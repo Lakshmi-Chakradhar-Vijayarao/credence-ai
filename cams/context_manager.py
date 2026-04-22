@@ -486,13 +486,27 @@ class CAMSContextManager:
     # Novelty guard
     # ------------------------------------------------------------------
 
+    # Common English words that get capitalized at sentence-start but are not named entities.
+    _ENTITY_STOPWORDS = frozenset({
+        "The", "This", "These", "That", "Those", "There", "Then", "Here",
+        "It", "Its", "They", "Their", "We", "Our", "You", "Your",
+        "How", "What", "Why", "When", "Where", "Who", "Which",
+        "Can", "Could", "Should", "Would", "Will", "May", "Might", "Must",
+        "Is", "Are", "Was", "Were", "Has", "Have", "Had", "Does", "Did",
+        "For", "And", "But", "Or", "So", "Also", "Note", "Use", "Used",
+        "Using", "With", "From", "Into", "About", "After", "Before",
+    })
+
     def _extract_entities(self, text: str) -> set[str]:
-        """Extract named entities (capitalized tokens ≥ 3 chars, not sentence-start)."""
-        # Match capitalized words that appear mid-sentence (not at start of line)
+        """Extract named entities (capitalized tokens ≥ 3 chars), filtering stopwords."""
+        # Mid-sentence capitalized words (strongest signal)
         tokens = re.findall(r'(?<=[a-z\s,;:])\s([A-Z][a-z]{2,}(?:\s[A-Z][a-z]{2,})*)', text)
-        # Also catch standalone capitalized words
+        # All capitalized words (broader catch, filtered by stopwords)
         tokens += re.findall(r'\b([A-Z][a-z]{2,})\b', text)
-        return {t.strip() for t in tokens if len(t.strip()) >= 3}
+        return {
+            t.strip() for t in tokens
+            if len(t.strip()) >= 3 and t.strip() not in self._ENTITY_STOPWORDS
+        }
 
     def _check_novelty(self, text: str) -> bool:
         """
@@ -507,7 +521,11 @@ class CAMSContextManager:
         if not new_entities:
             return False
 
-        new_count     = len(new_entities - self._entity_vocab)
+        new_count = len(new_entities - self._entity_vocab)
+        # Require minimum 3 new entities: a single new class name or term is
+        # not a topic pivot. Genuine pivots introduce many new entities.
+        if new_count < 3:
+            return False
         novelty_ratio = new_count / len(new_entities)
         return novelty_ratio > _NOVELTY_THRESHOLD
 
