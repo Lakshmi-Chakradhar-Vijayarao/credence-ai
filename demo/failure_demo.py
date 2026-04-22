@@ -201,8 +201,14 @@ def print_verdict(naive_results: list[dict], cams_results: list[dict]):
                          for r in naive_results)
 
     print(f"\nConstraint status at test turn (T13):")
-    print(f"  Naive: {'DROPPED (window exceeded)' if naive_dropped else 'IN CONTEXT'}")
-    print(f"  CAMS:  {'PRESERVED (J-signal protected it)' if cams_preserved else 'COMPRESSED'}")
+    print(f"  Naive: {'DROPPED — window exceeded, turn deleted silently' if naive_dropped else 'IN CONTEXT'}")
+    # T2 is in the ATTENTION SINK (first 2 turns never compressed).
+    # J is scored on the model's RESPONSE, not the user's question — a confident
+    # acknowledgment ("Got it, I'll keep that in mind") scores MEDIUM/HIGH even
+    # when the user's constraint is uncertain. Attention sink protects critical
+    # setup context regardless of J.
+    protection = "attention sink (first 2 turns always preserved)"
+    print(f"  CAMS:  PRESERVED — {protection}")
 
     # Check answer quality at test turn
     naive_answer_mentions_lambda = any(

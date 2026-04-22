@@ -1,0 +1,14 @@
+{
+  "constraint_turn": {
+    "naive_j": 0.5548,
+    "cams_j": 0.5016,
+    "cams_zone": "MEDIUM",
+    "cams_decision": "PRESERVE"
+  },
+  "test_turn": {
+    "naive_answer": "I have to be upfront: we haven't actually discussed your project. Our conversation so far has covered general computer science concepts \u2014 CAP theorem, TCP vs UDP, deadlocks, scaling, memoization, and CDNs \u2014 but you haven't shared any details about a specific project, its language (beyond the topic being Python now), architecture, scale, or pain points.\n\nTo give you a useful recommendation, I'd need to know things like:\n\n- **What kind of application?** Web service, data pipeline, ML training, CLI tool, long-running daemon?\n- **What's the symptom?** High baseline memory, gradual leak, spikes under load, OOM crashes?\n- **Production or development profiling?** Overhead tolerance differs hugely.\n- **Scale**: Single process, multi-process, distributed?\n\n**That said, here's a quick map of the Python memory profiling landscape:**\n\n- **`tracemalloc`** (stdlib)",
+    "cams_answer": "Given your uncertain deployment target (likely AWS Lambda at 128MB, possibly a 512MB container), memory profiling matters a lot \u2014 especially for the Lambda case, where hitting the limit means hard failure.\n\n**Recommended approach**:\n\n1. **`tracemalloc`** (standard library): Best starting point. Low overhead, built-in, tracks allocations by line/file. Good for finding where memory is allocated.\n\n   ```python\n   import tracemalloc\n   tracemalloc.start()\n   # ... run code ...\n   snapshot = tracemalloc.take_snapshot()\n   for stat in snapshot.statistics('lineno')[:10]:\n       print(stat)\n   ```\n\n2. **`memory_profiler`**: Line-by-line memory usage with `@profile` decorator. Great for local development. Adds overhead, so don't run in production.\n\n3. **`psutil`**: For runtime self-",
+    "naive_context_had_constraint": false,
+    "cams_context_had_constraint": true
+  }
+}
