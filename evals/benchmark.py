@@ -393,6 +393,96 @@ def run_cams(pairs: list[dict], client: Anthropic) -> ConditionResult:
     )
 
 
+def run_random_gating(
+    pairs: list[dict],
+    client: Anthropic,
+    compress_rate: float = 0.30,
+    seed: int = 42,
+) -> ConditionResult:
+    """
+    Control condition: compress at the SAME RATE as CAMS but pick turns randomly.
+
+    If CAMS ROUGE-L > random-gating ROUGE-L, the J signal is doing real work.
+    If they are equal, J adds nothing over a compression schedule.
+
+    compress_rate: fraction of eligible turns to compress (match CAMS observed rate).
+    Default 0.30 matches typical CAMS compression rate on 30-turn sessions.
+    """
+    import random as _random
+    rng = _random.Random(seed)
+
+    history = []
+    turns   = []
+    total_tokens_in = total_tokens_out = total_tokens_saved = 0
+    compression_count = 0
+    ATTENTION_SINK = 2   # never compress first N turns (mirrors CAMS)
+    TRIM_WINDOW    = 10  # keep last N turns on trim (mirrors CAMS)
+
+    for idx, p in enumerate(pairs):
+        history.append({"role": "user", "content": p["question"]})
+        decision = "PRESERVE"
+
+        # Eligible for compression after attention sink
+        if idx >= ATTENTION_SINK:
+            roll = rng.random()
+            if roll < compress_rate and len(history) > ATTENTION_SINK * 2 + 4:
+                # Random-compress: summarise oldest turns (same mechanism as CAMS TRIM)
+                keep = history[-(TRIM_WINDOW * 2):]
+                dropped = history[:-(TRIM_WINDOW * 2)]
+                if dropped:
+                    total_tokens_saved += sum(len(m["content"]) // 4 for m in dropped)
+                    history = history[:ATTENTION_SINK * 2] + keep
+                    compression_count += 1
+                    decision = "COMPRESS-RANDOM"
+            elif roll < compress_rate * 2:
+                # Random-trim: same probability band
+                if len(history) > TRIM_WINDOW * 2:
+                    dropped = history[:-(TRIM_WINDOW * 2)]
+                    total_tokens_saved += sum(len(m["content"]) // 4 for m in dropped)
+                    history = history[-(TRIM_WINDOW * 2):]
+                    decision = "TRIM-RANDOM"
+
+        resp = client.messages.create(
+            model      = "claude-opus-4-7",
+            messages   = history,
+            max_tokens = 300,
+        )
+        text  = resp.content[0].text
+        t_in  = resp.usage.input_tokens
+        t_out = resp.usage.output_tokens
+        total_tokens_in  += t_in
+        total_tokens_out += t_out
+        history.append({"role": "assistant", "content": text})
+
+        proxy = ConfidenceProxy()
+        cr    = proxy.compute(text)
+        rl    = rouge_l(text, p["reference"])
+        turns.append(TurnLog(
+            question=p["question"], answer=text, rouge_l=rl,
+            j_score=cr.j_score, zone=cr.zone, decision=decision,
+            tokens_in=t_in, tokens_out=t_out, tokens_saved=0,
+            domain=p.get("domain", "unknown"),
+        ))
+
+    total_used = total_tokens_in + total_tokens_out
+    denom      = total_used + total_tokens_saved
+    ratio      = total_tokens_saved / denom if denom > 0 else 0.0
+    cost       = round(_cost(total_tokens_in, total_tokens_out), 4)
+    mean_rl    = round(sum(t.rouge_l for t in turns) / len(turns), 4)
+    return ConditionResult(
+        condition          = "Random gating (control)",
+        turns              = turns,
+        total_tokens_used  = total_used,
+        total_tokens_saved = total_tokens_saved,
+        total_cost_usd     = cost,
+        mean_rouge_l       = mean_rl,
+        mean_j_score       = round(sum(t.j_score for t in turns) / len(turns), 4),
+        compression_ratio  = round(ratio, 3),
+        auarc              = compute_auarc(turns),
+        reasoning_density_per_kdollar = reasoning_density(mean_rl, cost),
+    )
+
+
 def run_baseline(pairs: list[dict], client: Anthropic) -> ConditionResult:
     """Full context, no compression."""
     history = []
@@ -551,6 +641,23 @@ def print_table(results: list[ConditionResult]):
               f"(J-proxy captures real signal at language surface)")
         print(f"  Interpretation: CAMS achieves {api_surface_pct:.0f}% of Fisher theory's "
               f"ceiling without hidden-state access.")
+
+    # Random-gating ablation: does J signal beat random compression?
+    rand_r = next((r for r in results if "Random" in r.condition), None)
+    if rand_r:
+        rl_delta  = cams_r.mean_rouge_l - rand_r.mean_rouge_l
+        tok_delta = rand_r.total_tokens_used - cams_r.total_tokens_used
+        print(f"\n── Ablation: J-Gated vs Random Gating (same compression rate) ─")
+        print(f"  CAMS ROUGE-L          : {cams_r.mean_rouge_l:.4f}")
+        print(f"  Random gating ROUGE-L : {rand_r.mean_rouge_l:.4f}")
+        print(f"  Delta                 : {rl_delta:+.4f}")
+        print(f"  Token difference      : {tok_delta:+,}")
+        if rl_delta > 0.01:
+            print(f"  ✓ J-proxy beats random — signal is doing real work")
+        elif rl_delta > -0.01:
+            print(f"  △ No significant difference — J schedule may matter more than signal")
+        else:
+            print(f"  ✗ Random gating wins — J-proxy hurts quality (investigate)")
 
     # Per-zone quality breakdown for CAMS
     for zone in ("HIGH", "MEDIUM", "LOW"):
@@ -716,6 +823,7 @@ def main():
     parser.add_argument("--quick",  action="store_true", help="Run 3 questions only (smoke test)")
     parser.add_argument("--judge",  action="store_true", help="Score answers with GPT-4o-mini (~$0.50, requires OPENAI_API_KEY)")
     parser.add_argument("--judge-only", action="store_true", help="Run judge on existing results.json without re-running benchmark")
+    parser.add_argument("--ablation", action="store_true", help="Add random-gating control condition (proves J signal vs schedule)")
     args = parser.parse_args()
 
     if not _CLIENT_AVAILABLE:
@@ -733,12 +841,18 @@ def main():
     print(f"Running benchmark ({len(pairs)} questions across 3 domains, 3 conditions)...")
     print("This will make real API calls to claude-opus-4-7.\n")
 
-    results = []
-    for name, fn in [
+    conditions = [
         ("Baseline (no compression)", lambda: run_baseline(pairs, client)),
         ("Naive sliding window",      lambda: run_naive_window(pairs, client)),
         ("CAMS",                      lambda: run_cams(pairs, client)),
-    ]:
+    ]
+    if args.ablation:
+        conditions.append(
+            ("Random gating (control)", lambda: run_random_gating(pairs, client))
+        )
+
+    results = []
+    for name, fn in conditions:
         print(f"  Running {name}...")
         t0 = time.perf_counter()
         r  = fn()
