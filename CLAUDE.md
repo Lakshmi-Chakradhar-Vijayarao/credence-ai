@@ -106,8 +106,8 @@ Long-running task agent built on top of `CAMSContextManager`.
 
 ---
 
-### `evals/benchmark.py` — 618 lines
-Three-condition benchmark. Runs 30 QA pairs (10 factual / 10 reasoning / 10 uncertain).
+### `evals/benchmark.py` — ~1100 lines
+Four-condition benchmark. Runs 30 QA pairs (10 factual / 10 reasoning / 10 uncertain).
 
 **Key functions**:
 - `rouge_l(hypothesis, reference) → float` — LCS-based F1, no external deps
@@ -124,12 +124,15 @@ Three-condition benchmark. Runs 30 QA pairs (10 factual / 10 reasoning / 10 unce
 - `TurnLog` (dataclass, line 329): `question, reference, hypothesis, j_score, rouge, domain`
 - `ConditionResult` (dataclass, line 343): `name, turns, total_tokens, tokens_saved, cost_usd`
 
-**Benchmark results** (from last run):
+**Benchmark results** (from last run — 4-condition honest design, system prompt held constant):
 ```
-Baseline:     121,969 tokens / $2.31 / ROUGE-L 0.137 / AUARC 0.174
-Naive window:  52,444 tokens / $1.25 / ROUGE-L 0.144 / AUARC 0.171
-CAMS:          89,633 tokens / $1.74 / ROUGE-L 0.224 / AUARC 0.285
+Baseline (no prompt):       126,702 tokens / $2.39 / ROUGE-L 0.138 / AUARC 0.194
+Baseline (no compression):   90,105 tokens / $1.75 / ROUGE-L 0.215 / AUARC 0.301
+Naive sliding window:         44,674 tokens / $1.06 / ROUGE-L 0.154 / AUARC 0.262
+CAMS:                         86,962 tokens / $1.70 / ROUGE-L 0.194 / AUARC 0.270
 ```
+System prompt delta: +0.077 ROUGE-L. J-proxy delta on diverse Q&A: ~0 (novelty guard PRESERVE all).
+CAMS AUARC: 40.8% of Φ(√J̄/2) theoretical ceiling (hidden-state access) at API surface.
 
 ---
 

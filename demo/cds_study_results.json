@@ -187,7 +187,7 @@
     "naive": {
       "session_id": "S2",
       "condition": "Naive",
-      "referenced": true,
+      "referenced": false,
       "test_answer": "I actually don't have any information about your project. Looking back at our conversation, you've only asked general technical questions (exponential backoff, REST vs GraphQL, webhooks, HTTP codes, rate limiting, API gateways) \u2014 you haven't shared details about what you're building.\n\nI did mention a \"$50/month budget\" a couple of times in my responses, but I shouldn't have \u2014 I was inferring or fabricating that detail. I apologize for that; it was misleading.\n\nTo give you a useful recommendation, I'd need to know things like:\n- **What you're building** (chatbot, RAG system, code assistant, content generation, classification, etc.)\n- **Expected volume** (requests per day, average input/output token length)\n- **Actual budget**\n- **Quality requirements** (is GPT-3.5-tier good enough, or do you need frontier models?)\n- **Latency needs** (real-time user-facing vs. batch processing)\n- **Priv",
       "constraint_dropped": true,
       "turns": [
@@ -305,7 +305,7 @@
     "naive": {
       "session_id": "S3",
       "condition": "Naive",
-      "referenced": true,
+      "referenced": false,
       "test_answer": "I don't actually have any context about your situation \u2014 this appears to be the start of our conversation about your specifics. The earlier messages were general questions about software development practices, but you haven't shared details about:\n\n- Your team size\n- What you're building\n- Your timeline and constraints\n- Your team's experience level\n- Whether you have external stakeholders/clients\n- How much requirements are likely to change\n- Your current pain points\n\nIf you share some of that context, I can give a grounded recommendation. But a few general pointers:\n\n- **Small team, evolving requirements** \u2192 Lightweight Scrum or Kanban. Short iterations, frequent demos.\n- **Solo or very small team** \u2192 Kanban with a simple board is often enough; Scrum ceremonies become overhead.\n- **Fixed scope and deadline (e.g., contract work)** \u2192 More upfront planning, but still iterative delivery.\n- **Research or exploratory work** \u2192 Kanban, since you can't reli",
       "constraint_dropped": true,
       "turns": [
@@ -423,7 +423,7 @@
     "naive": {
       "session_id": "S4",
       "condition": "Naive",
-      "referenced": true,
+      "referenced": false,
       "test_answer": "I'd love to help, but **you haven't actually told me about your project** in this conversation \u2014 we've only discussed general database concepts (SQL vs NoSQL, indexing, ORMs, sharding, eventual consistency, ACID). There's no project context for me to reason from.\n\nTo give you a useful recommendation, I'd need to know things like:\n\n- **What are you building?** (web app, API, mobile backend, analytics platform...)\n- **What's the read/write pattern?** (read-heavy? write-heavy? bursty?)\n- **What's the data?** (user sessions, product catalogue, feed items, computed results...)\n- **How fresh does cached data need to be?** (seconds? minutes? tolerant of staleness?)\n- **Scale and latency targets?**\n- **Stack choices so far?** (you mentioned PostgreSQL and DynamoDB as options \u2014 did you pick one?)\n\nIf you share those details, I can suggest a",
       "constraint_dropped": true,
       "turns": [
@@ -541,7 +541,7 @@
     "naive": {
       "session_id": "S5",
       "condition": "Naive",
-      "referenced": true,
+      "referenced": false,
       "test_answer": "I don't actually have any details about your project \u2014 we've only covered general concepts (latency vs throughput, load balancers, scaling, CDNs, event-driven architecture, circuit breakers). You mentioned a \"200ms P99\" SLA in passing, but no specifics about your domain, traffic, team, or constraints.\n\nTo give you a useful prioritization, I'd need to know things like:\n\n- **What does the system do?** (e-commerce, real-time messaging, analytics, etc.)\n- **Scale**: expected RPS, data volume, user geography\n- **Team size and expertise**\n- **Current state**: greenfield or evolving an existing system?\n- **Non-functional priorities**: Is it latency-sensitive? Availability-critical? Cost-constrained?\n- **SLA details**: That 200ms P99 \u2014 for which operations?\n\nThat said, a generally sound prioritization order for most backend architectures looks like:\n\n1. **Get the",
       "constraint_dropped": true,
       "turns": [
