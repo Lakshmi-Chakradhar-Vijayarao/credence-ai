@@ -139,16 +139,19 @@ Four-condition benchmark. Runs 30 QA pairs (10 factual / 10 reasoning / 10 uncer
 - `TurnLog` (dataclass, line 329): `question, reference, hypothesis, j_score, rouge, domain`
 - `ConditionResult` (dataclass, line 343): `name, turns, total_tokens, tokens_saved, cost_usd`
 
-**Benchmark results** (April 23 2026 run — 4-condition honest design, system prompt held constant):
+**Benchmark results** (April 23 2026 run — 4-condition honest design, adaptive thresholds active):
 ```
-Baseline (no prompt):       119,680 tokens / $2.27 / ROUGE-L 0.138 / AUARC 0.189
-Baseline (no compression):   89,462 tokens / $1.74 / ROUGE-L 0.216 / AUARC 0.316
-Naive sliding window:         45,252 tokens / $1.07 / ROUGE-L 0.222 / AUARC 0.310
-CAMS:                         63,204 tokens / $1.32 / ROUGE-L 0.218 / AUARC 0.324
+Baseline (no prompt):       106,465 tokens / $2.04 / ROUGE-L 0.146 / AUARC 0.217
+Baseline (no compression):   91,248 tokens / $1.77 / ROUGE-L 0.219 / AUARC 0.326
+Naive sliding window:         45,168 tokens / $1.07 / ROUGE-L 0.238 / AUARC 0.356
+CAMS:                         70,895 tokens / $1.47 / ROUGE-L 0.213 / AUARC 0.323
 ```
-System prompt delta: +0.078 ROUGE-L. J-proxy delta on diverse Q&A: +0.002 (within noise, CI ±0.13).
+System prompt delta: +0.073 ROUGE-L. J-proxy delta on diverse Q&A: −0.006 (within noise, CI ±0.12).
+Naive window outperforms CAMS on aggregate QA (expected: independent QA doesn't require context preservation).
 CAMS AUARC: 49.0% of Φ(√J̄/2) theoretical ceiling (hidden-state access) at API surface.
-Token reduction vs same-prompt baseline: 29.4%. Cost reduction: 24.2%.
+Token reduction vs same-prompt baseline: 22.3%. Cost reduction: 17.1%.
+Experiment results: E1 CAMS 0.875 vs naive 0.833; E4 CAMS 0.875 vs random_j 0.812 vs naive 0.750;
+E6 CAMS 100% correction vs naive 0%; E7 CAMS 3/3 hops vs naive 0/3; E8 CAMS 1.000 vs naive 0.600.
 
 ---
 
@@ -239,3 +242,14 @@ User message
 - **ATTENTION_SINK = 2**: first 2 turns establish conversation identity; losing them causes topic drift even if their content is HIGH-J
 - **MAX_COMPRESSIONS = 3**: each Haiku compression is ~85% lossless; after 3 passes the cumulative loss becomes noticeable; tested empirically
 - **NOVELTY_THRESHOLD = 0.75 (content words, not entities)**: three-gate design — (1) vocab ≥10 content words established, (2) ≥5 new content words in response, (3) >75% of response content words are new. Content words (any ≥4-char non-stop word) replaces entity-counting, which could not detect topic pivots without proper nouns. Same threshold and gates, broader vocabulary signal. False positive rate on stable-domain sessions validated through test suite.
+- **Adaptive thresholds are model-agnostic by construction**: P75/P25 of rolling buffer adapts to whatever J-distribution the current model produces — no per-model calibration needed. Static thresholds would mis-classify GPT-4o vs Claude responses because hedging vocabularies differ.
+- **Selective compression is the right design**: Sending the entire old segment to Haiku risks losing LOW/MEDIUM-J turns that contain critical uncertain constraints. The `_history_j_scores` parallel list enables per-turn lookup: only HIGH-J (already-resolved) turns go to Haiku; LOW/MEDIUM turns survive verbatim.
+
+## What Was Added (April 23, 2026 session — fourth pass)
+
+- **Adaptive percentile thresholds** (`context_manager.py`): `_j_buffer` (rolling 20-turn list) + `_effective_theta_high` (P75, floored at 0.65) + `_effective_theta_low` (P25, capped at min(p25, eff_high−0.10, 0.55)). Warmup: first 5 turns use static thresholds. Guard-rail override detection: if `cr.zone != static_zone`, a guard rail modified the zone — respected as-is. `TurnResult` new fields: `adaptive_theta_high`, `adaptive_theta_low`.
+- **Selective turn-level compression** (`context_manager.py`): `_history_j_scores` list maintained in sync with `_history`. During `_compress()`, old segment split into HIGH-J pairs (→ Haiku) and LOW/MEDIUM-J pairs (→ kept verbatim). History rebuilt as: sink + preserved_msgs + `<context_summary>` + recent.
+- **E1 fixed** (`experiments.py`): All three conditions (baseline/naive/cams) now use live Opus generation — eliminates pre-canned vs live confound. `SEED_MESSAGES` list, 8 messages, 4 callbacks.
+- **E2 fixed** (`experiments.py`): Short code snippets + `max_tokens=150` to force brief responses that would score HIGH without Type Prior.
+- **E8 — Real Debugging Session** (`experiments.py`): 12-turn realistic debugging session. T3: specific RuntimeError. T4: uncertain hypothesis (LOW-J). T5-T10: 6 HIGH-J filler turns. T11: attempted fix. T12: partial outcome. 3 callbacks: original error, hypothesis, fix+outcome. Naive drops T4 (0.00 recall on hypothesis). CAMS matches baseline (1.000).
+- **All experiments re-run with real API**: E1 CAMS 0.875, E4 CAMS 0.875 vs random_j 0.812 vs naive 0.750, E6 100% vs 0% correction, E7 3/3 vs 0/3 hops, E8 1.000 vs 0.600.

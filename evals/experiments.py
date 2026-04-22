@@ -89,54 +89,43 @@ class E1Result:
 
 def run_e1() -> list[E1Result]:
     """
-    Setup:
-      Turns 1-2  : attention-sink turns (identity establishment)
-      Turn  3    : inject uncertain constraint with LOW-J language
-                   "I think the rate limit might be 100 req/min — not certain"
-      Turns 4-7  : confident factual HIGH-J exchanges (build compression pressure)
-      Turn  8    : inject second uncertain dependency
-                   "I believe the auth token expires in 24 hours, though I'd verify"
-      Turns 9-12 : callback questions requiring turns 3 and 8
+    E1 — Propagation Chain (fixed: live generation for all conditions)
 
-    Three conditions: Baseline (no compression), Naive window (keep last 6),
-    CAMS (adaptive).  Measure: recall of uncertain constraints in turns 9-12.
+    Setup:
+      T1-T2  : identity turns (attention sink)
+      T3     : LOW-J uncertain constraint ("rate limit ~100 req/min — not certain")
+      T4-T7  : HIGH-J factual filler (compression pressure)
+      T8     : second LOW-J uncertain constraint ("token expiry ~24h — not sure")
+      T9-T12 : callback questions requiring T3 and T8
+
+    All three conditions use live Opus generation. The only difference is how
+    history is managed between turns (no compression / naive window / CAMS).
+    This eliminates the pre-canned vs live generation confound in the original design.
     """
-    print("\n[E1] Propagation Chain ...")
+    print("\n[E1] Propagation Chain (live generation, all conditions) ...")
 
     SYSTEM = (
         "You are a precise technical assistant helping plan a software integration. "
-        "When asked to recall earlier facts, state them exactly as established."
+        "When asked to recall earlier facts, state them exactly as established, "
+        "including any uncertainty flags."
     )
 
-    CONVERSATION = [
-        # Turns 1-2: identity
-        {"role": "user",      "content": "Let's plan an integration with an external API. I'll share constraints as we go."},
-        {"role": "assistant", "content": "Understood. I'm ready to help plan the integration. Please share the constraints whenever you're ready."},
-        {"role": "user",      "content": "The API endpoint is /v2/events and uses Bearer token auth."},
-        {"role": "assistant", "content": "Got it. Endpoint: /v2/events, authentication: Bearer token."},
-        # Turn 3: LOW-J uncertain constraint
-        {"role": "user",      "content": "I think the rate limit might be around 100 requests per minute — I'm not completely certain though, I'd need to double-check the docs."},
-        {"role": "assistant", "content": "Noted. The rate limit is approximately 100 req/min, though you've flagged this as uncertain and worth verifying. I'll treat it as a tentative constraint."},
-        # Turns 4-7: confident HIGH-J exchanges
-        {"role": "user",      "content": "What HTTP status code indicates rate limiting?"},
-        {"role": "assistant", "content": "HTTP 429 Too Many Requests. Some APIs also use 503 with a Retry-After header."},
-        {"role": "user",      "content": "What is exponential backoff?"},
-        {"role": "assistant", "content": "Exponential backoff doubles the wait time between retries: 1s, 2s, 4s, 8s... typically with jitter to avoid thundering-herd."},
-        {"role": "user",      "content": "What does idempotency mean in API design?"},
-        {"role": "assistant", "content": "An idempotent operation produces the same result if called once or multiple times. GET, PUT, DELETE are idempotent; POST is not."},
-        {"role": "user",      "content": "What is a circuit breaker pattern?"},
-        {"role": "assistant", "content": "A circuit breaker stops calling a failing service after a threshold of errors, allowing it to recover. States: Closed (normal), Open (blocked), Half-open (testing recovery)."},
-        # Turn 8: second LOW-J uncertain dependency
-        {"role": "user",      "content": "I believe the Bearer token expires in around 24 hours — though I'm not 100% sure, might be less."},
-        {"role": "assistant", "content": "Noted. Token expiry is approximately 24 hours, marked as uncertain and needing verification before implementation."},
+    SEED_MESSAGES = [
+        "Let's plan an integration with an external API. I'll share constraints as we go.",
+        "The API endpoint is /v2/events and uses Bearer token auth.",
+        "I think the rate limit might be around 100 requests per minute — I'm not completely certain though, I'd need to double-check the docs.",
+        "What HTTP status code indicates rate limiting?",
+        "What is exponential backoff?",
+        "What does idempotency mean in API design?",
+        "What is a circuit breaker pattern?",
+        "I believe the Bearer token expires in around 24 hours — though I'm not 100% sure, might be less.",
     ]
 
-    # Callback questions and their expected recall fragments
     CALLBACKS = [
         ("What rate limit did we establish for this API?",
-         ["100", "req", "uncertain", "verify"]),
+         ["100", "req", "uncertain", "verify", "certain", "sure"]),
         ("What was the token expiry we noted earlier?",
-         ["24", "hour", "uncertain", "verify"]),
+         ["24", "hour", "uncertain", "verify", "certain", "sure"]),
         ("Summarise both uncertain constraints we need to verify.",
          ["100", "rate", "24", "token", "uncertain"]),
         ("Before we write the retry logic, what two API constraints are we unsure about?",
@@ -153,32 +142,37 @@ def run_e1() -> list[E1Result]:
             mgr = CAMSContextManager(
                 api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
                 theta_high=0.65, theta_low=0.35,
-                system_prompt=SYSTEM, max_tokens=512,
+                system_prompt=SYSTEM, max_tokens=400,
             )
-            # Replay the conversation through CAMS so its history/J state is real
-            for i in range(0, len(CONVERSATION), 2):
-                user_msg = CONVERSATION[i]["content"]
-                result = mgr.chat(user_msg)
-                tokens_total += result.tokens_in + result.tokens_out
-
+            for msg in SEED_MESSAGES:
+                r = mgr.chat(msg)
+                tokens_total += r.tokens_in + r.tokens_out
+                time.sleep(0.3)
             for q, fragments in CALLBACKS:
-                result = mgr.chat(q)
-                score = _score_recall(result.response, fragments)
+                r = mgr.chat(q)
+                score = _score_recall(r.response, fragments)
                 recall_scores.append(score)
-                tokens_total += result.tokens_in + result.tokens_out
+                tokens_total += r.tokens_in + r.tokens_out
                 print(f"  [cams] Q: {q[:55]}… recall={score:.2f}")
                 time.sleep(0.3)
 
         else:
-            # Build history as a flat list; apply compression strategy
-            history = list(CONVERSATION)
+            history = []
+            for msg in SEED_MESSAGES:
+                if condition == "naive_window":
+                    history = history[-12:]
+                msgs = history + [{"role": "user", "content": msg}]
+                answer, t_in, t_out = _ask(msgs, system=SYSTEM, max_tokens=400)
+                tokens_total += t_in + t_out
+                history.append({"role": "user",      "content": msg})
+                history.append({"role": "assistant", "content": answer})
+                time.sleep(0.3)
 
             for q, fragments in CALLBACKS:
                 if condition == "naive_window":
-                    # Keep only last 6 turns (12 messages)
                     history = history[-12:]
                 msgs = history + [{"role": "user", "content": q}]
-                answer, t_in, t_out = _ask(msgs, system=SYSTEM)
+                answer, t_in, t_out = _ask(msgs, system=SYSTEM, max_tokens=400)
                 tokens_total += t_in + t_out
                 score = _score_recall(answer, fragments)
                 recall_scores.append(score)
@@ -191,7 +185,7 @@ def run_e1() -> list[E1Result]:
             condition=condition,
             callback_scores=recall_scores,
             mean_recall=sum(recall_scores) / len(recall_scores),
-            turns=len(CONVERSATION) // 2 + len(CALLBACKS),
+            turns=len(SEED_MESSAGES) + len(CALLBACKS),
             tokens_used=tokens_total,
         ))
         print(f"  [{condition}] mean_recall={results[-1].mean_recall:.3f}  tokens={tokens_total:,}")
@@ -214,23 +208,17 @@ class E2Result:
 
 def run_e2() -> list[E2Result]:
     """
-    Place the traceback at T3 — the FIRST compressible turn (T1-T2 are the
-    attention sink and are never touched by compression).  Follow with 3
-    code-heavy turns (T4-T6) so that T3 falls into the 'old' segment when
-    COMPRESS becomes eligible (n_turns > COMPRESS_AFTER*2=6 i.e. after T6).
+    E2 — Confident Error Trap (Type Prior ablation) — fixed with short code snippets.
 
-    Key mechanism:
-      Without Type Prior: T4-T6 code responses score J ~ 0.70 (HIGH) →
-        COMPRESS fires when n_turns=12 (T6 completes) → T3 traceback is
-        Haiku-summarised → exact line numbers / exception names may be lost.
+    The original design used full multi-hundred-line function implementations.
+    Those naturally stay MEDIUM due to the brevity factor (long text → low brevity score),
+    making the Type Prior redundant. This version uses short one-liner fixes and
+    single-function patches — responses that would score HIGH without Type Prior.
 
-      With Type Prior: T4-T6 code responses capped at J ≤ 0.64 (MEDIUM) →
-        COMPRESS never fires → full traceback stays in history → recall=1.0.
-
-    Previous design flaw: traceback was at T1 (attention sink) so it was
-    never in the compressible zone — both conditions returned 1.0 trivially.
+    With Type Prior:    code response J capped at 0.64 → MEDIUM → no compression
+    Without Type Prior: short code response J ~ 0.72 → HIGH → COMPRESS fires → traceback lost
     """
-    print("\n[E2] Confident Error Trap (Type Prior ablation) ...")
+    print("\n[E2] Confident Error Trap (Type Prior ablation) — short code snippets ...")
 
     TRACEBACK = """\
 Traceback (most recent call last):
@@ -238,23 +226,22 @@ Traceback (most recent call last):
     result = transform(item["payload"])
   File "transform.py", line 41, in transform
     return encoder.fit_transform(data)
-  File "/usr/local/lib/python3.11/site-packages/sklearn/preprocessing/_encoders.py", line 877, in fit_transform
-    return super().fit_transform(X, y=y)
 ValueError: Found unknown categories ['premium_v3', 'beta_access'] in column 0 during transform"""
 
     SYSTEM = "You are a senior Python engineer helping debug a production pipeline."
 
-    # User messages only — Opus generates real assistant responses via mgr.chat().
-    # T1-T2: plain-text identity (no code in response) → attention sink turns
-    # T3:    traceback inject → first compressible turn → what we measure
-    # T4-T6: code requests → Opus responds with code blocks → floors fire vs don't
+    # T1-T2: identity (no code in response → attention sink)
+    # T3: traceback inject → first compressible turn → what we protect
+    # T4-T6: SHORT code fixes (one-liners / single-function patches)
+    #        → without Type Prior these score HIGH and trigger COMPRESS
+    #        → with Type Prior they score MEDIUM and COMPRESS never fires
     USER_MESSAGES = [
         "I'll be working through a Python ML pipeline bug with you today.",
-        "It's a nightly preprocessing pipeline handling about 50,000 records.",
-        "Here's the traceback I'm seeing in production:\n\n" + TRACEBACK,
-        "Show me the complete fixed transform function with the handle_unknown parameter.",
-        "Write pytest unit tests for the encoder covering the unknown-category edge case.",
-        "Add Python type annotations to both transform and process_batch.",
+        "It's a preprocessing pipeline for our nightly batch.",
+        "Here's the traceback I'm seeing:\n\n" + TRACEBACK,
+        "What's the one-line fix to handle unknown categories in the encoder? Just the parameter change.",
+        "What's the pytest assertion to check that unknown categories don't raise? One line.",
+        "What's the type hint for the transform function's return value? One line.",
     ]
 
     CALLBACKS = [
@@ -275,18 +262,20 @@ ValueError: Found unknown categories ['premium_v3', 'beta_access'] in column 0 d
         mgr = CAMSContextManager(
             api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
             theta_high=0.65, theta_low=0.35,
-            system_prompt=SYSTEM, max_tokens=512,
+            system_prompt=SYSTEM, max_tokens=150,   # force short responses
         )
 
         if condition == "without_type_prior":
-            # Bypass content-type detection so code/error responses score on
-            # linguistic factors only — typically landing HIGH and triggering COMPRESS.
             mgr.proxy._detect_content_type = lambda text: ("text", 0.0)  # type: ignore
 
         for user_msg in USER_MESSAGES:
             result = mgr.chat(user_msg)
             tokens_total += result.tokens_in + result.tokens_out
             time.sleep(0.3)
+
+        n_compress = sum(1 for log in mgr.stats.decision_log if log["decision"] == "COMPRESS")
+        print(f"  [{condition}] compressions_fired={n_compress} "
+              f"(expected: {'>=1' if condition == 'without_type_prior' else '0'})")
 
         for q, fragments in CALLBACKS:
             result = mgr.chat(q)
@@ -295,12 +284,6 @@ ValueError: Found unknown categories ['premium_v3', 'beta_access'] in column 0 d
             tokens_total += result.tokens_in + result.tokens_out
             print(f"  [{condition}] Q: {q[:55]}… recall={score:.2f}")
             time.sleep(0.3)
-
-        n_compress = sum(
-            1 for log in mgr.stats.decision_log if log["decision"] == "COMPRESS"
-        )
-        print(f"  [{condition}] compressions_fired={n_compress} "
-              f"(expected: {'>=1' if condition == 'without_type_prior' else '0'})")
 
         r = E2Result(
             condition=condition,
@@ -1153,6 +1136,151 @@ def run_e7() -> list[E7Result]:
 
 
 # ---------------------------------------------------------------------------
+# E8 — Real Debugging Session (end-to-end realistic)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class E8CallbackLog:
+    question: str
+    recall_score: float
+    answer: str
+
+@dataclass
+class E8Result:
+    condition: str
+    callback_logs: list[E8CallbackLog]
+    mean_recall: float
+    tokens_used: int
+
+def run_e8() -> list[E8Result]:
+    """
+    E8 — Real Debugging Session (end-to-end realistic)
+
+    The most realistic test: a multi-turn debugging conversation with three
+    types of information that need different preservation strategies:
+
+      Original error (HIGH-J specific fact)     → should survive compression
+      Uncertain hypothesis (LOW-J)              → faithfulness probe protects it
+      Attempted fix + outcome (reasoning chain) → E7-style chain preservation
+
+    Setup:
+      T1-T2 : Attention sink (project identity)
+      T3    : Plant bug — specific RuntimeError with file/line (HIGH-J if resolved)
+      T4    : Plant uncertain hypothesis — "might be threading or GIL, not sure" (LOW-J)
+      T5-T10: HIGH-J diagnostic/factual exchanges (compression pressure)
+      T11   : Attempted fix description (MEDIUM-J — code change tried)
+      T12   : Fix outcome — partial, new symptom (LOW-J uncertain again)
+      T13-T16: More diagnostics
+      T17-T19: Callbacks
+
+    Three conditions: baseline, naive_window (window=6), cams
+    """
+    print("\n[E8] Real Debugging Session ...")
+
+    SYSTEM = (
+        "You are a senior engineer helping debug a production system. "
+        "Remember all established facts, hypotheses, and attempted fixes. "
+        "When recalling information, include any uncertainty flags exactly as stated."
+    )
+
+    SEED_MESSAGES = [
+        # T1-T2: identity
+        "I'm debugging a race condition in our payment processing service.",
+        "It's a Python FastAPI service handling ~500 concurrent requests per second.",
+        # T3: specific error — HIGH-J (precise, factual)
+        "Here's the exact error from production logs:\n\nRuntimeError: dictionary changed size during iteration\n  File 'payment_processor.py', line 147, in process_pending\n    for txn_id, txn in self.pending_transactions.items():\nThis happens roughly every 2-3 hours under high load.",
+        # T4: uncertain hypothesis — LOW-J (should be preserved by faithfulness probe)
+        "My hypothesis is it might be a threading issue with the GIL, or possibly our Redis connection pool isn't thread-safe — I'm genuinely not sure which. Could be either one, or both.",
+        # T5-T10: HIGH-J factual filler (compression pressure builds here)
+        "What is the GIL and how does it affect thread safety in Python?",
+        "What is the difference between threading.Lock and threading.RLock?",
+        "How does Redis connection pooling work?",
+        "What is the difference between a race condition and a deadlock?",
+        "What does asyncio.gather() do?",
+        "What is a context manager in Python?",
+        # T11: attempted fix — MEDIUM-J (code change)
+        "I tried wrapping the iteration with list(self.pending_transactions.items()) to take a snapshot first. Deployed it yesterday.",
+        # T12: outcome — LOW-J uncertain (new symptom, uncertainty remains)
+        "The original error stopped, but now we're occasionally seeing KeyError in the same function — different line though (line 152). Not sure if this is related to my fix or a separate issue.",
+    ]
+
+    CALLBACKS = [
+        (
+            "What was the exact original error and which file and line number did it occur on?",
+            ["RuntimeError", "dictionary changed size", "payment_processor", "147", "process_pending"],
+        ),
+        (
+            "What two uncertain hypotheses did we have about the root cause?",
+            ["threading", "GIL", "Redis", "connection pool", "not sure", "uncertain"],
+        ),
+        (
+            "What fix did we try and what happened after we deployed it?",
+            ["list", "snapshot", "items", "KeyError", "152"],
+        ),
+    ]
+
+    results = []
+
+    for condition in ["baseline", "naive_window", "cams"]:
+        tokens_total = 0
+        callback_logs = []
+
+        if condition == "cams":
+            mgr = CAMSContextManager(
+                api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+                theta_high=0.65, theta_low=0.35,
+                system_prompt=SYSTEM, max_tokens=400,
+            )
+            for msg in SEED_MESSAGES:
+                r = mgr.chat(msg)
+                tokens_total += r.tokens_in + r.tokens_out
+                time.sleep(0.3)
+            for q, fragments in CALLBACKS:
+                r = mgr.chat(q)
+                score = _score_recall(r.response, fragments)
+                callback_logs.append(E8CallbackLog(q, score, r.response[:150]))
+                tokens_total += r.tokens_in + r.tokens_out
+                print(f"  [cams] Q: {q[:60]}… recall={score:.2f}")
+                time.sleep(0.3)
+
+        else:
+            history = []
+            for msg in SEED_MESSAGES:
+                if condition == "naive_window":
+                    history = history[-12:]
+                msgs = history + [{"role": "user", "content": msg}]
+                answer, t_in, t_out = _ask(msgs, system=SYSTEM, max_tokens=400)
+                tokens_total += t_in + t_out
+                history.append({"role": "user",      "content": msg})
+                history.append({"role": "assistant", "content": answer})
+                time.sleep(0.3)
+
+            for q, fragments in CALLBACKS:
+                if condition == "naive_window":
+                    history = history[-12:]
+                msgs = history + [{"role": "user", "content": q}]
+                answer, t_in, t_out = _ask(msgs, system=SYSTEM, max_tokens=400)
+                tokens_total += t_in + t_out
+                score = _score_recall(answer, fragments)
+                callback_logs.append(E8CallbackLog(q, score, answer[:150]))
+                history.append({"role": "user",      "content": q})
+                history.append({"role": "assistant", "content": answer})
+                print(f"  [{condition}] Q: {q[:60]}… recall={score:.2f}")
+                time.sleep(0.3)
+
+        mean_recall = sum(l.recall_score for l in callback_logs) / len(callback_logs) if callback_logs else 0.0
+        results.append(E8Result(
+            condition=condition,
+            callback_logs=callback_logs,
+            mean_recall=mean_recall,
+            tokens_used=tokens_total,
+        ))
+        print(f"  [{condition}] mean_recall={mean_recall:.3f}  tokens={tokens_total:,}")
+
+    return results
+
+
+# ---------------------------------------------------------------------------
 # Print summary
 # ---------------------------------------------------------------------------
 
@@ -1246,6 +1374,28 @@ def _print_e6(results: list[E6Result]):
         else:
             print(f"  △ CAMS correction recall {cr_gap:.0%} below baseline — probe may need tuning")
 
+def _print_e8(results: list[E8Result]):
+    print("\n" + "="*70)
+    print("E8 — REAL DEBUGGING SESSION")
+    print("="*70)
+    print(f"  {'Condition':<20}  Mean  | Error  Hypothesis  Fix")
+    print("  " + "-"*58)
+    for r in results:
+        scores = [f"{l.recall_score:.2f}" for l in r.callback_logs]
+        score_str = "  ".join(scores) if scores else "—"
+        print(f"  {r.condition:<20}  {r.mean_recall:.3f} | {score_str}")
+    cams_r  = next((r for r in results if r.condition == "cams"), None)
+    base_r  = next((r for r in results if r.condition == "baseline"), None)
+    naive_r = next((r for r in results if r.condition == "naive_window"), None)
+    if cams_r and naive_r:
+        print(f"\n  CAMS vs Naive recall delta: {cams_r.mean_recall - naive_r.mean_recall:+.3f}")
+    if cams_r and base_r:
+        gap = base_r.mean_recall - cams_r.mean_recall
+        if gap <= 0.05:
+            print(f"  ✓ CAMS within 5% of baseline recall (all 3 information types preserved)")
+        else:
+            print(f"  △ CAMS {gap:.0%} below baseline — compression losing some context")
+
 
 # ---------------------------------------------------------------------------
 # Serialisation helpers
@@ -1253,8 +1403,9 @@ def _print_e6(results: list[E6Result]):
 
 def _serialise(obj):
     if isinstance(obj, (E1Result, E2Result, E3Result, E4Result, E5Result,
-                        E6Result, E7Result, E3TurnLog, E4TurnLog, E5TurnLog,
-                        E6NeedleLog, E7HopLog)):
+                        E6Result, E7Result, E8Result,
+                        E3TurnLog, E4TurnLog, E5TurnLog,
+                        E6NeedleLog, E7HopLog, E8CallbackLog)):
         return asdict(obj)
     raise TypeError(f"Not serializable: {type(obj)}")
 
@@ -1265,7 +1416,7 @@ def _serialise(obj):
 
 def main():
     parser = argparse.ArgumentParser(description="CAMS ablation experiments")
-    parser.add_argument("--exp", choices=["E1", "E2", "E3", "E4", "E5", "E6", "E7", "all"],
+    parser.add_argument("--exp", choices=["E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "all"],
                         default="all", help="Which experiment to run")
     parser.add_argument("--out", default="evals/experiment_results.json",
                         help="Output JSON path")
@@ -1321,6 +1472,11 @@ def main():
         r = run_e7(); _print_e7(r)
         all_results["E7"] = [
             {**asdict(x), "hop_logs": [asdict(l) for l in x.hop_logs]} for x in r
+        ]
+    if args.exp in ("E8", "all"):
+        r = run_e8(); _print_e8(r)
+        all_results["E8"] = [
+            {**asdict(x), "callback_logs": [asdict(l) for l in x.callback_logs]} for x in r
         ]
 
     with open(out_path, "w") as f:

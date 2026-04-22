@@ -81,6 +81,33 @@ _NOVELTY_MIN_ENTITIES = 5   # require at least 5 new entities (single new names 
 _NOVELTY_MIN_VOCAB    = 10  # don't fire until the entity vocab is established
 _MIN_COMPRESS_TOKENS  = 150 # don't call Haiku if old segment is smaller than this
 
+# ---------------------------------------------------------------------------
+# Adaptive threshold configuration
+#
+# Fixed global thresholds (theta_high=0.65) misfire because the J-distribution
+# shifts by session type: a Q&A session clusters [0.60-0.91]; a coding session
+# clusters tighter around [0.62-0.72]. A fixed cutoff that works for one
+# mis-classifies the other.
+#
+# Solution: track a rolling buffer of J-scores and set thresholds as percentiles
+# of what this specific session is producing — "compress the top 25%, preserve
+# the bottom 25%, TRIM the middle 50%".
+#
+# Safety floors prevent over-compression during warmup or in pathological sessions:
+#   _ADAPTIVE_THETA_HIGH_FLOOR = 0.65  — never compress below this (global default)
+#   _ADAPTIVE_THETA_LOW_CEIL   = 0.55  — never let LOW zone creep above this
+#
+# Empirical calibration from 30-question benchmark (April 2026):
+#   Full J range: [0.594, 0.907], mean=0.691
+#   At theta_high=0.70: factual=8/10 HIGH, uncertain=0/10 HIGH → clean separation
+#   At theta_high=0.65: uncertain=6/10 HIGH → wrong, compresses uncertain responses
+#   → Floor set to 0.65; adaptive P75 raises it further when session warrants.
+# ---------------------------------------------------------------------------
+_ADAPTIVE_MIN_SAMPLES      = 5   # turns before adaptive mode activates (warmup)
+_ADAPTIVE_BUFFER_SIZE      = 20  # rolling window (last N turns)
+_ADAPTIVE_THETA_HIGH_FLOOR = 0.65  # global safety floor — never compress below J=0.65
+_ADAPTIVE_THETA_LOW_CEIL   = 0.55  # cap — LOW zone must stay below this
+
 # Faithfulness guard — markers that signal user-flagged uncertainty.
 # If the compressible old segment contains these, Haiku may strip them,
 # turning tentative facts into apparent certainties. We refuse to compress
@@ -143,6 +170,8 @@ class TurnResult:
     thinking_utilization:  float = 0.0  # thinking_tokens / budget; 0 when not used
     thinking_budget_used:  int   = 0    # budget allocated for this turn (continuous J-governor)
     drift_state:           bool  = False  # True when 3+ consecutive LOW-zone turns detected
+    adaptive_theta_high:   float = 0.65  # effective HIGH threshold used this turn
+    adaptive_theta_low:    float = 0.35  # effective LOW threshold used this turn
 
 
 @dataclass
@@ -226,6 +255,16 @@ class CAMSContextManager:
         # Novelty guard: vocabulary of named entities seen so far
         self._content_vocab: set[str] = set()
 
+        # Adaptive threshold tracking: rolling J-buffer for percentile-based thresholds.
+        # After _ADAPTIVE_MIN_SAMPLES turns, theta_high = P75, theta_low = P25 of buffer.
+        self._j_buffer:         list[float]          = []
+
+        # Parallel J-score list for history messages (same length as _history).
+        # User messages store None; assistant messages store the turn's J-score.
+        # Used by selective compression to identify HIGH-J turns for compression
+        # while keeping LOW/MEDIUM-J turns verbatim.
+        self._history_j_scores: list[Optional[float]] = []
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -236,6 +275,7 @@ class CAMSContextManager:
         if self._turn_idx == 1:
             self._turn1_goal = user_message   # anchor for task-aware compression
         self._history.append({"role": "user", "content": user_message})
+        self._history_j_scores.append(None)   # user message — no J-score yet
 
         # Build messages and call Opus for the main answer
         messages = self._build_messages()
@@ -326,14 +366,24 @@ class CAMSContextManager:
 
         # Append assistant turn BEFORE compression decision
         self._history.append({"role": "assistant", "content": text})
+        self._history_j_scores.append(cr.j_score)   # assistant message — record J
 
         # Apply CAMS memory decision
         decision, tokens_saved = self._apply_cams(cr, novelty_override)
+
+        # Capture effective thresholds AFTER apply_cams so buffer is still pre-update
+        eff_high = self._effective_theta_high
+        eff_low  = self._effective_theta_low
 
         # Update entity vocabulary and zone memory for next-turn thinking budget
         self._update_content_vocab(text)
         self._prev_zone = cr.zone
         self._prev_j    = cr.j_score
+
+        # Update adaptive threshold buffer (after decision — causal, not lookahead)
+        self._j_buffer.append(cr.j_score)
+        if len(self._j_buffer) > _ADAPTIVE_BUFFER_SIZE:
+            self._j_buffer.pop(0)
 
         # Costs
         cost_usd    = _cost(tokens_in, tokens_out)
@@ -366,6 +416,8 @@ class CAMSContextManager:
             "thinking_utilization": thinking_utilization,
             "thinking_budget_used": thinking_budget,
             "drift_state":          self._drift_state,
+            "adaptive_theta_high":  eff_high,
+            "adaptive_theta_low":   eff_low,
         })
 
         return TurnResult(
@@ -389,6 +441,8 @@ class CAMSContextManager:
             thinking_utilization  = thinking_utilization,
             thinking_budget_used  = thinking_budget,
             drift_state           = self._drift_state,
+            adaptive_theta_high   = eff_high,
+            adaptive_theta_low    = eff_low,
         )
 
     def reset(self):
@@ -402,11 +456,34 @@ class CAMSContextManager:
         self._j_history          = []
         self._drift_state        = False
         self._content_vocab      = set()
+        self._j_buffer           = []
+        self._history_j_scores   = []
         self.stats               = SessionStats()
 
     @property
     def decision_log(self) -> list[dict]:
         return self.stats.decision_log
+
+    @property
+    def _effective_theta_high(self) -> float:
+        """P75 of recent J-scores, floored at _ADAPTIVE_THETA_HIGH_FLOOR.
+        Compresses only the most confident quarter of this session's responses."""
+        if len(self._j_buffer) < _ADAPTIVE_MIN_SAMPLES:
+            return self.proxy.theta_high
+        buf = sorted(self._j_buffer)
+        p75 = buf[int(0.75 * len(buf))]
+        return max(_ADAPTIVE_THETA_HIGH_FLOOR, p75)
+
+    @property
+    def _effective_theta_low(self) -> float:
+        """P25 of recent J-scores, capped at _ADAPTIVE_THETA_LOW_CEIL.
+        Preserves only the least confident quarter of this session's responses."""
+        if len(self._j_buffer) < _ADAPTIVE_MIN_SAMPLES:
+            return self.proxy.theta_low
+        buf = sorted(self._j_buffer)
+        p25 = buf[int(0.25 * len(buf))]
+        eff_high = self._effective_theta_high
+        return min(p25, eff_high - 0.10, _ADAPTIVE_THETA_LOW_CEIL)
 
     # ------------------------------------------------------------------
     # CAMS memory decisions
@@ -424,15 +501,32 @@ class CAMSContextManager:
         if novelty_override:
             return "PRESERVE", 0
 
-        # Compression depth limit: stop after MAX_COMPRESSIONS
-        if cr.zone == "HIGH" and n_turns > self.COMPRESS_AFTER * 2:
+        # Compute effective zone using adaptive thresholds.
+        # Guard-rail overrides (semantic entropy proxy, dual-signal thinking) are
+        # detected by comparing cr.zone against what static thresholds would give.
+        # When a guard rail has already downgraded the zone, respect it.
+        static_zone = (
+            "HIGH"   if cr.j_score >= self.proxy.theta_high else
+            "MEDIUM" if cr.j_score >= self.proxy.theta_low  else
+            "LOW"
+        )
+        if cr.zone != static_zone:
+            eff_zone = cr.zone          # guard-rail override — keep as-is
+        else:
+            eff_zone = (
+                "HIGH"   if cr.j_score >= self._effective_theta_high else
+                "MEDIUM" if cr.j_score >= self._effective_theta_low  else
+                "LOW"
+            )
+
+        if eff_zone == "HIGH" and n_turns > self.COMPRESS_AFTER * 2:
             if self._compression_count < self.MAX_COMPRESSIONS:
                 saved = self._compress()
                 if saved > 0:
                     self._compression_count += 1
                     return "COMPRESS", saved
 
-        if cr.zone == "MEDIUM" and n_turns > self.TRIM_WINDOW * 2:
+        if eff_zone == "MEDIUM" and n_turns > self.TRIM_WINDOW * 2:
             saved = self._trim()
             return "TRIM", saved
 
@@ -440,40 +534,61 @@ class CAMSContextManager:
 
     def _compress(self) -> int:
         """
-        Summarize history older than COMPRESS_AFTER turns using Haiku (cheap).
-        Attention sinks (first ATTENTION_SINK turns = 2*2 messages) are never
-        compressed — they anchor the conversation identity.
-        Returns net tokens saved (gross minus Haiku compression overhead).
-        """
-        sink_msgs = self.ATTENTION_SINK * 2   # messages to always keep at front
-        keep_n    = self.COMPRESS_AFTER * 2   # keep last N messages at back
+        Selectively compress the old segment using per-turn J-scores.
 
-        # Must have enough history to compress something between sink and recent
+        HIGH-J turns are resolved context — safe to summarize via Haiku.
+        LOW/MEDIUM-J turns contain uncertainty or important context — kept verbatim.
+
+        History after compression:
+            sink (attention sinks) + verbatim LOW/MEDIUM turns + recent
+
+        The Haiku summary of HIGH-J turns is injected via _build_messages as
+        <context_summary> XML prefix, not as a fake turn in _history.
+        """
+        sink_msgs = self.ATTENTION_SINK * 2
+        keep_n    = self.COMPRESS_AFTER * 2
+
         if len(self._history) <= sink_msgs + keep_n:
             return 0
 
-        sink   = self._history[:sink_msgs]    # attention sinks — never touched
-        old    = self._history[sink_msgs:-keep_n]   # compressible middle
-        recent = self._history[-keep_n:]      # always keep
+        sink   = self._history[:sink_msgs]
+        old    = self._history[sink_msgs:-keep_n]
+        recent = self._history[-keep_n:]
+        old_j  = self._history_j_scores[sink_msgs:-keep_n]
 
         if not old:
             return 0
 
-        tokens_before = sum(len(m["content"]) // 4 for m in old)
+        # Split old segment into HIGH-J turns (compress) and LOW/MEDIUM-J (keep verbatim).
+        # Process in turn-pairs (user message + assistant message).
+        high_j_msgs:      list[dict] = []
+        preserved_msgs:   list[dict] = []
+        preserved_j:      list[Optional[float]] = []
 
-        # Pre-check: don't call Haiku if the old segment is too small to compress profitably.
-        # A ~100-token Haiku summary on a 150-token old segment saves almost nothing.
+        for i in range(0, len(old) - 1, 2):
+            user_msg = old[i]
+            asst_msg = old[i + 1]
+            j = old_j[i + 1]   # J-score lives on the assistant message
+            if j is not None and j >= self._effective_theta_high:
+                high_j_msgs.extend([user_msg, asst_msg])
+            else:
+                preserved_msgs.extend([user_msg, asst_msg])
+                preserved_j.extend([old_j[i], old_j[i + 1]])
+
+        # Nothing to compress — all old turns are LOW/MEDIUM-J
+        if not high_j_msgs:
+            return 0
+
+        tokens_before = sum(len(m["content"]) // 4 for m in high_j_msgs)
         if tokens_before < _MIN_COMPRESS_TOKENS:
             return 0
 
         conv_text = "\n".join(
-            f"{m['role'].upper()}: {m['content']}" for m in old
+            f"{m['role'].upper()}: {m['content']}" for m in high_j_msgs
         )
 
-        # Faithfulness guard: if old segment contains uncertainty markers, refuse
-        # to compress. Returning 0 makes _apply_cams fall through to PRESERVE,
-        # keeping the exact user-stated uncertainty in context rather than risking
-        # Haiku silently converting "I think ~50 req/min" into "50 req/min".
+        # Faithfulness guard: refuse to compress if high-J segment contains uncertainty.
+        # (Should be rare since these scored HIGH-J, but a guard rail is cheap.)
         if self._has_uncertainty(conv_text):
             return 0
 
@@ -501,23 +616,25 @@ class CAMSContextManager:
         )
         summary = summary_resp.content[0].text.strip()
 
-        # Count Haiku compression overhead against session totals
         comp_in  = summary_resp.usage.input_tokens
         comp_out = summary_resp.usage.output_tokens
         self.stats.total_tokens_in  += comp_in
         self.stats.total_tokens_out += comp_out
         self.stats.total_cost_usd   += _cost_haiku(comp_in, comp_out)
 
-        # Rebuild history: sink + summary_turn + recent
+        # Rebuild history: sink + verbatim preserved turns + recent
+        # HIGH-J turns are removed; their summary is stored in self._summary
+        # and injected as <context_summary> prefix by _build_messages.
         self._summary = summary
-        self._history = sink + recent
+        self._history = sink + preserved_msgs + recent
+        self._history_j_scores = (
+            self._history_j_scores[:sink_msgs]
+            + preserved_j
+            + self._history_j_scores[-keep_n:]
+        )
 
         tokens_after = len(summary) // 4
         gross_saved  = max(0, tokens_before - tokens_after)
-        # Haiku reads old messages once (comp_in); those same tokens would be sent
-        # to Opus on every future turn without compression, so comp_in is not a net
-        # cost against savings — it's offset by recurring future savings. Only the
-        # summary output length (comp_out) is genuinely new context overhead.
         return max(0, gross_saved - comp_out)
 
     def _trim(self) -> int:
@@ -527,7 +644,8 @@ class CAMSContextManager:
             return 0
         dropped       = self._history[:-keep_n]
         tokens_saved  = sum(len(m["content"]) // 4 for m in dropped)
-        self._history = self._history[-keep_n:]
+        self._history        = self._history[-keep_n:]
+        self._history_j_scores = self._history_j_scores[-keep_n:]
         return tokens_saved
 
     def _build_messages(self) -> list[dict]:
