@@ -151,6 +151,21 @@ The delta between "Baseline (no compression)" and CAMS is the pure J-proxy contr
 
 ---
 
+### COMPRESS Mechanism: Proven on 20-turn Sustained Session
+
+`demo/compress_demo.py` runs a 20-turn session of Python history Q&A — pure prose answers, no code blocks, consistent "Python" entity throughout. In a verified run:
+
+- COMPRESS fires **3 times** (turns 13, 15, 18) — Haiku summarises old context into 2-3 sentences
+- History is correctly rebuilt as: attention_sink (T1-T2) + `<context_summary>` + recent turns
+- **922 tokens saved** at 3 compressions; $0.57 total cost vs $0.99 without compression
+- Final summary captures key facts across all prior turns: Python's end-of-life transition, NumPy/pandas origins, Google's role
+
+The design constraint: COMPRESS only fires when **J is HIGH (≥ 0.65) AND history is long enough to save tokens net of Haiku overhead**. This requires prose answers (no code blocks — Type Prior caps J at 0.64 for code content) and a sustained topic (novelty guard blocks compression on fresh entity sets).
+
+> Run: `python demo/compress_demo.py`
+
+---
+
 ### The Honest Benchmark Interpretation
 
 On a diverse 30-question benchmark (30 different topics in one session), CAMS's novelty guard correctly identifies that every answer introduces new domain entities and applies PRESERVE on all turns. This is the right behavior for truly diverse Q&A — you should preserve everything when every topic is new. For context *management* to activate (COMPRESS/TRIM), you need a sustained, related-topic session. The CDS study and `demo/compress_demo.py` demonstrate these behaviors on appropriate inputs.

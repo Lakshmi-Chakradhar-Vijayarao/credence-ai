@@ -69,7 +69,8 @@ SESSIONS = [
             "Given everything we've discussed about my project, "
             "what Python memory profiling tool would you recommend and why?"
         ),
-        "keywords": ["lambda", "128", "memory limit", "container", "512"],
+        # Specific: only match if constraint (128MB Lambda / 512MB) actually cited
+        "keywords": ["lambda", "128mb", "128 mb", "memory limit", "512mb", "512 mb"],
     },
     {
         "id":   "S2",
@@ -92,7 +93,8 @@ SESSIONS = [
             "Based on everything I've told you about my project, "
             "which LLM API pricing tier or model would you suggest I start with?"
         ),
-        "keywords": ["50", "budget", "cost", "cheaper", "lower", "200"],
+        # Specific: dollar figures or "per month" — not generic "cost" or "200"
+        "keywords": ["$50", "$200", "50/month", "200/month", "50 per month", "200 per month"],
     },
     {
         "id":   "S3",
@@ -114,7 +116,9 @@ SESSIONS = [
             "Given what I've shared about my situation, "
             "what project management approach would you recommend?"
         ),
-        "keywords": ["small", "2", "3", "two", "three", "solo", "pair", "engineers"],
+        # Specific: must mention team of 2-3 or small team — not standalone "2" or "3"
+        "keywords": ["2 or 3", "2-3", "two or three", "small team", "solo", "one other person",
+                     "2 engineers", "3 engineers"],
     },
     {
         "id":   "S4",
@@ -136,7 +140,10 @@ SESSIONS = [
             "Given what I've told you about my project, "
             "what caching strategy would you recommend for our backend?"
         ),
-        "keywords": ["postgres", "postgresql", "dynamodb", "database", "sql", "nosql"],
+        # Must name the DB options OR explicitly flag that choice is still open
+        "keywords": ["postgres", "postgresql", "dynamodb",
+                     "which database you end up with", "database you end up",
+                     "depends on which database", "whichever database"],
     },
     {
         "id":   "S5",
@@ -158,7 +165,8 @@ SESSIONS = [
             "Based on everything we've discussed about my project, "
             "what would you prioritise first in our backend architecture?"
         ),
-        "keywords": ["200ms", "500ms", "latency", "sla", "p99", "response time"],
+        # Specific: must cite the actual SLA values — not generic "latency"
+        "keywords": ["200ms", "500ms", "p99", "sla"],
     },
 ]
 
@@ -169,8 +177,35 @@ assert len(SESSIONS) == 5, f"Expected 5 sessions, got {len(SESSIONS)}"
 # Session runner
 # ---------------------------------------------------------------------------
 
+_NO_CONTEXT_PHRASES = [
+    "haven't discussed your project",
+    "haven't actually discussed",
+    "don't have any information about your project",
+    "don't have information about your project",
+    "i don't have any context about your",
+    "i don't actually have",
+    "no information about your project",
+    "no context about your",
+    "you haven't shared",
+    "you haven't told me about your project",
+    "you haven't actually told me",
+    "i was inferring",
+    "i was hallucinating",
+    "i shouldn't have",
+    "appears to be the start of our conversation",
+]
+
 def _check_reference(answer: str, keywords: list[str]) -> bool:
+    """
+    Returns True only if the answer positively references the constraint:
+    - contains at least one constraint keyword, AND
+    - does NOT contain a no-context disqualifier phrase (which would mean the
+      model is disclaiming knowledge of the constraint, even if the keyword
+      appears incidentally in the same response).
+    """
     lower = answer.lower()
+    if any(phrase in lower for phrase in _NO_CONTEXT_PHRASES):
+        return False
     return any(kw.lower() in lower for kw in keywords)
 
 

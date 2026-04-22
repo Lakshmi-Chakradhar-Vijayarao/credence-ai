@@ -4,11 +4,13 @@ demo/compress_demo.py
 Demonstrates COMPRESS actually firing.
 
 Design:
-  - 20 turns on a single sustained topic (Python web API development)
-  - All questions are factual/technical within the same domain → HIGH-J responses
-  - COMPRESS_AFTER=3, so COMPRESS is eligible from turn 4
-  - Meaningful history accumulates → _compress() can produce real savings
-  - TRIM_WINDOW=10, so TRIM fires around turn 11
+  - 20 turns on a single sustained topic (Python history and community)
+  - All questions are purely historical/organisational prose → no code blocks
+    → Type Prior never fires → J is uncapped → HIGH-J answers throughout
+  - "Python" entity repeats in every answer → novelty guard stabilises by T3
+  - COMPRESS_AFTER=3, so COMPRESS is eligible from turn 4 (n_turns > 6)
+  - _compress() produces savings when history > sink_msgs + keep_n = 10 (turn 7+)
+  - COMPRESS fires 3 times in a typical run (turns ~13, 15, 18)
 
 What this proves:
   - The compression mechanism is real and functional
@@ -45,28 +47,31 @@ except ImportError:
 
 SCRIPT = [
     # Turn 1-2: setup (attention sink — never compressed)
-    "I'm building a REST API with Python and FastAPI. I'll be asking several questions.",
-    "What are the core FastAPI features that make it better than Flask for building APIs?",
+    # Pure history topic — no code or syntax in any answer → Type Prior never fires → J uncapped
+    "I'm going to ask you questions about the history and community of the Python programming language. Please give factual answers in 2-4 sentences.",
+    "Who created Python and what inspired Guido van Rossum to design it?",
 
-    # Turn 3-20: sustained technical Q&A on same topic
-    "How does FastAPI handle request validation with Pydantic models?",
-    "What is dependency injection in FastAPI and how do you use it?",
-    "How do you add authentication to a FastAPI endpoint using OAuth2?",
-    "What is the best way to handle database connections in FastAPI with SQLAlchemy?",
-    "How do you write background tasks in FastAPI?",
-    "What is the difference between sync and async endpoints in FastAPI?",
-    "How do you implement pagination in a FastAPI endpoint?",
-    "What is the best way to handle file uploads in FastAPI?",
-    "How do you add CORS middleware to a FastAPI application?",
-    "What is OpenAPI and how does FastAPI auto-generate the schema?",
-    "How do you write unit tests for FastAPI endpoints with TestClient?",
-    "What are FastAPI routers and how do you organise a large API with them?",
-    "How do you handle request timeouts in FastAPI?",
-    "What is the best way to implement rate limiting in FastAPI?",
-    "How do you add structured logging to a FastAPI application?",
-    "What is the difference between path parameters and query parameters in FastAPI?",
-    "How do you deploy a FastAPI application with Docker?",
-    "What are the best practices for error handling in FastAPI?",
+    # Turn 3-20: Python history and community — purely factual prose, no code.
+    # "Python" entity appears in every answer → novelty guard stabilises by T3-T4.
+    # Historical/organizational questions → no code blocks → Type Prior never fires → HIGH-J.
+    "What programming language most directly influenced Python's design, and how?",
+    "When was Python first publicly released and what version did it debut as?",
+    "What does the name Python come from and is it related to the snake?",
+    "What is the Python Software Foundation and when was it established?",
+    "What is a BDFL in the Python community, and who held this role for Python?",
+    "Why did Guido van Rossum step down as Python's BDFL in 2018?",
+    "What happened to Python governance after Guido stepped down as BDFL?",
+    "What is PyCon and why is it significant to the Python community?",
+    "What is the Zen of Python and what philosophy does it describe?",
+    "What was the main controversy surrounding Python 2 versus Python 3?",
+    "When did Python officially end support for Python 2, and why was this significant?",
+    "How did Python become so dominant in scientific computing and data science?",
+    "What role did Google play in Python's adoption and growth in the 2000s?",
+    "What is the CPython implementation and how does it relate to other Python implementations?",
+    "What is PyPy and why was it created as an alternative Python implementation?",
+    "How does the Python Enhancement Proposal process work for language changes?",
+    "What is the significance of PEP 8 and how has it shaped Python code style?",
+    "How has Python's popularity ranking changed over the past decade in indices like TIOBE?",
 ]
 
 assert len(SCRIPT) == 20, f"Expected 20 turns, got {len(SCRIPT)}"
@@ -77,7 +82,7 @@ assert len(SCRIPT) == 20, f"Expected 20 turns, got {len(SCRIPT)}"
 # ---------------------------------------------------------------------------
 
 def run(client: Anthropic):
-    mgr = CAMSContextManager(max_tokens=400)  # slightly longer for richer history
+    mgr = CAMSContextManager(max_tokens=600)  # longer answers give _compress() real material to save
 
     print("\n" + "=" * 65)
     print("COMPRESS DEMONSTRATION — 20-turn FastAPI session")
@@ -158,8 +163,8 @@ def dry_run():
             label = "  ← ATTENTION SINK (never compressed)"
         elif turn == 4:
             label = "  ← COMPRESS eligible from here (n_turns > COMPRESS_AFTER*2=6)"
-        elif turn == 6:
-            label = "  ← _compress() can produce savings from here (history > sink+keep=10)"
+        elif turn == 7:
+            label = "  ← _compress() can save tokens from here (history=14 > sink+keep=10)"
         print(f"T{turn:02d}: {msg[:80]}{'...' if len(msg)>80 else ''}{label}")
     print(f"\nExpected: COMPRESS fires when HIGH-J + history > 10 messages")
     print(f"Expected: TRIM fires at turn 11+ if zone == MEDIUM and history > 20 messages")
