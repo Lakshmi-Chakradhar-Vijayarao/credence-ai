@@ -47,6 +47,17 @@ from cams.confidence_proxy import ConfidenceProxy
 from cams.context_manager import CAMSContextManager, _cost
 
 # ---------------------------------------------------------------------------
+# Shared system prompt — used by ALL conditions so results are comparable.
+# CAMS uses this internally via CAMSContextManager; baseline/naive must use
+# the same prompt or the comparison conflates prompt effect with J-proxy effect.
+# ---------------------------------------------------------------------------
+BENCHMARK_SYSTEM_PROMPT = (
+    "You are a helpful, precise assistant. "
+    "Give concise answers when the answer is clear; "
+    "express genuine uncertainty when it exists."
+)
+
+# ---------------------------------------------------------------------------
 # Benchmark Q&A pairs — 30 questions across 3 domains
 # Domain A: Factual/Scientific (expect HIGH J, short answers)
 # Domain B: Reasoning/STEM (expect MEDIUM J, structured answers)
@@ -240,6 +251,99 @@ QA_PAIRS = [
 ]
 
 QUICK_PAIRS = QA_PAIRS[:3]   # smoke test: 1 per domain
+
+# ---------------------------------------------------------------------------
+# Context-Dependent Q&A pairs
+# ---------------------------------------------------------------------------
+# Design: each SESSION is a short scripted conversation. Turn 1 plants a
+# constraint in uncertain language (LOW-J → CAMS preserves). Turns 2-7 are
+# factual filler (HIGH-J → naive window or compression could drop turn 1).
+# Turn 8 is the test question — correct answer requires turn 1's constraint.
+#
+# Evaluation metric: Context Dependency Score (CDS) = does the answer at
+# turn 8 reference the constraint from turn 1?
+#
+# CAMS target: preserves turn 1 (attention sink) → correct answer at turn 8
+# Naive window (window=6): turn 1 dropped at turn 8 → incomplete/wrong answer
+# ---------------------------------------------------------------------------
+
+CONTEXT_SESSIONS = [
+    {
+        "name": "lambda_memory",
+        "constraint_turn": (
+            "I'm not entirely sure about our deployment environment yet. "
+            "It might be AWS Lambda with a 128 MB memory limit, or it could be "
+            "a 512 MB container. The team hasn't confirmed. Can you keep this in mind?"
+        ),
+        "filler": [
+            "What is the time complexity of quicksort?",
+            "What does idempotent mean in the context of HTTP methods?",
+            "What is the difference between a stack and a queue?",
+            "What is tail recursion and why does it matter?",
+            "What is the CAP theorem in distributed systems?",
+            "What is connection pooling and why is it used?",
+        ],
+        "test_question": (
+            "Given everything we've discussed about my project, "
+            "what Python memory profiling tool would you recommend and why?"
+        ),
+        "constraint_keywords": ["lambda", "128", "memory limit", "container", "512"],
+        "reference": (
+            "Given a possible 128 MB Lambda memory limit, use tracemalloc or memory_profiler "
+            "for lightweight profiling; avoid heavy tools like heapy that exceed the limit."
+        ),
+    },
+    {
+        "name": "budget_constraint",
+        "constraint_turn": (
+            "I should mention upfront that I'm not totally sure of our API budget. "
+            "It's either $50/month or maybe $200/month — finance hasn't confirmed yet. "
+            "I think it's probably the lower one but I genuinely don't know. Keep this in mind."
+        ),
+        "filler": [
+            "What is exponential backoff in retry logic?",
+            "What is the difference between REST and GraphQL?",
+            "What is a webhook and how does it differ from polling?",
+            "What are the main HTTP status code ranges and what does each mean?",
+            "What is rate limiting and how is it typically implemented?",
+            "What is the purpose of an API gateway?",
+        ],
+        "test_question": (
+            "Based on what I've told you about my project, "
+            "which LLM API pricing tier or model would you suggest I start with?"
+        ),
+        "constraint_keywords": ["50", "budget", "cost", "cheaper", "lower", "200"],
+        "reference": (
+            "Given an uncertain budget of $50-200/month, start with a cheaper model tier "
+            "and monitor usage carefully before committing to higher-cost options."
+        ),
+    },
+    {
+        "name": "team_size",
+        "constraint_turn": (
+            "Quick context about my team: I think we have either 2 or 3 engineers — "
+            "one contractor might not be joining after all. I'm not sure yet. "
+            "Could be just me and one other person. Please keep this in mind."
+        ),
+        "filler": [
+            "What is trunk-based development?",
+            "What is the purpose of a code review?",
+            "What is continuous integration and why does it matter?",
+            "What is the difference between unit tests and integration tests?",
+            "What is semantic versioning?",
+            "What is a monorepo and what are its trade-offs?",
+        ],
+        "test_question": (
+            "Given what I've shared about my situation, "
+            "what project management approach would you recommend for our team?"
+        ),
+        "constraint_keywords": ["small", "2", "3", "two", "three", "solo", "pair", "engineers"],
+        "reference": (
+            "For a 2-3 person team, a lightweight kanban board or simple sprint planning "
+            "works better than heavy JIRA setups; minimize process overhead."
+        ),
+    },
+]
 
 
 # ---------------------------------------------------------------------------
@@ -444,6 +548,7 @@ def run_random_gating(
 
         resp = client.messages.create(
             model      = "claude-opus-4-7",
+            system     = BENCHMARK_SYSTEM_PROMPT,
             messages   = history,
             max_tokens = 300,
         )
@@ -483,7 +588,7 @@ def run_random_gating(
     )
 
 
-def run_baseline(pairs: list[dict], client: Anthropic) -> ConditionResult:
+def run_baseline(pairs: list[dict], client: Anthropic, use_system_prompt: bool = True) -> ConditionResult:
     """Full context, no compression."""
     history = []
     turns   = []
@@ -491,11 +596,14 @@ def run_baseline(pairs: list[dict], client: Anthropic) -> ConditionResult:
 
     for p in pairs:
         history.append({"role": "user", "content": p["question"]})
-        resp = client.messages.create(
+        create_kwargs = dict(
             model      = "claude-opus-4-7",
             messages   = history,
             max_tokens = 300,
         )
+        if use_system_prompt:
+            create_kwargs["system"] = BENCHMARK_SYSTEM_PROMPT
+        resp = client.messages.create(**create_kwargs)
         text  = resp.content[0].text
         t_in  = resp.usage.input_tokens
         t_out = resp.usage.output_tokens
@@ -516,8 +624,9 @@ def run_baseline(pairs: list[dict], client: Anthropic) -> ConditionResult:
     total_used = total_tokens_in + total_tokens_out
     cost       = round(_cost(total_tokens_in, total_tokens_out), 4)
     mean_rl    = round(sum(t.rouge_l for t in turns) / len(turns), 4)
+    label      = "Baseline (no compression)" if use_system_prompt else "Baseline (no prompt)"
     return ConditionResult(
-        condition          = "Baseline (no compression)",
+        condition          = label,
         turns              = turns,
         total_tokens_used  = total_used,
         total_tokens_saved = 0,
@@ -546,6 +655,7 @@ def run_naive_window(pairs: list[dict], client: Anthropic, window: int = 6) -> C
 
         resp = client.messages.create(
             model      = "claude-opus-4-7",
+            system     = BENCHMARK_SYSTEM_PROMPT,
             messages   = history,
             max_tokens = 300,
         )
@@ -586,6 +696,86 @@ def run_naive_window(pairs: list[dict], client: Anthropic, window: int = 6) -> C
 
 
 # ---------------------------------------------------------------------------
+# Context Dependency Score (CDS) evaluation
+# ---------------------------------------------------------------------------
+
+def run_context_sessions(sessions: list[dict], client: Anthropic) -> dict:
+    """
+    Run each CONTEXT_SESSION against both CAMS and naive window (window=6).
+
+    Scores each test-turn answer: did it reference the planted constraint?
+    Returns per-session and aggregate CDS for both conditions.
+    CDS = fraction of sessions where the answer correctly references the constraint.
+    """
+    results = {"cams": [], "naive": []}
+
+    for sess in sessions:
+        for condition in ("cams", "naive"):
+            history = []
+            mgr     = CAMSContextManager(max_tokens=300) if condition == "cams" else None
+
+            all_turns = [sess["constraint_turn"]] + sess["filler"] + [sess["test_question"]]
+
+            for i, msg in enumerate(all_turns):
+                is_test = (i == len(all_turns) - 1)
+
+                if condition == "cams":
+                    result = mgr.chat(msg)
+                    answer = result.response
+                else:
+                    history.append({"role": "user", "content": msg})
+                    # Naive: drop turns beyond window=6
+                    if len(history) > 6 * 2:
+                        history = history[-(6 * 2):]
+                    resp   = client.messages.create(
+                        model="claude-opus-4-7",
+                        system=BENCHMARK_SYSTEM_PROMPT,
+                        messages=history,
+                        max_tokens=300,
+                    )
+                    answer = resp.content[0].text
+                    history.append({"role": "assistant", "content": answer})
+
+                if is_test:
+                    lower = answer.lower()
+                    referenced = any(kw in lower for kw in sess["constraint_keywords"])
+                    results[condition].append({
+                        "session":    sess["name"],
+                        "referenced": referenced,
+                        "answer":     answer,
+                    })
+
+    return results
+
+
+def print_cds_table(cds_results: dict):
+    """Print Context Dependency Score table."""
+    print("\n" + "=" * 70)
+    print("CONTEXT DEPENDENCY SCORE (CDS) — does the answer reference the constraint?")
+    print("=" * 70)
+    print(f"  {'Session':<20} {'CAMS':^10} {'Naive':^10}")
+    print("  " + "-" * 42)
+
+    cams_rows  = {r["session"]: r for r in cds_results["cams"]}
+    naive_rows = {r["session"]: r for r in cds_results["naive"]}
+
+    sessions = list(cams_rows.keys())
+    for s in sessions:
+        c = "✓" if cams_rows[s]["referenced"] else "✗"
+        n = "✓" if naive_rows[s]["referenced"] else "✗"
+        print(f"  {s:<20} {c:^10} {n:^10}")
+
+    cams_score  = sum(1 for r in cds_results["cams"]  if r["referenced"]) / len(sessions)
+    naive_score = sum(1 for r in cds_results["naive"] if r["referenced"]) / len(sessions)
+    print("  " + "-" * 42)
+    print(f"  {'CDS Score':<20} {cams_score:.0%}".ljust(32) + f"{naive_score:.0%}")
+    print(f"\n  CAMS correctly references constraint in {cams_score:.0%} of sessions")
+    print(f"  Naive window correctly references in    {naive_score:.0%} of sessions")
+    if cams_score > naive_score:
+        print(f"  ✓ CAMS preserves uncertain context that naive window silently drops")
+
+
+# ---------------------------------------------------------------------------
 # Reporting
 # ---------------------------------------------------------------------------
 
@@ -607,24 +797,62 @@ def print_table(results: list[ConditionResult]):
             f"{r.auarc:>7.4f} {r.reasoning_density_per_kdollar:>7.4f} {pct:>6}"
         )
     print("=" * 82)
-    print("  RD/$K = ROUGE-L per $0.001 spent (Reasoning Density per Dollar)")
-    print("  AUARC = Area Under Abstention-Risk Curve (proxy calibration quality)")
+    print("  RD/$K = ROUGE-L per $0.001 spent  (×10⁻⁴ typical; higher = more quality per dollar)")
+    print("  AUARC = Area Under Abstention-Risk Curve (J-proxy calibration quality)")
+    print()
+    print("  Condition guide:")
+    print("    'Baseline (no prompt)'      — no compression, no system prompt (raw API)")
+    print("    'Baseline (no compression)' — no compression, same system prompt as CAMS")
+    print("    Delta CAMS vs 'no compression' = pure J-proxy context-management contribution")
+    print("    Delta 'no compression' vs 'no prompt' = system prompt contribution alone")
 
     cams_r = next(r for r in results if r.condition == "CAMS")
-    base_r = next(r for r in results if "Baseline" in r.condition)
+    # Primary comparison: CAMS vs same-prompt baseline (isolates context management effect)
+    same_prompt_base = next(
+        (r for r in results if r.condition == "Baseline (no compression)"), None
+    )
+    # Secondary: no-prompt baseline to quantify prompt-alone effect
+    no_prompt_base = next(
+        (r for r in results if r.condition == "Baseline (no prompt)"), None
+    )
+    base_r = same_prompt_base or no_prompt_base
 
-    if base_r.total_tokens_used > 0:
+    if base_r and base_r.total_tokens_used > 0:
         tok_pct  = (base_r.total_tokens_used - cams_r.total_tokens_used) / base_r.total_tokens_used * 100
         cost_pct = (base_r.total_cost_usd - cams_r.total_cost_usd) / base_r.total_cost_usd * 100
         qual_d   = cams_r.mean_rouge_l - base_r.mean_rouge_l
-        print(f"\nCAMS vs Baseline:")
+        print(f"\nCAMS vs Baseline (same system prompt — honest comparison):")
         print(f"  Token reduction      : {tok_pct:+.1f}%")
         print(f"  Cost reduction       : {cost_pct:+.1f}%")
         print(f"  Quality delta        : {qual_d:+.3f} ROUGE-L")
         print(f"  AUARC delta          : {cams_r.auarc - base_r.auarc:+.4f}")
-        print(f"  Reasoning Density    : {cams_r.reasoning_density_per_kdollar:.4f} vs {base_r.reasoning_density_per_kdollar:.4f} ROUGE/$K")
+        rd_cams = cams_r.reasoning_density_per_kdollar * 1e4
+        rd_base = base_r.reasoning_density_per_kdollar * 1e4
+        print(f"  Reasoning Density    : {rd_cams:.2f} vs {rd_base:.2f}  (×10⁻⁴ ROUGE/$K)")
 
-        # Φ(√J̄/2) theoretical certificate (Geom-Proof: bounds hidden-state AUROC within 1.5%)
+    if no_prompt_base and same_prompt_base:
+        prompt_rl_delta = same_prompt_base.mean_rouge_l - no_prompt_base.mean_rouge_l
+        print(f"\nSystem prompt effect (no compression, prompt vs no-prompt):")
+        print(f"  ROUGE-L delta        : {prompt_rl_delta:+.3f}  "
+              f"(this portion is prompt, not J-proxy)")
+
+        # Φ(√J̄/2) theoretical certificate
+        from math import sqrt
+        from statistics import NormalDist
+        mean_j = cams_r.mean_j_score
+        phi_ceiling = NormalDist().cdf(sqrt(mean_j) / 2)
+        auarc_gain  = cams_r.auarc - (same_prompt_base.auarc if same_prompt_base else 0)
+        api_surface_pct = (cams_r.auarc / phi_ceiling) * 100
+        print(f"\n── Theoretical Certificate (Fisher Information, Geom-Proof) ───")
+        print(f"  Mean J-score             : {mean_j:.4f}")
+        print(f"  Φ(√J̄/2) theoretical cap : {phi_ceiling:.4f}  "
+              f"(AUROC ceiling w/ hidden-state access, Geom-Proof ±0.93%)")
+        print(f"  CAMS AUARC (API surface) : {cams_r.auarc:.4f}  "
+              f"({api_surface_pct:.1f}% of theoretical ceiling)")
+        print(f"  AUARC gain over baseline : +{auarc_gain:.4f}")
+        print(f"  Interpretation: CAMS recovers {api_surface_pct:.0f}% of the J-signal "
+              f"available to a model with hidden-state access.")
+    elif base_r:
         from math import sqrt
         from statistics import NormalDist
         mean_j = cams_r.mean_j_score
@@ -633,14 +861,10 @@ def print_table(results: list[ConditionResult]):
         api_surface_pct = (cams_r.auarc / phi_ceiling) * 100
         print(f"\n── Theoretical Certificate (Fisher Information, Geom-Proof) ───")
         print(f"  Mean J-score             : {mean_j:.4f}")
-        print(f"  Φ(√J̄/2) theoretical cap : {phi_ceiling:.4f}  "
-              f"(AUROC achievable with hidden-state access, Geom-Proof ±0.93%)")
+        print(f"  Φ(√J̄/2) theoretical cap : {phi_ceiling:.4f}")
         print(f"  CAMS AUARC (API surface) : {cams_r.auarc:.4f}  "
               f"({api_surface_pct:.1f}% of theoretical ceiling)")
-        print(f"  AUARC gain over baseline : +{auarc_gain:.4f}  "
-              f"(J-proxy captures real signal at language surface)")
-        print(f"  Interpretation: CAMS achieves {api_surface_pct:.0f}% of Fisher theory's "
-              f"ceiling without hidden-state access.")
+        print(f"  AUARC gain over baseline : +{auarc_gain:.4f}")
 
     # Random-gating ablation: does J signal beat random compression?
     rand_r = next((r for r in results if "Random" in r.condition), None)
@@ -820,10 +1044,11 @@ def save_results(results: list[ConditionResult], path: str = "evals/results.json
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--quick",  action="store_true", help="Run 3 questions only (smoke test)")
-    parser.add_argument("--judge",  action="store_true", help="Score answers with GPT-4o-mini (~$0.50, requires OPENAI_API_KEY)")
-    parser.add_argument("--judge-only", action="store_true", help="Run judge on existing results.json without re-running benchmark")
-    parser.add_argument("--ablation", action="store_true", help="Add random-gating control condition (proves J signal vs schedule)")
+    parser.add_argument("--quick",    action="store_true", help="Run 3 questions only (smoke test)")
+    parser.add_argument("--judge",    action="store_true", help="Score with GPT-4o-mini judge (~$0.50, requires OPENAI_API_KEY)")
+    parser.add_argument("--judge-only", action="store_true", help="Run judge on existing results.json without re-running")
+    parser.add_argument("--ablation", action="store_true", help="Add random-gating control (proves J signal vs schedule)")
+    parser.add_argument("--cds",      action="store_true", help="Run Context Dependency Score sessions (3 planted-constraint sessions)")
     args = parser.parse_args()
 
     if not _CLIENT_AVAILABLE:
@@ -838,11 +1063,15 @@ def main():
     pairs  = QUICK_PAIRS if args.quick else QA_PAIRS
     client = Anthropic(api_key=api_key)
 
-    print(f"Running benchmark ({len(pairs)} questions across 3 domains, 3 conditions)...")
+    print(f"Running benchmark ({len(pairs)} questions, 4 conditions)...")
     print("This will make real API calls to claude-opus-4-7.\n")
 
     conditions = [
-        ("Baseline (no compression)", lambda: run_baseline(pairs, client)),
+        # No-prompt baseline: isolates the raw prompt effect vs. context management
+        ("Baseline (no prompt)",      lambda: run_baseline(pairs, client, use_system_prompt=False)),
+        # Prompt-only baseline: same system prompt as CAMS, no compression
+        # Delta between this and CAMS = pure J-proxy context management contribution
+        ("Baseline (no compression)", lambda: run_baseline(pairs, client, use_system_prompt=True)),
         ("Naive sliding window",      lambda: run_naive_window(pairs, client)),
         ("CAMS",                      lambda: run_cams(pairs, client)),
     ]
@@ -864,10 +1093,19 @@ def main():
     print_table(results)
     save_results(results)
 
+    if args.cds:
+        print(f"\nRunning Context Dependency Score sessions ({len(CONTEXT_SESSIONS)} sessions)...")
+        print("Each session plants an uncertain constraint then tests if it survives to turn 8.\n")
+        cds_results = run_context_sessions(CONTEXT_SESSIONS, client)
+        print_cds_table(cds_results)
+        cds_path = "evals/cds_results.json"
+        with open(cds_path, "w") as f:
+            json.dump(cds_results, f, indent=2)
+        print(f"\nCDS results saved → {cds_path}")
+
     if args.judge:
         print(f"\nRunning GPT-4o-mini quality judge...")
         judge_results = judge_with_gpt4o_mini(results, client, pairs)
-        # Persist judge scores alongside main results
         judge_path = "evals/judge_results.json"
         os.makedirs("evals", exist_ok=True)
         with open(judge_path, "w") as f:
