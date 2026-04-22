@@ -223,11 +223,10 @@ class CAMSContextManager:
         resp = self.client.messages.create(**call_kwargs)
 
         # When thinking is enabled, content blocks are [thinking, text].
-        # Extract the text block regardless of position.
-        text = next(
-            (b.text for b in resp.content if b.type == "text"),
-            resp.content[0].text,
-        )
+        # next() default is evaluated eagerly, so we cannot use content[0].text
+        # as fallback when thinking blocks are present (they have no .text attr).
+        text_block = next((b for b in resp.content if b.type == "text"), None)
+        text = text_block.text if text_block else ""
         tokens_in  = resp.usage.input_tokens
         tokens_out = resp.usage.output_tokens
 
