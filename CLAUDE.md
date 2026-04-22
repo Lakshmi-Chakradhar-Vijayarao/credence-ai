@@ -46,10 +46,14 @@ Core system. Manages conversation history and all compression decisions.
 **Module-level constants**:
 - `_MODEL_OPUS = "claude-opus-4-7"`
 - `_MODEL_HAIKU = "claude-haiku-4-5-20251001"`
-- `_NOVELTY_THRESHOLD = 0.60`
+- `_NOVELTY_THRESHOLD = 0.75`
+- `_NOVELTY_MIN_ENTITIES = 5`  — minimum absolute new entities required
+- `_NOVELTY_MIN_VOCAB = 10`    — don't fire until vocab is established
+- `_MIN_COMPRESS_TOKENS = 150` — skip Haiku if old segment is smaller than this
+- `_UNCERTAINTY_MARKERS` — frozenset of 21 uncertainty phrases (faithfulness guard)
 
 **Session constants** (class-level on `CAMSContextManager`):
-- `COMPRESS_AFTER = 6` — turns before compression eligibility
+- `COMPRESS_AFTER = 3` — keep last N turn-pairs on COMPRESS; fires when n_turns > COMPRESS_AFTER*2=6
 - `TRIM_WINDOW = 10` — turns to keep on TRIM
 - `ATTENTION_SINK = 2` — first N turns never compressed
 - `MAX_COMPRESSIONS = 3` — max recursive compressions
@@ -64,12 +68,21 @@ Core system. Manages conversation history and all compression decisions.
   - `reset()` — clear history and stats
   - `decision_log` → list[dict] — per-turn decisions
   - `_apply_cams(cr, novelty_override) → (decision, tokens_saved)` — decides compress/trim/preserve
-  - `_compress() → int` — calls Haiku, rebuilds history as sink + compressed_summary + recent
+  - `_compress() → int` — calls Haiku; returns 0 (PRESERVE) if faithfulness probe fires
   - `_trim() → int` — drops history[:-TRIM_WINDOW*2]
   - `_build_messages() → list[dict]` — injects `<context_summary>` XML prefix on first message
-  - `_check_novelty(text) → bool` — >60% new named entities
+  - `_check_novelty(text) → bool` — three-gate entity novelty guard (vocab≥10, count≥5, ratio>0.75)
+  - `_has_uncertainty(text) → bool` — faithfulness probe: detects uncertainty markers in text
   - `_update_entity_vocab(text)` — maintains entity set
   - `_extract_entities(text) → set[str]` — capitalised word extractor
+
+**Faithfulness probe** (inside `_compress()`):
+```python
+if self._has_uncertainty(conv_text):
+    return 0   # caller sees saved=0 → falls through to PRESERVE
+```
+Fires when old segment contains uncertainty markers (`"i think"`, `"not certain"`, `"approximately"`, etc.).
+Prevents Haiku from silently stripping user-flagged uncertainty into apparent fact (worst failure: confident hallucination).
 
 **Module-level helpers**:
 - `_cost(input_tokens, output_tokens) → float` — Opus pricing ($15/$75 per 1M)
@@ -112,27 +125,30 @@ Four-condition benchmark. Runs 30 QA pairs (10 factual / 10 reasoning / 10 uncer
 **Key functions**:
 - `rouge_l(hypothesis, reference) → float` — LCS-based F1, no external deps
 - `compute_auarc(turns) → float` — trapezoid area over J-sorted abstention thresholds
+- `bootstrap_ci(values, n_boot=2000, ci=0.95) → (lo, hi)` — non-parametric bootstrap CI for the mean
 - `reasoning_density(mean_rouge_l, total_cost_usd) → float` — ROUGE-L per $0.001
 - `run_cams(pairs, client) → ConditionResult`
 - `run_baseline(pairs, client) → ConditionResult`
 - `run_naive_window(pairs, client, window=6) → ConditionResult`
-- `print_table(results)` — formatted terminal output
+- `run_random_gating(pairs, client, compress_rate=0.30) → ConditionResult` — random compression schedule control
+- `print_table(results)` — formatted terminal output; now includes 95% bootstrap CI on ROUGE-L
 - `save_results(results, path="evals/results.json")`
-- `main()` — entry point
+- `main()` — entry point; `--ablation` flag adds random-gating condition
 
 **Classes**:
 - `TurnLog` (dataclass, line 329): `question, reference, hypothesis, j_score, rouge, domain`
 - `ConditionResult` (dataclass, line 343): `name, turns, total_tokens, tokens_saved, cost_usd`
 
-**Benchmark results** (from last run — 4-condition honest design, system prompt held constant):
+**Benchmark results** (April 23 2026 run — 4-condition honest design, system prompt held constant):
 ```
-Baseline (no prompt):       126,702 tokens / $2.39 / ROUGE-L 0.138 / AUARC 0.194
-Baseline (no compression):   90,105 tokens / $1.75 / ROUGE-L 0.215 / AUARC 0.301
-Naive sliding window:         44,674 tokens / $1.06 / ROUGE-L 0.154 / AUARC 0.262
-CAMS:                         86,962 tokens / $1.70 / ROUGE-L 0.194 / AUARC 0.270
+Baseline (no prompt):       119,680 tokens / $2.27 / ROUGE-L 0.138 / AUARC 0.189
+Baseline (no compression):   89,462 tokens / $1.74 / ROUGE-L 0.216 / AUARC 0.316
+Naive sliding window:         45,252 tokens / $1.07 / ROUGE-L 0.222 / AUARC 0.310
+CAMS:                         63,204 tokens / $1.32 / ROUGE-L 0.218 / AUARC 0.324
 ```
-System prompt delta: +0.077 ROUGE-L. J-proxy delta on diverse Q&A: ~0 (novelty guard PRESERVE all).
-CAMS AUARC: 40.8% of Φ(√J̄/2) theoretical ceiling (hidden-state access) at API surface.
+System prompt delta: +0.078 ROUGE-L. J-proxy delta on diverse Q&A: +0.002 (within noise, CI ±0.13).
+CAMS AUARC: 49.0% of Φ(√J̄/2) theoretical ceiling (hidden-state access) at API surface.
+Token reduction vs same-prompt baseline: 29.4%. Cost reduction: 24.2%.
 
 ---
 
@@ -176,7 +192,7 @@ User message
         → ConfidenceProxy.compute(response_text)  [pure text, no API]
         → dual-signal check  [thinking_utilization > 0.50 + zone == HIGH → downgrade]
         → _apply_cams(cr, novelty_override)  [decide compress/trim/preserve]
-            → _compress()  [calls Haiku, rebuilds history]
+            → _compress()  [faithfulness probe → 0 if uncertainty in old segment; else calls Haiku]
             → _trim()      [slices history list]
             → no-op        [PRESERVE]
         → _update_entity_vocab()
@@ -185,7 +201,7 @@ User message
 
 ---
 
-## What Was Added (April 22, 2026 session)
+## What Was Added (April 22, 2026 session — first pass)
 
 - **Thinking API updated for Opus 4.7**: now uses `thinking={"type":"adaptive"}` + `output_config={"effort":"high"|"medium"}`. `_THINKING_MIN=1024` (API minimum), `_THINKING_MAX=5000`. Opus 4.7 does NOT expose thinking blocks, so `thinking_tokens` and `thinking_utilization` are always 0 — dual-signal fusion is a no-op on this model. Forward-reserved for models that expose thinking blocks.
 - **Drift detector**: `_j_history` (rolling 5-turn list) + `_drift_state` bool. 3 consecutive LOW turns → `_drift_state=True` → `_apply_cams` returns PRESERVE.
@@ -194,7 +210,24 @@ User message
 - **`evals/experiments.py`**: 5 ablation experiments (E1–E5); run with `python -m evals.experiments --exp E1`
 - **`SUBMISSION.md`**: 200-word submission summary for hackathon platform
 - **`README.md`**: research narrative restored, Fisher J framing, FAIL-CHAIN connection, dual-signal section, engineering details
-- **`CLAUDE.md`**: this file — full structural map
+
+## What Was Added (April 22, 2026 session — second pass)
+
+- **Faithfulness probe** (`context_manager.py`): `_UNCERTAINTY_MARKERS` frozenset + `_has_uncertainty()` method. Called inside `_compress()` before the Haiku API call — if old segment contains uncertainty markers, returns 0 (caller sees PRESERVE). Prevents Haiku from silently stripping user-stated qualifications.
+- **Novelty guard tightened** (`context_manager.py`): threshold raised 0.60→0.75, added `_NOVELTY_MIN_ENTITIES=5` and `_NOVELTY_MIN_VOCAB=10` gates to eliminate 50% false-positive rate on stable-domain sessions.
+- **Compression prompt updated** (`context_manager.py`): explicit instruction to preserve uncertainty flags in Haiku summary.
+- **Minimum compress tokens** (`context_manager.py`): `_MIN_COMPRESS_TOKENS=150` — skips Haiku if old segment < 150 estimated tokens.
+- **Bootstrap CI** (`benchmark.py`): `bootstrap_ci(values, n_boot=2000)` function; `print_table()` now reports 95% CI on ROUGE-L for CAMS and baseline; delta CI annotated as significant/not-significant. n=30 CI width ~0.09 — the 0.021 ROUGE-L delta between CAMS and baseline is not significant at this sample size.
+- **E6 — Negative Needle** (`experiments.py`): new eval testing whether CAMS + faithfulness probe preserves uncertain constraints through compression pressure; measures `correction_recall` and `hallucination_rate`; three conditions (baseline/naive_window/cams).
+- **E4 — random_j condition** (`experiments.py`): fourth condition alongside baseline/naive_window/cams. Same conversation, compression decisions driven by random J scores from Uniform(0,1). Causality check: if CAMS > random_j, J-routing is doing real work.
+- **E3/E5 marked DEFERRED** (`experiments.py`): both require thinking block exposure (thinking_tokens > 0); Opus 4.7 does not expose thinking blocks. Forward-reserved.
+
+## What Was Added (April 22, 2026 session — third pass)
+
+- **Content-word novelty** (`context_manager.py`): replaced entity-counting novelty guard with content-word ratio guard. `_ENTITY_STOPWORDS` → `_CONTENT_STOPWORDS`; `_extract_entities()` → `_extract_content_words()` (any ≥4-char non-stop lowercase word); `_entity_vocab` → `_content_vocab`. Same three-gate logic but now fires on semantic pivots without proper nouns (e.g. "optimistic locking" → "database sharding"). Sentence-start capitalization false positives eliminated.
+- **Semantic entropy proxy** (`context_manager.py`): `_MULTI_ANSWER_MARKERS` frozenset (24 markers: "it depends on", "case by case", "no single answer", etc.) + `_has_multi_answer()` method. In `chat()`: if zone==MEDIUM and multi-answer markers detected → downgrade to LOW → PRESERVE. Zero-cost single-pass approximation of Kuhn et al. ICLR 2023 semantic entropy. Targets the weakest region of CAMS (MEDIUM zone) where neither TRIM nor COMPRESS is clearly correct.
+- **E7 — Multi-Hop Reasoning Chain** (`experiments.py`): 3-hop chain test (Project Falcon → Nexus config → CVE/v5 → Python ≥3.10). 6 filler turns force naive window to drop T3-T5. Measures `hops_recalled` (0-3) and `chain_complete` (bool). Tests directly whether Haiku compression preserves dependency chains. Three conditions: baseline/naive_window/cams.
+- **`--exp E7`** added to `main()` argparse choices.
 
 ---
 
@@ -205,4 +238,4 @@ User message
 - **Type Prior cap formula**: `j_cap = j_floor + 0.34` — 0.34 is the band from the floor to MEDIUM ceiling (0.64 for code, 0.54 for errors) — ensures content type keeps zone at MEDIUM maximum
 - **ATTENTION_SINK = 2**: first 2 turns establish conversation identity; losing them causes topic drift even if their content is HIGH-J
 - **MAX_COMPRESSIONS = 3**: each Haiku compression is ~85% lossless; after 3 passes the cumulative loss becomes noticeable; tested empirically
-- **NOVELTY_THRESHOLD = 0.60**: calibrated to avoid false positives on vocabulary-rich answers while catching genuine topic pivots
+- **NOVELTY_THRESHOLD = 0.75 (content words, not entities)**: three-gate design — (1) vocab ≥10 content words established, (2) ≥5 new content words in response, (3) >75% of response content words are new. Content words (any ≥4-char non-stop word) replaces entity-counting, which could not detect topic pivots without proper nouns. Same threshold and gates, broader vocabulary signal. False positive rate on stable-domain sessions validated through test suite.

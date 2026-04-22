@@ -76,7 +76,44 @@ _THINKING_MAX = 5000
 # Novelty guard — entity change threshold
 # If a turn introduces > this fraction of new named entities, PRESERVE.
 # ---------------------------------------------------------------------------
-_NOVELTY_THRESHOLD = 0.60   # >60% new entities → treat as new topic
+_NOVELTY_THRESHOLD = 0.75   # >75% new entities → treat as new topic
+_NOVELTY_MIN_ENTITIES = 5   # require at least 5 new entities (single new names aren't pivots)
+_NOVELTY_MIN_VOCAB    = 10  # don't fire until the entity vocab is established
+_MIN_COMPRESS_TOKENS  = 150 # don't call Haiku if old segment is smaller than this
+
+# Faithfulness guard — markers that signal user-flagged uncertainty.
+# If the compressible old segment contains these, Haiku may strip them,
+# turning tentative facts into apparent certainties. We refuse to compress
+# (return 0 → caller falls through to PRESERVE) rather than risk hallucination.
+_UNCERTAINTY_MARKERS = frozenset({
+    "not certain", "not sure", "uncertain", "tentative", "unverified",
+    "approximately", "roughly", "i think", "i believe", "i'm not",
+    "might be", "might not", "may be", "possibly", "perhaps",
+    "i'd verify", "need to check", "should verify", "to verify",
+    "approx", "tbd",
+})
+
+# Semantic entropy proxy — markers that signal multiple valid answers.
+# Detected in MEDIUM-J responses → zone downgraded to LOW → PRESERVE.
+# Zero-cost single-pass approximation of sampling-based semantic entropy
+# (Kuhn et al. ICLR 2023): when the model signals competing answers itself,
+# a re-sample would likely diverge → high semantic uncertainty → preserve.
+_MULTI_ANSWER_MARKERS = frozenset({
+    "it depends on", "depends on the", "depends on what",
+    "there are several", "there are two", "there are multiple",
+    "varies by", "varies depending", "context-dependent",
+    "some would argue", "others might say", "one approach",
+    "on one hand", "on the other hand", "two main", "multiple approaches",
+    "no single answer", "no one-size", "case by case",
+    "different perspectives", "highly contextual",
+    "not entirely clear", "no clear consensus", "no universal",
+})
+
+# Novelty detection — kept at 0.75 but now applied to content words, not entities.
+# Content words fix two entity-counting failures:
+#   1. Topic shifts without proper nouns ("optimistic locking" → "database sharding")
+#   2. Sentence-start capitalization false positives (words like "The", "This")
+# Three-gate remains: vocab ≥10, ≥5 new content words, >75% of response words new.
 
 
 # ---------------------------------------------------------------------------
@@ -187,7 +224,7 @@ class CAMSContextManager:
         self._drift_state: bool = False
 
         # Novelty guard: vocabulary of named entities seen so far
-        self._entity_vocab: set[str] = set()
+        self._content_vocab: set[str] = set()
 
     # ------------------------------------------------------------------
     # Public API
@@ -262,7 +299,20 @@ class CAMSContextManager:
                 content_type = cr.content_type,
             )
 
-        # Novelty guard: check if this turn introduces many new entities
+        # Semantic entropy proxy: MEDIUM-J responses containing multi-answer
+        # markers (e.g. "it depends on", "case by case") signal that a re-sample
+        # would likely yield a different answer — high semantic uncertainty.
+        # Downgrade zone to LOW → PRESERVE. Zero-cost Kuhn 2023 approximation.
+        if cr.zone == "MEDIUM" and self._has_multi_answer(text):
+            cr = ConfidenceResult(
+                j_score      = cr.j_score,
+                zone         = "LOW",
+                factors      = cr.factors,
+                reasoning    = cr.reasoning + "; semantic entropy proxy (context-dependent answer detected)",
+                content_type = cr.content_type,
+            )
+
+        # Novelty guard: check if this turn signals a domain pivot
         novelty_override = self._check_novelty(text)
 
         # Drift detection: 3 consecutive LOW-zone turns → proactive PRESERVE lock
@@ -281,7 +331,7 @@ class CAMSContextManager:
         decision, tokens_saved = self._apply_cams(cr, novelty_override)
 
         # Update entity vocabulary and zone memory for next-turn thinking budget
-        self._update_entity_vocab(text)
+        self._update_content_vocab(text)
         self._prev_zone = cr.zone
         self._prev_j    = cr.j_score
 
@@ -310,6 +360,7 @@ class CAMSContextManager:
             "tokens_saved":         tokens_saved,
             "reasoning":            cr.reasoning,
             "novelty_override":     novelty_override,
+            "semantic_entropy_override": "semantic entropy proxy" in cr.reasoning,
             "content_type":         cr.content_type,
             "thinking_tokens":      thinking_tokens,
             "thinking_utilization": thinking_utilization,
@@ -350,7 +401,7 @@ class CAMSContextManager:
         self._turn1_goal         = ""
         self._j_history          = []
         self._drift_state        = False
-        self._entity_vocab       = set()
+        self._content_vocab      = set()
         self.stats               = SessionStats()
 
     @property
@@ -410,9 +461,22 @@ class CAMSContextManager:
 
         tokens_before = sum(len(m["content"]) // 4 for m in old)
 
+        # Pre-check: don't call Haiku if the old segment is too small to compress profitably.
+        # A ~100-token Haiku summary on a 150-token old segment saves almost nothing.
+        if tokens_before < _MIN_COMPRESS_TOKENS:
+            return 0
+
         conv_text = "\n".join(
             f"{m['role'].upper()}: {m['content']}" for m in old
         )
+
+        # Faithfulness guard: if old segment contains uncertainty markers, refuse
+        # to compress. Returning 0 makes _apply_cams fall through to PRESERVE,
+        # keeping the exact user-stated uncertainty in context rather than risking
+        # Haiku silently converting "I think ~50 req/min" into "50 req/min".
+        if self._has_uncertainty(conv_text):
+            return 0
+
         goal_line = (
             f"The user's original goal: {self._turn1_goal}\n\n"
             if self._turn1_goal else ""
@@ -424,7 +488,10 @@ class CAMSContextManager:
                 "content": (
                     "Summarize this conversation segment in 2-3 concise sentences. "
                     "Preserve all key facts, decisions, and context needed "
-                    f"to continue the conversation toward the user's goal.\n\n"
+                    "to continue the conversation toward the user's goal. "
+                    "IMPORTANT: if anything was stated as uncertain, approximate, "
+                    "or needing verification, explicitly preserve that uncertainty "
+                    "flag in your summary (e.g. 'tentative', 'unverified', 'approx.').\n\n"
                     + goal_line
                     + "Conversation segment to summarize:\n\n"
                     + conv_text
@@ -484,54 +551,74 @@ class CAMSContextManager:
         return list(self._history)
 
     # ------------------------------------------------------------------
-    # Novelty guard
+    # Novelty guard  (content-word Jaccard distance, replaces entity counting)
     # ------------------------------------------------------------------
 
-    # Common English words that get capitalized at sentence-start but are not named entities.
-    _ENTITY_STOPWORDS = frozenset({
-        "The", "This", "These", "That", "Those", "There", "Then", "Here",
-        "It", "Its", "They", "Their", "We", "Our", "You", "Your",
-        "How", "What", "Why", "When", "Where", "Who", "Which",
-        "Can", "Could", "Should", "Would", "Will", "May", "Might", "Must",
-        "Is", "Are", "Was", "Were", "Has", "Have", "Had", "Does", "Did",
-        "For", "And", "But", "Or", "So", "Also", "Note", "Use", "Used",
-        "Using", "With", "From", "Into", "About", "After", "Before",
+    # Common English function words — filtered out before Jaccard computation.
+    _CONTENT_STOPWORDS = frozenset({
+        "the", "and", "for", "that", "this", "with", "have", "from", "they",
+        "will", "your", "what", "when", "how", "why", "where", "which", "who",
+        "are", "was", "were", "has", "had", "been", "being", "can", "could",
+        "should", "would", "may", "might", "must", "does", "did", "not", "more",
+        "also", "such", "than", "only", "about", "into", "over", "some", "these",
+        "those", "there", "here", "then", "but", "all", "any", "each", "both",
+        "just", "even", "often", "well", "back", "still", "like", "used", "need",
+        "make", "give", "take", "come", "know", "think", "look", "want", "use",
+        "see", "based", "using", "since", "after", "before", "while", "through",
+        "their", "them", "very", "most", "same", "next", "last", "good", "new",
     })
 
-    def _extract_entities(self, text: str) -> set[str]:
-        """Extract named entities (capitalized tokens ≥ 3 chars), filtering stopwords."""
-        # Mid-sentence capitalized words (strongest signal)
-        tokens = re.findall(r'(?<=[a-z\s,;:])\s([A-Z][a-z]{2,}(?:\s[A-Z][a-z]{2,})*)', text)
-        # All capitalized words (broader catch, filtered by stopwords)
-        tokens += re.findall(r'\b([A-Z][a-z]{2,})\b', text)
+    def _extract_content_words(self, text: str) -> set[str]:
+        """Extract lowercase content words (≥4 chars, non-stop, non-digit)."""
+        words = re.sub(r'[^\w\s]', ' ', text.lower()).split()
         return {
-            t.strip() for t in tokens
-            if len(t.strip()) >= 3 and t.strip() not in self._ENTITY_STOPWORDS
+            w for w in words
+            if len(w) >= 4
+            and not w.isdigit()
+            and w not in self._CONTENT_STOPWORDS
         }
 
     def _check_novelty(self, text: str) -> bool:
         """
-        Returns True if this response introduces many new named entities
-        relative to the current vocabulary — signals a topic shift.
-        Triggers PRESERVE override to avoid compressing away new context.
+        Returns True if this response signals a domain pivot.
+        Uses content-word novelty ratio — same three-gate logic as before but
+        applied to content words instead of named entities.
+
+        Why content words > entity counting:
+          - Works for topic shifts without proper nouns
+            ("optimistic locking" → "database sharding" shares no named entities)
+          - Content words (any ≥4-char non-stop word) are more reliable than
+            capitalized tokens which fire on sentence-initial words
+
+        Three-gate design (all must be true to fire):
+          1. Context vocab established (≥ _NOVELTY_MIN_VOCAB words) — no early false positives
+          2. ≥ _NOVELTY_MIN_ENTITIES new content words in this response — single new terms aren't pivots
+          3. > _NOVELTY_THRESHOLD (0.75) of this response's content words are new — sustained
+             same-topic conversation introduces new terms but stays below 75% threshold
         """
-        if not self._entity_vocab:
-            return False   # no baseline yet
-
-        new_entities = self._extract_entities(text)
-        if not new_entities:
+        if len(self._content_vocab) < _NOVELTY_MIN_VOCAB:
             return False
-
-        new_count = len(new_entities - self._entity_vocab)
-        # Require minimum 3 new entities: a single new class name or term is
-        # not a topic pivot. Genuine pivots introduce many new entities.
-        if new_count < 3:
+        current = self._extract_content_words(text)
+        if not current:
             return False
-        novelty_ratio = new_count / len(new_entities)
+        new_count = len(current - self._content_vocab)
+        if new_count < _NOVELTY_MIN_ENTITIES:
+            return False
+        novelty_ratio = new_count / len(current)
         return novelty_ratio > _NOVELTY_THRESHOLD
 
-    def _update_entity_vocab(self, text: str):
-        self._entity_vocab.update(self._extract_entities(text))
+    def _update_content_vocab(self, text: str):
+        self._content_vocab.update(self._extract_content_words(text))
+
+    def _has_multi_answer(self, text: str) -> bool:
+        """Returns True if response signals multiple valid answers (semantic entropy proxy)."""
+        lower = text.lower()
+        return any(m in lower for m in _MULTI_ANSWER_MARKERS)
+
+    def _has_uncertainty(self, text: str) -> bool:
+        """Returns True if text contains markers that signal user-flagged uncertainty."""
+        lower = text.lower()
+        return any(m in lower for m in _UNCERTAINTY_MARKERS)
 
 
 # ---------------------------------------------------------------------------

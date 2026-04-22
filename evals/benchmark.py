@@ -427,6 +427,35 @@ def reasoning_density(mean_rouge_l: float, total_cost_usd: float) -> float:
 
 
 # ---------------------------------------------------------------------------
+# Bootstrap confidence intervals
+# ---------------------------------------------------------------------------
+
+def bootstrap_ci(
+    values: list[float],
+    n_boot: int = 2000,
+    ci: float = 0.95,
+    seed: int = 42,
+) -> tuple[float, float]:
+    """
+    Non-parametric bootstrap 95% CI for the mean.
+    n=30 ROUGE-L estimates have ~±0.04 error; reporting only point estimates
+    without CIs overstates result precision.
+    """
+    import random as _rand
+    n = len(values)
+    if n == 0:
+        return (0.0, 0.0)
+    rng = _rand.Random(seed)
+    boot_means = sorted(
+        sum(rng.choices(values, k=n)) / n
+        for _ in range(n_boot)
+    )
+    lo_idx = int((1 - ci) / 2 * n_boot)
+    hi_idx = int((1 + ci) / 2 * n_boot)
+    return (round(boot_means[lo_idx], 4), round(boot_means[hi_idx], 4))
+
+
+# ---------------------------------------------------------------------------
 # Conditions
 # ---------------------------------------------------------------------------
 
@@ -829,6 +858,22 @@ def print_table(results: list[ConditionResult]):
         rd_cams = cams_r.reasoning_density_per_kdollar * 1e4
         rd_base = base_r.reasoning_density_per_kdollar * 1e4
         print(f"  Reasoning Density    : {rd_cams:.2f} vs {rd_base:.2f}  (×10⁻⁴ ROUGE/$K)")
+
+        # Bootstrap 95% CIs — n=30 point estimates have ~±0.04 inherent noise;
+        # reporting only point estimates would overstate result precision.
+        cams_rouges = [t.rouge_l for t in cams_r.turns]
+        base_rouges = [t.rouge_l for t in base_r.turns]
+        cams_ci = bootstrap_ci(cams_rouges)
+        base_ci = bootstrap_ci(base_rouges)
+        n = len(cams_rouges)
+        print(f"\n  Bootstrap 95% CI on ROUGE-L (n={n}, 2000 resamples):")
+        print(f"    CAMS               : {cams_r.mean_rouge_l:.3f}  [{cams_ci[0]:.3f}, {cams_ci[1]:.3f}]")
+        print(f"    Baseline           : {base_r.mean_rouge_l:.3f}  [{base_ci[0]:.3f}, {base_ci[1]:.3f}]")
+        delta_lo = cams_ci[0] - base_ci[1]
+        delta_hi = cams_ci[1] - base_ci[0]
+        significant = delta_lo > 0 or delta_hi < 0
+        print(f"    Delta CI           : [{delta_lo:+.3f}, {delta_hi:+.3f}]  "
+              f"({'significant' if significant else 'not significant — within noise'})")
 
     if no_prompt_base and same_prompt_base:
         prompt_rl_delta = same_prompt_base.mean_rouge_l - no_prompt_base.mean_rouge_l

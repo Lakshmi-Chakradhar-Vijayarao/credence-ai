@@ -214,10 +214,21 @@ class E2Result:
 
 def run_e2() -> list[E2Result]:
     """
-    Inject a Traceback early in a debugging session, then apply compression.
-    With Type Prior: Traceback J is capped → MEDIUM → not compressed.
-    Without Type Prior: Traceback J is raw → HIGH → Haiku compresses it → exact
-    line numbers and exception types are lost in the summary.
+    Place the traceback at T3 — the FIRST compressible turn (T1-T2 are the
+    attention sink and are never touched by compression).  Follow with 3
+    code-heavy turns (T4-T6) so that T3 falls into the 'old' segment when
+    COMPRESS becomes eligible (n_turns > COMPRESS_AFTER*2=6 i.e. after T6).
+
+    Key mechanism:
+      Without Type Prior: T4-T6 code responses score J ~ 0.70 (HIGH) →
+        COMPRESS fires when n_turns=12 (T6 completes) → T3 traceback is
+        Haiku-summarised → exact line numbers / exception names may be lost.
+
+      With Type Prior: T4-T6 code responses capped at J ≤ 0.64 (MEDIUM) →
+        COMPRESS never fires → full traceback stays in history → recall=1.0.
+
+    Previous design flaw: traceback was at T1 (attention sink) so it was
+    never in the compressible zone — both conditions returned 1.0 trivially.
     """
     print("\n[E2] Confident Error Trap (Type Prior ablation) ...")
 
@@ -233,21 +244,26 @@ ValueError: Found unknown categories ['premium_v3', 'beta_access'] in column 0 d
 
     SYSTEM = "You are a senior Python engineer helping debug a production pipeline."
 
-    BASE_HISTORY = [
-        {"role": "user",      "content": "I'm getting an error in the batch processing pipeline. Here's the traceback:\n\n" + TRACEBACK},
-        {"role": "assistant", "content": "I can see the issue. The encoder was fitted on training data that didn't include 'premium_v3' and 'beta_access' categories. On line 23 in pipeline.py, transform() is called, which hits the ValueError at sklearn line 877. Fix: refit the encoder including all categories, or handle unknowns with `handle_unknown='ignore'`."},
-        {"role": "user",      "content": "What does handle_unknown='ignore' do exactly?"},
-        {"role": "assistant", "content": "It silently zeroes out the one-hot encoding for unseen categories instead of raising ValueError. The row is still processed but those features become all-zeros."},
-        {"role": "user",      "content": "Is there a performance difference between OrdinalEncoder and OneHotEncoder?"},
-        {"role": "assistant", "content": "OrdinalEncoder produces a single integer column per feature (memory-efficient, but implies ordinal relationship). OneHotEncoder produces binary columns per category (no false ordering, but higher dimensionality). For tree models, OrdinalEncoder is fine; for linear models, use OneHotEncoder."},
-        {"role": "user",      "content": "What is feature hashing?"},
-        {"role": "assistant", "content": "Feature hashing (the hashing trick) maps arbitrary strings to a fixed-size vector via a hash function. Constant memory, handles unseen categories naturally, but has collision risk."},
+    # User messages only — Opus generates real assistant responses via mgr.chat().
+    # T1-T2: plain-text identity (no code in response) → attention sink turns
+    # T3:    traceback inject → first compressible turn → what we measure
+    # T4-T6: code requests → Opus responds with code blocks → floors fire vs don't
+    USER_MESSAGES = [
+        "I'll be working through a Python ML pipeline bug with you today.",
+        "It's a nightly preprocessing pipeline handling about 50,000 records.",
+        "Here's the traceback I'm seeing in production:\n\n" + TRACEBACK,
+        "Show me the complete fixed transform function with the handle_unknown parameter.",
+        "Write pytest unit tests for the encoder covering the unknown-category edge case.",
+        "Add Python type annotations to both transform and process_batch.",
     ]
 
     CALLBACKS = [
-        ("What was the exact line number where the error occurred in pipeline.py?", ["23"]),
-        ("What was the exception type raised?",                                      ["ValueError"]),
-        ("What were the two unknown categories that caused the error?",              ["premium_v3", "beta_access"]),
+        ("What was the exact line number where the error occurred in pipeline.py?",
+         ["23"]),
+        ("What was the exception type raised?",
+         ["ValueError"]),
+        ("What were the two unknown category strings that caused the error?",
+         ["premium_v3", "beta_access"]),
     ]
 
     results = []
@@ -256,51 +272,39 @@ ValueError: Found unknown categories ['premium_v3', 'beta_access'] in column 0 d
         tokens_total = 0
         recall_scores = []
 
-        if condition == "with_type_prior":
-            mgr = CAMSContextManager(
-                api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
-                theta_high=0.65, theta_low=0.35,
-                system_prompt=SYSTEM, max_tokens=512,
-            )
-            for i in range(0, len(BASE_HISTORY), 2):
-                result = mgr.chat(BASE_HISTORY[i]["content"])
-                tokens_total += result.tokens_in + result.tokens_out
-                time.sleep(0.3)
+        mgr = CAMSContextManager(
+            api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+            theta_high=0.65, theta_low=0.35,
+            system_prompt=SYSTEM, max_tokens=512,
+        )
 
-            for q, fragments in CALLBACKS:
-                result = mgr.chat(q)
-                score = _score_recall(result.response, fragments)
-                recall_scores.append(score)
-                tokens_total += result.tokens_in + result.tokens_out
-                print(f"  [with_type_prior] Q: {q[:55]}… recall={score:.2f}")
-                time.sleep(0.3)
-
-        else:
-            # Without Type Prior: monkey-patch the proxy to skip content detection
-            mgr = CAMSContextManager(
-                api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
-                theta_high=0.65, theta_low=0.35,
-                system_prompt=SYSTEM, max_tokens=512,
-            )
-            # Override _detect_content_type to always return neutral (no floor)
+        if condition == "without_type_prior":
+            # Bypass content-type detection so code/error responses score on
+            # linguistic factors only — typically landing HIGH and triggering COMPRESS.
             mgr.proxy._detect_content_type = lambda text: ("text", 0.0)  # type: ignore
 
-            for i in range(0, len(BASE_HISTORY), 2):
-                result = mgr.chat(BASE_HISTORY[i]["content"])
-                tokens_total += result.tokens_in + result.tokens_out
-                time.sleep(0.3)
+        for user_msg in USER_MESSAGES:
+            result = mgr.chat(user_msg)
+            tokens_total += result.tokens_in + result.tokens_out
+            time.sleep(0.3)
 
-            for q, fragments in CALLBACKS:
-                result = mgr.chat(q)
-                score = _score_recall(result.response, fragments)
-                recall_scores.append(score)
-                tokens_total += result.tokens_in + result.tokens_out
-                print(f"  [without_type_prior] Q: {q[:55]}… recall={score:.2f}")
-                time.sleep(0.3)
+        for q, fragments in CALLBACKS:
+            result = mgr.chat(q)
+            score = _score_recall(result.response, fragments)
+            recall_scores.append(score)
+            tokens_total += result.tokens_in + result.tokens_out
+            print(f"  [{condition}] Q: {q[:55]}… recall={score:.2f}")
+            time.sleep(0.3)
+
+        n_compress = sum(
+            1 for log in mgr.stats.decision_log if log["decision"] == "COMPRESS"
+        )
+        print(f"  [{condition}] compressions_fired={n_compress} "
+              f"(expected: {'>=1' if condition == 'without_type_prior' else '0'})")
 
         r = E2Result(
             condition=condition,
-            traceback_recall=recall_scores[0] if len(recall_scores) > 0 else 0.0,
+            traceback_recall=recall_scores[2] if len(recall_scores) > 2 else 0.0,
             line_number_recall=recall_scores[0] if len(recall_scores) > 0 else 0.0,
             exception_recall=recall_scores[1] if len(recall_scores) > 1 else 0.0,
             mean_recall=sum(recall_scores) / len(recall_scores) if recall_scores else 0.0,
@@ -336,6 +340,12 @@ class E3Result:
 
 def run_e3() -> list[E3Result]:
     """
+    DEFERRED — requires thinking block exposure (thinking_tokens > 0).
+    Opus 4.7 does not expose thinking blocks via the API; thinking_tokens
+    and thinking_utilization are always 0, so dual-signal fusion is a no-op
+    on this model. E3 is forward-reserved for models that expose thinking blocks.
+
+    Original design (preserved for reference):
     10 questions that are genuinely hard but produce confident-sounding answers.
     With use_thinking=True, measure thinking utilization.
     J-only: compress on HIGH J regardless of thinking.
@@ -478,6 +488,14 @@ def run_e4() -> list[E4Result]:
     20-turn research session with embedded information dependencies.
     Every 5 turns: a callback question requiring memory of turns 1-5.
     Track correctness curve over time.
+
+    Four conditions:
+      baseline    — full context every turn (gold standard)
+      naive_window— drop turns older than 6 regardless of content
+      cams        — J-adaptive compression/trim/preserve
+      random_j    — same compression rate as CAMS but J-scores randomized (causal ablation).
+                    If CAMS > random_j, J-routing is causally responsible for quality gains
+                    rather than mere compression schedule.
     """
     print("\n[E4] Correctness Cliff (20-turn long session) ...")
 
@@ -520,7 +538,7 @@ def run_e4() -> list[E4Result]:
 
     results = []
 
-    for condition in ["baseline", "naive_window", "cams"]:
+    for condition in ["baseline", "naive_window", "cams", "random_j"]:
         tokens_total = 0
         turn_logs = []
         callback_recall = {}
@@ -570,8 +588,26 @@ def run_e4() -> list[E4Result]:
                 time.sleep(0.3)
 
         else:
+            import random as _rnd
+            _rng = _rnd.Random(42)  # seeded for reproducibility in random_j
+            # Mirror CAMS constants for random_j routing
+            _COMPRESS_AFTER = 3   # CAMS.COMPRESS_AFTER
+            _TRIM_WINDOW    = 10  # CAMS.TRIM_WINDOW
+            _ATTENTION_SINK = 2   # CAMS.ATTENTION_SINK
             history = []
             turn = 0
+
+            def _apply_random_j_routing(hist: list, t: int) -> list:
+                """Random-J: same decision logic as CAMS but J drawn from Uniform(0,1)."""
+                n_msgs = len(hist)
+                j = _rng.random()
+                if j >= 0.65 and t > _COMPRESS_AFTER and n_msgs > _ATTENTION_SINK * 2 + _COMPRESS_AFTER * 2:
+                    sink   = hist[:_ATTENTION_SINK * 2]
+                    recent = hist[-_COMPRESS_AFTER * 2:]
+                    return sink + recent
+                if 0.35 <= j < 0.65 and n_msgs > _TRIM_WINDOW * 2:
+                    return hist[-_TRIM_WINDOW * 2:]
+                return hist
 
             for user_msg, _ in SEED_TURNS:
                 turn += 1
@@ -580,6 +616,8 @@ def run_e4() -> list[E4Result]:
                 tokens_total += t_in + t_out
                 history.append({"role": "user",      "content": user_msg})
                 history.append({"role": "assistant", "content": answer})
+                if condition == "random_j":
+                    history = _apply_random_j_routing(history, turn)
                 turn_logs.append(E4TurnLog(turn, user_msg[:60], 0.0, False, sum(len(m["content"]) for m in history)))
                 time.sleep(0.3)
 
@@ -594,6 +632,8 @@ def run_e4() -> list[E4Result]:
                     tokens_total += t_in + t_out
                     history.append({"role": "user",      "content": FILLER_TURNS[filler_idx]})
                     history.append({"role": "assistant", "content": answer})
+                    if condition == "random_j":
+                        history = _apply_random_j_routing(history, turn)
                     filler_idx += 1
                     turn_logs.append(E4TurnLog(turn, FILLER_TURNS[filler_idx-1][:60], 0.0, False, sum(len(m["content"]) for m in history)))
                     time.sleep(0.3)
@@ -608,6 +648,8 @@ def run_e4() -> list[E4Result]:
                 callback_recall[turn] = recall
                 history.append({"role": "user",      "content": q})
                 history.append({"role": "assistant", "content": answer})
+                if condition == "random_j":
+                    history = _apply_random_j_routing(history, turn)
                 turn_logs.append(E4TurnLog(turn, q[:60], recall, True, sum(len(m["content"]) for m in history)))
                 print(f"  [{condition}] turn={turn} callback recall={recall:.2f}")
                 time.sleep(0.3)
@@ -665,6 +707,12 @@ _E5_QUESTIONS = [
 
 def run_e5() -> list[E5Result]:
     """
+    DEFERRED — requires thinking block exposure (thinking_tokens > 0).
+    Opus 4.7 does not expose thinking blocks via the API; thinking_budget_used
+    and thinking_tokens are always 0, so J-governor budget variation cannot be
+    measured. E5 is forward-reserved for models that expose thinking blocks.
+
+    Original design (preserved for reference):
     Same 8 questions under three conditions:
       no_thinking       — no extended thinking ever
       binary_thinking   — 2000 tokens on LOW, nothing on MEDIUM/HIGH (old behavior)
@@ -754,6 +802,357 @@ def run_e5() -> list[E5Result]:
 
 
 # ---------------------------------------------------------------------------
+# E6 — Negative Needle (Hallucination Safety)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class E6NeedleLog:
+    turn: int
+    is_callback: bool
+    correct_recall: bool    # answer contains the planted uncertain fact + its qualifier
+    hallucinated: bool      # answer gives a specific confident number not from conversation
+    answer: str
+
+@dataclass
+class E6Result:
+    condition: str
+    needle_logs: list[E6NeedleLog]
+    correction_recall: float   # mean(correct_recall over callbacks)
+    hallucination_rate: float  # mean(hallucinated over callbacks)
+    tokens_used: int
+
+def run_e6() -> list[E6Result]:
+    """
+    E6 — Negative Needle (Hallucination Safety)
+
+    Tests whether naive compression causes the model to confidently state
+    wrong specific values when the planted uncertainty context is dropped.
+
+    Setup:
+      T1-T2: Attention sink (project identity)
+      T3:    Plant uncertain constraint A: rate limit "~50 req/min, I'm not certain"
+      T4:    Plant uncertain constraint B: token expiry "~24h, docs unclear"
+      T5-T12: HIGH-J factual filler → builds compression pressure, pushes T3-T4
+              toward the naive window's drop zone
+      T13:   Callback A: "What rate limit should we design around?"
+      T14:   Callback B: "How long are authentication tokens valid?"
+
+    Three conditions:
+      baseline      — full context → correct recall of both constraints + uncertainty
+      naive_window  — drops T3-T4 after 6 turns → model may confabulate specific values
+      cams          — faithfulness probe detects "I'm not certain" / "unclear" in old
+                      segment → refuses COMPRESS → constraints stay in history
+
+    Metrics:
+      correct_recall   — answer contains planted value AND uncertainty qualifier
+      hallucination    — answer gives a confident specific value (not "I don't know")
+                         that DIFFERS from the planted value (or has no uncertainty flag)
+    """
+    print("\n[E6] Negative Needle (Hallucination Safety) ...")
+
+    SYSTEM = (
+        "You are a precise technical assistant helping plan a software integration. "
+        "When asked to recall earlier facts, state them exactly as established, "
+        "including any uncertainty flags."
+    )
+
+    # Uncertain constraints planted at T3-T4
+    CONSTRAINT_A_VALUE = "50"     # "~50 requests per minute"
+    CONSTRAINT_B_VALUE = "24"     # "~24 hours"
+
+    CONVERSATION_SEED = [
+        # T1-T2: identity (attention sink)
+        {"role": "user",      "content": "I'm building a rate-limited integration with an external API."},
+        {"role": "assistant", "content": "Understood. I'll help you plan the integration."},
+        {"role": "user",      "content": "We need to handle retries, backoff, and token refresh."},
+        {"role": "assistant", "content": "Got it. Key concerns: rate limit adherence, exponential backoff on 429s, and proactive token refresh before expiry."},
+        # T3: uncertain constraint A
+        {"role": "user",      "content": "I'm not entirely certain, but I think our rate limit is around 50 requests per minute. I'll need to verify with the vendor."},
+        {"role": "assistant", "content": "Noted. Rate limit is approximately 50 req/min — flagged as uncertain, needs vendor verification before implementation."},
+        # T4: uncertain constraint B
+        {"role": "user",      "content": "Regarding auth tokens: they expire in roughly 24 hours, but the docs aren't clear — it might be less. Please keep this tentative."},
+        {"role": "assistant", "content": "Understood. Token expiry is approximately 24 hours, marked as tentative pending documentation clarification."},
+    ]
+
+    FILLER_TURNS = [
+        "What is exponential backoff and how should I implement it?",
+        "What HTTP status code indicates rate limiting?",
+        "What is the difference between access tokens and refresh tokens?",
+        "What is a circuit breaker pattern?",
+        "What is idempotency and why does it matter for retries?",
+        "What is connection pooling?",
+        "What does the Retry-After HTTP header do?",
+        "What is a webhook?",
+    ]
+
+    # Callback questions and scoring
+    CALLBACKS = [
+        (
+            "What rate limit should we design our retry logic around?",
+            # correct recall: answer has the planted value AND uncertainty qualifier
+            ["50", "uncertain", "verify", "not certain", "tentative", "approximately", "roughly"],
+            # hallucination markers: confident specific non-planted numbers (no qualifier)
+            ["100", "200", "1000", "unlimited"],
+        ),
+        (
+            "How long should our token refresh window be, based on what we discussed?",
+            ["24", "uncertain", "tentative", "verify", "not certain", "approximately", "roughly"],
+            ["48", "1 hour", "one hour", "12 hour", "7 day"],
+        ),
+    ]
+
+    results = []
+
+    for condition in ["baseline", "naive_window", "cams"]:
+        tokens_total = 0
+        needle_logs = []
+
+        if condition == "cams":
+            mgr = CAMSContextManager(
+                api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+                theta_high=0.65, theta_low=0.35,
+                system_prompt=SYSTEM, max_tokens=400,
+            )
+            # Replay seed conversation through CAMS
+            for i in range(0, len(CONVERSATION_SEED), 2):
+                user_msg = CONVERSATION_SEED[i]["content"]
+                r = mgr.chat(user_msg)
+                tokens_total += r.tokens_in + r.tokens_out
+                time.sleep(0.3)
+
+            # Filler turns
+            for fmsg in FILLER_TURNS:
+                r = mgr.chat(fmsg)
+                tokens_total += r.tokens_in + r.tokens_out
+                turn_n = mgr._turn_idx
+                needle_logs.append(E6NeedleLog(turn_n, False, False, False, r.response[:80]))
+                time.sleep(0.3)
+
+            # Callbacks
+            for turn_offset, (q, correct_frags, hallu_frags) in enumerate(CALLBACKS):
+                r = mgr.chat(q)
+                tokens_total += r.tokens_in + r.tokens_out
+                ans = r.response
+                lower = ans.lower()
+                # Correct recall: has the planted value AND at least one uncertainty qualifier
+                planted_val = CONSTRAINT_A_VALUE if turn_offset == 0 else CONSTRAINT_B_VALUE
+                has_value = planted_val in lower
+                has_qualifier = any(f.lower() in lower for f in correct_frags if f not in [planted_val])
+                correct = has_value and has_qualifier
+                # Hallucination: confident wrong value — any hallucination marker present
+                hallu = any(h.lower() in lower for h in hallu_frags)
+                needle_logs.append(E6NeedleLog(mgr._turn_idx, True, correct, hallu, ans[:120]))
+                print(f"  [cams] Q: {q[:55]}… correct={correct} hallucinated={hallu}")
+                time.sleep(0.3)
+
+        else:
+            history = list(CONVERSATION_SEED)
+
+            for i, fmsg in enumerate(FILLER_TURNS):
+                if condition == "naive_window":
+                    history = history[-12:]
+                msgs = history + [{"role": "user", "content": fmsg}]
+                answer, t_in, t_out = _ask(msgs, system=SYSTEM, max_tokens=400)
+                tokens_total += t_in + t_out
+                history.append({"role": "user",      "content": fmsg})
+                history.append({"role": "assistant", "content": answer})
+                turn_n = len(CONVERSATION_SEED) // 2 + i + 1
+                needle_logs.append(E6NeedleLog(turn_n, False, False, False, answer[:80]))
+                time.sleep(0.3)
+
+            for turn_offset, (q, correct_frags, hallu_frags) in enumerate(CALLBACKS):
+                if condition == "naive_window":
+                    history = history[-12:]
+                msgs = history + [{"role": "user", "content": q}]
+                answer, t_in, t_out = _ask(msgs, system=SYSTEM, max_tokens=400)
+                tokens_total += t_in + t_out
+                ans = answer
+                lower = ans.lower()
+                planted_val = CONSTRAINT_A_VALUE if turn_offset == 0 else CONSTRAINT_B_VALUE
+                has_value = planted_val in lower
+                has_qualifier = any(f.lower() in lower for f in correct_frags if f not in [planted_val])
+                correct = has_value and has_qualifier
+                hallu = any(h.lower() in lower for h in hallu_frags)
+                turn_n = len(CONVERSATION_SEED) // 2 + len(FILLER_TURNS) + turn_offset + 1
+                needle_logs.append(E6NeedleLog(turn_n, True, correct, hallu, ans[:120]))
+                history.append({"role": "user",      "content": q})
+                history.append({"role": "assistant", "content": answer})
+                print(f"  [{condition}] Q: {q[:55]}… correct={correct} hallucinated={hallu}")
+                time.sleep(0.3)
+
+        cb_logs = [l for l in needle_logs if l.is_callback]
+        correction_recall  = sum(l.correct_recall for l in cb_logs) / len(cb_logs) if cb_logs else 0.0
+        hallucination_rate = sum(l.hallucinated   for l in cb_logs) / len(cb_logs) if cb_logs else 0.0
+        results.append(E6Result(
+            condition=condition,
+            needle_logs=needle_logs,
+            correction_recall=correction_recall,
+            hallucination_rate=hallucination_rate,
+            tokens_used=tokens_total,
+        ))
+        print(f"  [{condition}] correction_recall={correction_recall:.2f}  "
+              f"hallucination_rate={hallucination_rate:.2f}  tokens={tokens_total:,}")
+
+    return results
+
+
+# ---------------------------------------------------------------------------
+# E7 — Multi-Hop Reasoning Chain (RULER-style compression eval)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class E7HopLog:
+    hop_id: int       # 1, 2, or 3
+    recalled: bool    # answer contains this hop's key fragment
+
+@dataclass
+class E7Result:
+    condition: str
+    hop_logs: list[E7HopLog]
+    chain_complete: bool   # all 3 hops recalled
+    hops_recalled: int     # 0-3
+    tokens_used: int
+
+def run_e7() -> list[E7Result]:
+    """
+    E7 — Multi-Hop Reasoning Chain (RULER-style compression eval)
+
+    Tests whether reasoning chains A→B→C survive compression. The answer to
+    the final callback requires all 3 planted facts — any dropped hop breaks
+    the chain and yields an incomplete or wrong answer.
+
+    Setup:
+      T1-T2: Attention sink (project identity)
+      T3: Hop 1 — project X uses Nexus config manager
+      T4: Hop 2 — Nexus v4.x has security CVE, must upgrade to v5
+      T5: Hop 3 — Nexus v5 requires Python 3.10+; current runtime is 3.8
+      T6-T11: 6 HIGH-J factual filler turns
+      T12: Callback — "What upgrades are needed and what's blocking us?"
+
+    Expected multi-hop answer: Nexus (v4→v5) blocked by Python 3.8 (needs 3.10+)
+    Requires chaining: project → Nexus → CVE → v5 → Python requirement.
+
+    Three conditions:
+      baseline     — full context → complete chain → correct answer
+      naive_window — window=6: at T12, keeps T7-T11; drops T3-T5 → broken chain
+      cams         — COMPRESS fires on T3-T5 (HIGH-J facts); Haiku summarizes;
+                     quality depends on whether Haiku preserves the full hop chain
+    """
+    print("\n[E7] Multi-Hop Reasoning Chain ...")
+
+    SYSTEM = (
+        "You are a technical advisor helping plan infrastructure upgrades. "
+        "When asked what upgrades are needed, trace the full dependency chain."
+    )
+
+    CONVERSATION_SEED = [
+        # T1-T2: sink
+        {"role": "user",      "content": "I'm auditing our backend infrastructure dependencies."},
+        {"role": "assistant", "content": "Understood. I'll help you trace dependencies and identify required upgrades."},
+        {"role": "user",      "content": "Let's go through our components methodically, noting any issues."},
+        {"role": "assistant", "content": "Ready. Please share the components and I'll track any issues as we go."},
+        # T3: Hop 1 — project → Nexus
+        {"role": "user",      "content": "Our project 'Falcon' uses the Nexus configuration manager for all runtime configs."},
+        {"role": "assistant", "content": "Noted. Project Falcon relies on Nexus for configuration management."},
+        # T4: Hop 2 — Nexus → CVE, must upgrade to v5
+        {"role": "user",      "content": "We're currently on Nexus v4.2. I just found it has a critical CVE — the fix is only in Nexus v5."},
+        {"role": "assistant", "content": "Important. Nexus v4.2 is affected by a critical CVE; upgrading to Nexus v5 is required to get the security fix."},
+        # T5: Hop 3 — Nexus v5 → Python 3.10+, current is 3.8
+        {"role": "user",      "content": "The Nexus v5 migration guide says it requires Python 3.10 or later. Our current runtime is Python 3.8."},
+        {"role": "assistant", "content": "Dependency blocker found. Nexus v5 requires Python ≥3.10, but Falcon's runtime is Python 3.8. To fix the CVE, you must first upgrade Python."},
+    ]
+
+    FILLER_TURNS = [
+        "What is the difference between a load balancer and an API gateway?",
+        "What does container orchestration mean?",
+        "What is a service mesh?",
+        "What is blue-green deployment?",
+        "What is a canary release?",
+        "What is eventual consistency?",
+    ]
+
+    CALLBACK = (
+        "Given everything we've established about Project Falcon, "
+        "what upgrades do we need and what's blocking us from doing them?",
+    )
+
+    # Scoring: each hop has a unique fragment; all 3 must be present for chain_complete
+    HOP_FRAGMENTS = [
+        ("Nexus", ["nexus", "configuration manager"]),                # hop 1
+        ("CVE/upgrade", ["cve", "security", "v5", "version 5"]),      # hop 2
+        ("Python", ["python 3.10", "python3.10", "3.10", "python requirement"]),  # hop 3
+    ]
+
+    results = []
+
+    for condition in ["baseline", "naive_window", "cams"]:
+        tokens_total = 0
+        hop_logs = []
+
+        if condition == "cams":
+            mgr = CAMSContextManager(
+                api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+                theta_high=0.65, theta_low=0.35,
+                system_prompt=SYSTEM, max_tokens=400,
+            )
+            # Replay seed through CAMS
+            for i in range(0, len(CONVERSATION_SEED), 2):
+                r = mgr.chat(CONVERSATION_SEED[i]["content"])
+                tokens_total += r.tokens_in + r.tokens_out
+                time.sleep(0.3)
+
+            # Filler
+            for fmsg in FILLER_TURNS:
+                r = mgr.chat(fmsg)
+                tokens_total += r.tokens_in + r.tokens_out
+                time.sleep(0.3)
+
+            # Callback
+            r = mgr.chat(CALLBACK[0])
+            tokens_total += r.tokens_in + r.tokens_out
+            answer = r.response
+
+        else:
+            history = list(CONVERSATION_SEED)
+            for fmsg in FILLER_TURNS:
+                if condition == "naive_window":
+                    history = history[-12:]
+                msgs = history + [{"role": "user", "content": fmsg}]
+                ans, t_in, t_out = _ask(msgs, system=SYSTEM, max_tokens=400)
+                tokens_total += t_in + t_out
+                history.append({"role": "user",      "content": fmsg})
+                history.append({"role": "assistant", "content": ans})
+                time.sleep(0.3)
+
+            if condition == "naive_window":
+                history = history[-12:]
+            msgs = history + [{"role": "user", "content": CALLBACK[0]}]
+            answer, t_in, t_out = _ask(msgs, system=SYSTEM, max_tokens=400)
+            tokens_total += t_in + t_out
+
+        lower = answer.lower()
+        for hop_id, (hop_name, frags) in enumerate(HOP_FRAGMENTS, start=1):
+            recalled = any(f in lower for f in frags)
+            hop_logs.append(E7HopLog(hop_id, recalled))
+            print(f"  [{condition}] hop{hop_id} ({hop_name}): {'✓' if recalled else '✗'}")
+
+        hops = sum(l.recalled for l in hop_logs)
+        chain_ok = hops == len(HOP_FRAGMENTS)
+        results.append(E7Result(
+            condition=condition,
+            hop_logs=hop_logs,
+            chain_complete=chain_ok,
+            hops_recalled=hops,
+            tokens_used=tokens_total,
+        ))
+        print(f"  [{condition}] hops_recalled={hops}/{len(HOP_FRAGMENTS)}  "
+              f"chain_complete={chain_ok}  tokens={tokens_total:,}")
+        time.sleep(0.5)
+
+    return results
+
+
+# ---------------------------------------------------------------------------
 # Print summary
 # ---------------------------------------------------------------------------
 
@@ -805,6 +1204,48 @@ def _print_e5(results: list[E5Result]):
     for r in results:
         print(f"  {r.condition:<25}  {r.mean_rouge:.3f}    {r.total_cost_usd:.4f}    {r.mean_thinking_budget:.0f} tok")
 
+def _print_e7(results: list[E7Result]):
+    print("\n" + "="*70)
+    print("E7 — MULTI-HOP REASONING CHAIN")
+    print("="*70)
+    print(f"  {'Condition':<20}  Hops/3  ChainOK  Tokens")
+    print("  " + "-"*52)
+    for r in results:
+        print(f"  {r.condition:<20}  {r.hops_recalled}/3     {'✓' if r.chain_complete else '✗'}       {r.tokens_used:,}")
+    cams_r = next((r for r in results if r.condition == "cams"), None)
+    naive_r = next((r for r in results if r.condition == "naive_window"), None)
+    base_r  = next((r for r in results if r.condition == "baseline"), None)
+    if cams_r and naive_r:
+        delta = cams_r.hops_recalled - naive_r.hops_recalled
+        print(f"\n  CAMS vs naive: +{delta} hops preserved through compression")
+    if cams_r and base_r:
+        if cams_r.hops_recalled == base_r.hops_recalled:
+            print(f"  ✓ CAMS preserved full chain despite compression (matches baseline)")
+        else:
+            lost = base_r.hops_recalled - cams_r.hops_recalled
+            print(f"  △ CAMS lost {lost} hop(s) in Haiku summary — compression degrades multi-hop chains")
+
+def _print_e6(results: list[E6Result]):
+    print("\n" + "="*70)
+    print("E6 — NEGATIVE NEEDLE (Hallucination Safety)")
+    print("="*70)
+    print(f"  {'Condition':<20}  Correction%  Hallucination%  Tokens")
+    print("  " + "-"*60)
+    for r in results:
+        print(f"  {r.condition:<20}  {r.correction_recall:.0%}         {r.hallucination_rate:.0%}            {r.tokens_used:,}")
+    cams_r = next((r for r in results if r.condition == "cams"), None)
+    base_r = next((r for r in results if r.condition == "baseline"), None)
+    naive_r = next((r for r in results if r.condition == "naive_window"), None)
+    if cams_r and naive_r:
+        print(f"\n  CAMS vs Naive — correction recall delta : {cams_r.correction_recall - naive_r.correction_recall:+.2f}")
+        print(f"  CAMS vs Naive — hallucination rate delta: {cams_r.hallucination_rate - naive_r.hallucination_rate:+.2f}")
+    if cams_r and base_r:
+        cr_gap = base_r.correction_recall - cams_r.correction_recall
+        if cr_gap <= 0.05:
+            print(f"  ✓ CAMS correction recall within 5% of baseline (faithfulness probe working)")
+        else:
+            print(f"  △ CAMS correction recall {cr_gap:.0%} below baseline — probe may need tuning")
+
 
 # ---------------------------------------------------------------------------
 # Serialisation helpers
@@ -812,7 +1253,8 @@ def _print_e5(results: list[E5Result]):
 
 def _serialise(obj):
     if isinstance(obj, (E1Result, E2Result, E3Result, E4Result, E5Result,
-                        E3TurnLog, E4TurnLog, E5TurnLog)):
+                        E6Result, E7Result, E3TurnLog, E4TurnLog, E5TurnLog,
+                        E6NeedleLog, E7HopLog)):
         return asdict(obj)
     raise TypeError(f"Not serializable: {type(obj)}")
 
@@ -823,7 +1265,7 @@ def _serialise(obj):
 
 def main():
     parser = argparse.ArgumentParser(description="CAMS ablation experiments")
-    parser.add_argument("--exp", choices=["E1", "E2", "E3", "E4", "E5", "all"],
+    parser.add_argument("--exp", choices=["E1", "E2", "E3", "E4", "E5", "E6", "E7", "all"],
                         default="all", help="Which experiment to run")
     parser.add_argument("--out", default="evals/experiment_results.json",
                         help="Output JSON path")
@@ -833,7 +1275,21 @@ def main():
         print("Error: ANTHROPIC_API_KEY not set.")
         sys.exit(1)
 
-    all_results = {}
+    out_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        args.out,
+    )
+
+    # Load existing results so individual experiment runs accumulate rather
+    # than overwrite.  Running --exp E1 then --exp E2 will keep both.
+    if os.path.exists(out_path):
+        with open(out_path, "r") as f:
+            try:
+                all_results = json.load(f)
+            except (json.JSONDecodeError, ValueError):
+                all_results = {}
+    else:
+        all_results = {}
 
     if args.exp in ("E1", "all"):
         r = run_e1(); _print_e1(r); all_results["E1"] = [asdict(x) for x in r]
@@ -856,11 +1312,17 @@ def main():
         all_results["E5"] = [
             {**asdict(x), "turns": [asdict(t) for t in x.turns]} for x in r
         ]
+    if args.exp in ("E6", "all"):
+        r = run_e6(); _print_e6(r)
+        all_results["E6"] = [
+            {**asdict(x), "needle_logs": [asdict(l) for l in x.needle_logs]} for x in r
+        ]
+    if args.exp in ("E7", "all"):
+        r = run_e7(); _print_e7(r)
+        all_results["E7"] = [
+            {**asdict(x), "hop_logs": [asdict(l) for l in x.hop_logs]} for x in r
+        ]
 
-    out_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        args.out,
-    )
     with open(out_path, "w") as f:
         json.dump(all_results, f, indent=2, default=str)
     print(f"\nResults saved to {out_path}")

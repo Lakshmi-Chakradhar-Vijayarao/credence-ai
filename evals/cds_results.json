@@ -1,0 +1,36 @@
+{
+  "cams": [
+    {
+      "session": "lambda_memory",
+      "referenced": true,
+      "answer": "Based on what you've shared \u2014 an uncertain deployment target of either **AWS Lambda (128 MB)** or a **512 MB container** \u2014 memory profiling is especially important since the 128 MB ceiling is tight and you'll want to know your actual footprint before committing.\n\n**My recommendation: `memray`** (by Bloomberg)\n\n**Why:**\n- **Low overhead**: Suitable for profiling realistic workloads, not just toy scripts.\n- **Tracks native allocations too**: Important if you use libraries with C extensions (NumPy, Pandas, Pydantic v2, psycopg, etc.) \u2014 these are common memory culprits that pure-Python profilers miss.\n- **Flame graphs & multiple report formats**: Easy to spot allocation hotspots.\n- **Works well for short-lived processes**: Relevant if you go the Lambda route, where each invocation is essentially a fresh process.\n\n**"
+    },
+    {
+      "session": "budget_constraint",
+      "referenced": true,
+      "answer": "Based on what you've shared, here's my honest take \u2014 though I should flag that I actually don't know much about your project yet. You've only mentioned the budget uncertainty ($50 vs $200/month) and asked general API questions. I don't know your use case, expected volume, latency needs, or quality requirements.\n\nThat said, given the budget constraint, here's a rough starting framework:\n\n**If the budget is $50/month:**\n- **OpenAI GPT-4o mini** (~$0.15/M input, $0.60/M output) \u2014 very capable, cheap\n- **Anthropic Claude Haiku** \u2014 similar tier, strong for many tasks\n- **Google Gemini Flash** \u2014 also in this cost range\n- At $50, you can process roughly 50\u2013200M tokens/month depending on mix\n\n**If the budget is $200/month:**\n- Same models above, but with headroom to occasionally call a stronger model (GPT-4o, Claude Sonnet"
+    },
+    {
+      "session": "team_size",
+      "referenced": true,
+      "answer": "For a team of 2\u20133 engineers (including the contractor uncertainty), I'd recommend keeping things **lightweight and informal**. Here's my thinking:\n\n**Recommended approach: a stripped-down Kanban**\n- **A simple board** (Trello, GitHub Projects, Linear) with columns like *Backlog \u2192 In Progress \u2192 In Review \u2192 Done*.\n- **Work-in-progress limits**: With only 2\u20133 people, don't have more than ~1\u20132 items in progress per person.\n- **No sprints**: Scrum's ceremonies (sprint planning, retros, standups, demos) are overhead designed for larger teams. At your size, they're mostly noise.\n- **Short daily or every-other-day sync**: 10\u201315 minutes, informal. What are you working on, anything blocked?\n- **Lightweight weekly check-in**: Review priorities, adjust the backlog.\n\n**Why not Scrum"
+    }
+  ],
+  "naive": [
+    {
+      "session": "lambda_memory",
+      "referenced": true,
+      "answer": "I don't actually have any context about your project \u2014 our conversation so far has only covered general CS concepts (quicksort, HTTP idempotency, stacks/queues, tail recursion, CAP theorem, connection pooling). You haven't shared details about what you're building, its scale, or what memory issues you're facing.\n\nIf you can share some context \u2014 such as:\n\n- **What the app does** (web service, data pipeline, ML training, CLI tool, etc.)\n- **What problem you're seeing** (gradual leak, high baseline usage, spikes under load)\n- **Environment** (production vs. dev, can you restart freely, is it containerized)\n- **Granularity needed** (line-by-line allocations vs. overall heap snapshots)\n\n...I can give a much more targeted recommendation.\n\nThat said, here's a quick lay of the land:\n\n- **`tracemalloc`** (stdlib): Great first stop. Tracks allocations by line, good for finding"
+    },
+    {
+      "session": "budget_constraint",
+      "referenced": true,
+      "answer": "I don't actually have any information about your project \u2014 this is the first time you've mentioned it. Our conversation so far has been a series of general questions about API and web concepts (exponential backoff, REST vs. GraphQL, webhooks, HTTP status codes, rate limiting, API gateways), with no details about what you're building.\n\nTo give you a useful recommendation, it would help to know things like:\n\n- **What's the use case?** (chatbot, summarization, code generation, classification, RAG, agents, etc.)\n- **Expected volume** \u2014 requests per day, average input/output token counts\n- **Latency requirements** \u2014 real-time user-facing, or batch/background?\n- **Quality needs** \u2014 is this a simple task or does it need strong reasoning?\n- **Budget constraints**\n- **Any preferences** \u2014 specific providers (Anthropic, OpenAI, Google, open-source), self-hosted vs. managed?\n\nIf you share those details, I can give you a much more"
+    },
+    {
+      "session": "team_size",
+      "referenced": true,
+      "answer": "I don't actually have any context about your situation \u2014 this appears to be the start of our conversation from my perspective, and you haven't shared details about your team, project, or constraints. (I did mention offhandedly that code review looks different on a \"small team like yours (2\u20133 engineers),\" but I was speculating \u2014 you hadn't actually told me that.)\n\nTo give you a useful recommendation, it would help to know:\n\n- **Team size and composition** \u2014 how many engineers, their experience levels, co-located or remote?\n- **Product stage** \u2014 early-stage prototype, growing product, mature system?\n- **Release cadence** \u2014 shipping continuously, weekly, monthly, or tied to external deadlines?\n- **Type of work** \u2014 feature development, client projects with fixed scope, research, maintenance?\n- **Stakeholders** \u2014 just engineers, or also PMs, designers, external clients?\n- **Current pain points** \u2014 what's not working with how you operate today?\n\nOnce I understand the context,"
+    }
+  ]
+}
