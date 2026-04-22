@@ -465,8 +465,8 @@ with tab1:
 with tab2:
     st.markdown("### CAMS vs Baselines — Quality & Cost")
     st.caption(
-        "30 questions across 3 domains (factual / reasoning / uncertain). "
-        "CAMS adapts compression to confidence; the others don't."
+        "30 questions across 3 domains (factual / reasoning / uncertain), 4 conditions. "
+        "System prompt held constant — delta vs 'Baseline (no compression)' is pure J-proxy effect."
     )
 
     # Try to load pre-computed results
@@ -490,7 +490,8 @@ with tab2:
 
         c1, c2, c3, c4 = st.columns(4)
         cams_idx = next((i for i, n in enumerate(names) if n == "CAMS"), 0)
-        base_idx = next((i for i, n in enumerate(names) if "Baseline" in n), 0)
+        # Use "Baseline (no compression)" — same system prompt as CAMS, honest comparison
+        base_idx = next((i for i, n in enumerate(names) if n == "Baseline (no compression)"), 0)
         tok_save_pct = (tokens[base_idx] - tokens[cams_idx]) / max(tokens[base_idx], 1) * 100
         cost_save_pct = (costs[base_idx] - costs[cams_idx]) / max(costs[base_idx], 1e-9) * 100
         quality_delta = rouges[cams_idx] - rouges[base_idx]
@@ -498,23 +499,28 @@ with tab2:
         auarcs = [r.get("auarc", 0.0) for r in bench_data]
         rds    = [r.get("reasoning_density_per_kdollar", 0.0) for r in bench_data]
 
-        c1.metric("CAMS token reduction",    f"{tok_save_pct:.0f}%",   delta="vs baseline")
-        c2.metric("CAMS cost reduction",     f"{cost_save_pct:.0f}%",  delta="vs baseline")
-        c3.metric("Quality delta (ROUGE-L)", f"{quality_delta:+.3f}",  delta="vs baseline")
+        c1.metric("CAMS token reduction",    f"{tok_save_pct:.0f}%",   delta="vs same-prompt baseline")
+        c2.metric("CAMS cost reduction",     f"{cost_save_pct:.0f}%",  delta="vs same-prompt baseline")
+        c3.metric("Quality delta (ROUGE-L)", f"{quality_delta:+.3f}",  delta="vs same-prompt baseline")
         c4.metric("CAMS compression ratio",  f"{ratios[cams_idx]*100:.0f}%")
 
         st.divider()
 
         # Charts
         fig, axes = plt.subplots(1, 3, figsize=(13, 4), facecolor="#0f172a")
-        COLORS = ["#6366f1", "#f59e0b", "#22c55e"]
+        COLORS = ["#6366f1", "#a855f7", "#f59e0b", "#22c55e"]  # 4 colours for 4 conditions
         for ax in axes:
             ax.set_facecolor("#1e293b")
             ax.tick_params(colors="#94a3b8", labelsize=8)
             for spine in ax.spines.values():
                 spine.set_edgecolor("#334155")
 
-        short = [n.replace("(no compression)", "").replace("sliding window", "sliding\nwindow").strip() for n in names]
+        short = [
+            n.replace("Baseline (no compression)", "Baseline\n(no comp)")
+             .replace("Baseline (no prompt)", "Baseline\n(no prompt)")
+             .replace("Naive sliding window", "Naive\nwindow")
+            for n in names
+        ]
 
         # Tokens
         bars = axes[0].bar(short, tokens, color=COLORS[:len(names)], width=0.5, edgecolor="#0f172a")
@@ -549,18 +555,19 @@ with tab2:
             "Run: `python -m evals.benchmark` to generate them."
         )
         st.info(
-            "The benchmark runs 10 questions through all 3 conditions "
+            "The benchmark runs 30 questions through 4 conditions "
             "using real Claude API calls, then saves results to `evals/results.json`."
         )
 
         # Show what the benchmark measures
         st.markdown("""
-        **What the benchmark tests:**
-        | Condition | Strategy | Expected |
+        **What the benchmark tests (4 conditions, system prompt held constant):**
+        | Condition | Strategy | Purpose |
         |-----------|----------|---------|
-        | Baseline | Full context every turn | High cost, high quality |
-        | Naive sliding window | Drop turns older than N | Lower cost, some quality loss |
-        | **CAMS** | Compress only when J ≥ 0.65 | **Lower cost, quality preserved** |
+        | Baseline (no prompt) | Raw API, no system prompt | Isolates system prompt contribution |
+        | Baseline (no compression) | System prompt, full context | Honest CAMS comparison baseline |
+        | Naive sliding window | System prompt, drop oldest turns | Naive compression baseline |
+        | **CAMS** | System prompt, J-proxy adaptive | **Pure J-proxy effect vs same-prompt baseline** |
         """)
 
 # ===========================================================================
@@ -585,7 +592,8 @@ with tab3:
         ratios = [r["compression_ratio"] for r in bench_data]
 
         cams_idx = next((i for i, n in enumerate(names) if n == "CAMS"), 0)
-        base_idx = next((i for i, n in enumerate(names) if "Baseline" in n), 0)
+        # Honest comparison: same system prompt, no compression — isolates J-proxy contribution
+        base_idx = next((i for i, n in enumerate(names) if n == "Baseline (no compression)"), 0)
 
         tok_save_pct  = (tokens[base_idx] - tokens[cams_idx]) / max(tokens[base_idx], 1) * 100
         cost_save_pct = (costs[base_idx]  - costs[cams_idx])  / max(costs[base_idx], 1e-9) * 100
@@ -595,22 +603,22 @@ with tab3:
         rds    = [r.get("reasoning_density_per_kdollar", 0.0) for r in bench_data]
 
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Token reduction",    f"{tok_save_pct:.1f}%",       delta="vs Baseline")
-        m2.metric("Cost reduction",     f"{cost_save_pct:.1f}%",      delta="vs Baseline")
-        m3.metric("Quality Δ ROUGE-L",  f"{quality_delta:+.4f}",      delta="vs Baseline")
+        m1.metric("Token reduction",    f"{tok_save_pct:.1f}%",       delta="vs same-prompt baseline")
+        m2.metric("Cost reduction",     f"{cost_save_pct:.1f}%",      delta="vs same-prompt baseline")
+        m3.metric("Quality Δ ROUGE-L",  f"{quality_delta:+.4f}",      delta="vs same-prompt baseline")
         m4.metric("Compression ratio",  f"{ratios[cams_idx]*100:.0f}%")
 
         m5, m6 = st.columns(2)
         m5.metric(
             "AUARC (proxy calibration)",
             f"{auarcs[cams_idx]:.4f}",
-            delta=f"{auarcs[cams_idx] - auarcs[base_idx]:+.4f} vs Baseline",
+            delta=f"{auarcs[cams_idx] - auarcs[base_idx]:+.4f} vs same-prompt baseline",
             help="Area Under Abstention-Risk Curve: higher = J-proxy correctly identifies uncertain answers",
         )
         m6.metric(
             "Reasoning Density (ROUGE/$K)",
             f"{rds[cams_idx]:.4f}",
-            delta=f"{rds[cams_idx] - rds[base_idx]:+.4f} vs Baseline",
+            delta=f"{rds[cams_idx] - rds[base_idx]:+.4f} vs same-prompt baseline",
             help="ROUGE-L per $0.001 spent — quality-per-dollar metric",
         )
 
@@ -625,10 +633,14 @@ with tab3:
 
         with col_a:
             st.markdown("**Cost & Token Savings**")
-            short = [n.replace("(no compression)","").replace("sliding window","sliding\nwindow").strip()
-                     for n in names]
+            short = [
+                n.replace("Baseline (no compression)", "Baseline\n(no comp)")
+                 .replace("Baseline (no prompt)", "Baseline\n(no prompt)")
+                 .replace("Naive sliding window", "Naive\nwindow")
+                for n in names
+            ]
             fig1, axes = plt.subplots(1, 2, figsize=(7, 3.5), facecolor="#0f172a")
-            COLORS = ["#6366f1", "#f59e0b", "#22c55e"]
+            COLORS = ["#6366f1", "#a855f7", "#f59e0b", "#22c55e"]  # 4 colours for 4 conditions
             for ax in axes:
                 ax.set_facecolor("#1e293b")
                 ax.tick_params(colors="#94a3b8", labelsize=8)

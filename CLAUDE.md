@@ -95,7 +95,7 @@ if thinking_utilization > 0.50 and cr.zone == "HIGH":
 Long-running task agent built on top of `CAMSContextManager`.
 
 **Classes**:
-- `SubTaskResult` (dataclass, line 40): `question, answer, tokens_used, tokens_saved, cost_usd, j_score`
+- `SubTaskResult` (dataclass, line 40): `question, answer, j_score, zone, decision, tokens_in, tokens_out, tokens_saved, elapsed_ms`
 - `AgentResult` (dataclass, line 53): `sub_results, final_report, total_tokens, total_saved, total_cost`
   - `.summary` → formatted string
 - `CAMSAgent` (line 80):
