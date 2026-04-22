@@ -6,7 +6,7 @@ Streamlit demo: three tabs
 
   Tab 1  Live Chat      — real-time J-score + savings on every turn
   Tab 2  Benchmark      — side-by-side CAMS vs Baseline quality + cost
-  Tab 3  Research       — the science: F(b|J) curve, Phase O evidence
+  Tab 3  Evidence       — J-proxy calibration, per-turn decision log, zone validation
 
 Run:
     streamlit run demo/app.py
@@ -226,7 +226,12 @@ with tab1:
         st.markdown("**Decision Log**")
         log_placeholder = st.empty()
 
-        def _refresh_panel(j: float, zone: str, reasoning: str):
+        thinking_ph = st.empty()   # thinking utilization indicator
+
+        def _refresh_panel(j: float, zone: str, reasoning: str,
+                           thinking_util: float = 0.0,
+                           thinking_budget: int = 0,
+                           drift_state: bool = False):
             color = _j_color(zone)
             j_placeholder.markdown(
                 f"<div style='text-align:center'>"
@@ -235,12 +240,33 @@ with tab1:
                 f"</div>",
                 unsafe_allow_html=True,
             )
+            drift_badge = (
+                " &nbsp;<span style='background:#7f1d1d;color:#fca5a5;"
+                "font-size:0.7rem;padding:2px 6px;border-radius:4px;"
+                "font-weight:700'>⚠ DRIFT</span>"
+                if drift_state else ""
+            )
             zone_placeholder.markdown(
                 f"<div style='text-align:center;font-size:1.3rem;font-weight:700;"
-                f"color:{color}'>{zone} CONFIDENCE</div>",
+                f"color:{color}'>{zone} CONFIDENCE{drift_badge}</div>",
                 unsafe_allow_html=True,
             )
             reason_placeholder.caption(reasoning)
+            # Thinking budget + utilization — shown when thinking budget was allocated
+            if thinking_budget > 0:
+                bar_color = "#ef4444" if thinking_util > 0.50 else "#f59e0b"
+                override_note = " → zone override to MEDIUM" if thinking_util > 0.50 else ""
+                thinking_ph.markdown(
+                    f"<div style='font-size:0.78rem;color:#94a3b8;margin-top:4px'>"
+                    f"🧠 Thinking budget: <span style='color:#94a3b8'>{thinking_budget} tok</span>"
+                    f" &nbsp;|&nbsp; utilization: "
+                    f"<span style='color:{bar_color};font-weight:700'>{thinking_util:.0%}</span>"
+                    f"{override_note}"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+            else:
+                thinking_ph.empty()
 
         def _refresh_stats():
             su = st.session_state.session_tokens_used
@@ -258,10 +284,15 @@ with tab1:
             rows = []
             for e in reversed(log[-8:]):
                 c = _j_color(e["zone"])
+                drift_tag = (
+                    " <span style='color:#fca5a5;font-size:0.68rem'>⚠drift</span>"
+                    if e.get("drift_state") else ""
+                )
                 rows.append(
                     f"<div style='font-size:0.78rem;padding:2px 0'>"
                     f"<b>T{e['turn']}</b> "
-                    f"<span style='color:{c}'>J={e['j_score']:.2f}</span> "
+                    f"<span style='color:{c}'>J={e['j_score']:.2f}</span>"
+                    f"{drift_tag} "
                     f"→ <b>{_decision_label(e['decision'])}</b> "
                     f"<span style='color:#94a3b8'>(-{e['tokens_saved']} tok)</span>"
                     f"</div>"
@@ -269,7 +300,7 @@ with tab1:
             log_placeholder.markdown("\n".join(rows), unsafe_allow_html=True)
 
         # Initial render
-        _refresh_panel(0.0, "—", "Send a message to see the signal.")
+        _refresh_panel(0.0, "—", "Send a message to see the signal.", 0.0, 0, False)
         _refresh_stats()
         _refresh_log()
 
@@ -307,22 +338,28 @@ with tab1:
                     mgr    = st.session_state.cams_mgr
                     result = mgr.chat(user_input)
 
-                    assistant_text = result.response
-                    j_score   = result.j_score
-                    zone      = result.zone
-                    decision  = result.decision
-                    t_saved   = result.tokens_saved
-                    reasoning = result.reasoning
-                    tokens_in = result.tokens_in
-                    tokens_out= result.tokens_out
-                    cost_usd  = result.cost_usd
-                    sav_usd   = result.savings_usd
+                    assistant_text    = result.response
+                    j_score          = result.j_score
+                    zone             = result.zone
+                    decision         = result.decision
+                    t_saved          = result.tokens_saved
+                    reasoning        = result.reasoning
+                    tokens_in        = result.tokens_in
+                    tokens_out       = result.tokens_out
+                    cost_usd         = result.cost_usd
+                    sav_usd          = result.savings_usd
+                    thinking_util    = result.thinking_utilization
+                    thinking_budget  = result.thinking_budget_used
+                    drift_state      = result.drift_state
 
                 except Exception as e:
                     assistant_text = f"[API error: {e}]"
                     j_score = zone = decision = reasoning = "—"
                     t_saved = tokens_in = tokens_out = 0
                     cost_usd = sav_usd = 0.0
+                    thinking_util = 0.0
+                    thinking_budget = 0
+                    drift_state = False
 
             else:
                 # ---- Demo mode ----
@@ -330,16 +367,19 @@ with tab1:
                 demo = DEMO_TURNS[idx]
                 st.session_state.demo_idx += 1
 
-                assistant_text = demo["assistant"]
-                j_score   = demo["j_score"]
-                zone      = demo["zone"]
-                decision  = demo["decision"]
-                t_saved   = demo["tokens_saved"]
-                reasoning = demo["reasoning"]
-                tokens_in = demo["tokens_in"]
-                tokens_out= demo["tokens_out"]
-                cost_usd  = (tokens_in * 15 + tokens_out * 75) / 1_000_000
-                sav_usd   = t_saved * 15 / 1_000_000
+                assistant_text   = demo["assistant"]
+                j_score         = demo["j_score"]
+                zone            = demo["zone"]
+                decision        = demo["decision"]
+                t_saved         = demo["tokens_saved"]
+                reasoning       = demo["reasoning"]
+                tokens_in       = demo["tokens_in"]
+                tokens_out      = demo["tokens_out"]
+                cost_usd        = (tokens_in * 15 + tokens_out * 75) / 1_000_000
+                sav_usd         = t_saved * 15 / 1_000_000
+                thinking_util   = 0.0
+                thinking_budget = 0
+                drift_state     = False
 
             st.session_state.messages.append({"role": "assistant", "content": assistant_text})
 
@@ -353,9 +393,11 @@ with tab1:
             st.session_state.turn_log.append({
                 "turn": turn_idx, "j_score": j_score, "zone": zone,
                 "decision": decision, "tokens_saved": t_saved,
+                "drift_state": drift_state,
             })
 
-            _refresh_panel(j_score, zone, reasoning)
+            _refresh_panel(j_score, zone, reasoning, thinking_util,
+                           thinking_budget, drift_state)
             _refresh_stats()
             _refresh_log()
             st.rerun()
@@ -377,7 +419,7 @@ with tab1:
 with tab2:
     st.markdown("### CAMS vs Baselines — Quality & Cost")
     st.caption(
-        "Same 10 questions, three conditions. "
+        "30 questions across 3 domains (factual / reasoning / uncertain). "
         "CAMS adapts compression to confidence; the others don't."
     )
 
@@ -407,10 +449,13 @@ with tab2:
         cost_save_pct = (costs[base_idx] - costs[cams_idx]) / max(costs[base_idx], 1e-9) * 100
         quality_delta = rouges[cams_idx] - rouges[base_idx]
 
-        c1.metric("CAMS token reduction",  f"{tok_save_pct:.0f}%",  delta="vs baseline")
-        c2.metric("CAMS cost reduction",   f"{cost_save_pct:.0f}%", delta="vs baseline")
-        c3.metric("Quality delta (ROUGE-L)", f"{quality_delta:+.3f}", delta="vs baseline")
-        c4.metric("CAMS compression ratio", f"{ratios[cams_idx]*100:.0f}%")
+        auarcs = [r.get("auarc", 0.0) for r in bench_data]
+        rds    = [r.get("reasoning_density_per_kdollar", 0.0) for r in bench_data]
+
+        c1.metric("CAMS token reduction",    f"{tok_save_pct:.0f}%",   delta="vs baseline")
+        c2.metric("CAMS cost reduction",     f"{cost_save_pct:.0f}%",  delta="vs baseline")
+        c3.metric("Quality delta (ROUGE-L)", f"{quality_delta:+.3f}",  delta="vs baseline")
+        c4.metric("CAMS compression ratio",  f"{ratios[cams_idx]*100:.0f}%")
 
         st.divider()
 
@@ -473,164 +518,241 @@ with tab2:
         """)
 
 # ===========================================================================
-# TAB 3 — RESEARCH
+# TAB 3 — EVIDENCE
 # ===========================================================================
 
 with tab3:
-    st.markdown("### The Science Behind CAMS")
+    st.markdown("### CAMS Evidence — All Results From This Project")
     st.caption(
-        "CAMS is grounded in 12 experimental phases on real GPU hardware. "
-        "Here is the evidence."
+        "Every number on this page is generated by running "
+        "`python -m evals.benchmark`. No external data."
     )
 
-    col_a, col_b = st.columns(2, gap="large")
+    # ── Section 1: Benchmark results (from evals/results.json) ──────────────
+    st.markdown("#### Benchmark Results")
 
-    with col_a:
-        st.markdown("#### F(b|J) Saturation Curve")
-        st.caption(
-            "Memory budget vs answer quality, split by J-score zone. "
-            "High-J queries saturate earlier (need less context). "
-            "τ_l < τ_h confirms J-routing is theoretically justified."
+    if bench_data:
+        names  = [r["condition"]         for r in bench_data]
+        tokens = [r["total_tokens_used"] for r in bench_data]
+        costs  = [r["total_cost_usd"]    for r in bench_data]
+        rouges = [r["mean_rouge_l"]      for r in bench_data]
+        ratios = [r["compression_ratio"] for r in bench_data]
+
+        cams_idx = next((i for i, n in enumerate(names) if n == "CAMS"), 0)
+        base_idx = next((i for i, n in enumerate(names) if "Baseline" in n), 0)
+
+        tok_save_pct  = (tokens[base_idx] - tokens[cams_idx]) / max(tokens[base_idx], 1) * 100
+        cost_save_pct = (costs[base_idx]  - costs[cams_idx])  / max(costs[base_idx], 1e-9) * 100
+        quality_delta = rouges[cams_idx]  - rouges[base_idx]
+
+        auarcs = [r.get("auarc", 0.0) for r in bench_data]
+        rds    = [r.get("reasoning_density_per_kdollar", 0.0) for r in bench_data]
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Token reduction",    f"{tok_save_pct:.1f}%",       delta="vs Baseline")
+        m2.metric("Cost reduction",     f"{cost_save_pct:.1f}%",      delta="vs Baseline")
+        m3.metric("Quality Δ ROUGE-L",  f"{quality_delta:+.4f}",      delta="vs Baseline")
+        m4.metric("Compression ratio",  f"{ratios[cams_idx]*100:.0f}%")
+
+        m5, m6 = st.columns(2)
+        m5.metric(
+            "AUARC (proxy calibration)",
+            f"{auarcs[cams_idx]:.4f}",
+            delta=f"{auarcs[cams_idx] - auarcs[base_idx]:+.4f} vs Baseline",
+            help="Area Under Abstention-Risk Curve: higher = J-proxy correctly identifies uncertain answers",
+        )
+        m6.metric(
+            "Reasoning Density (ROUGE/$K)",
+            f"{rds[cams_idx]:.4f}",
+            delta=f"{rds[cams_idx] - rds[base_idx]:+.4f} vs Baseline",
+            help="ROUGE-L per $0.001 spent — quality-per-dollar metric",
         )
 
-        # Generate F(b|J) curves from Phase R-3B parameters
-        budgets = np.array([64, 96, 128, 192, 256, 320, 384, 512])
-        tau_low  = 109.58   # Phase R-3B: low-J saturation constant
-        tau_high = 154.23   # Phase R-3B: high-J saturation constant
+        # ── Zone quality: do HIGH-J answers score better? ────────────────────
+        cams_result = bench_data[cams_idx]
+        high_rl = [t["rouge_l"] for t in cams_result["turns"] if t["zone"] == "HIGH"]
+        med_rl  = [t["rouge_l"] for t in cams_result["turns"] if t["zone"] == "MEDIUM"]
+        low_rl  = [t["rouge_l"] for t in cams_result["turns"] if t["zone"] == "LOW"]
 
-        def fbj(b, tau, a=0.43, c=0.38):
-            return a - c * np.exp(-b / tau)
+        st.divider()
+        col_a, col_b = st.columns(2, gap="large")
 
-        f_low  = fbj(budgets, tau_low)
-        f_high = fbj(budgets, tau_high)
+        with col_a:
+            st.markdown("**Cost & Token Savings**")
+            short = [n.replace("(no compression)","").replace("sliding window","sliding\nwindow").strip()
+                     for n in names]
+            fig1, axes = plt.subplots(1, 2, figsize=(7, 3.5), facecolor="#0f172a")
+            COLORS = ["#6366f1", "#f59e0b", "#22c55e"]
+            for ax in axes:
+                ax.set_facecolor("#1e293b")
+                ax.tick_params(colors="#94a3b8", labelsize=8)
+                for spine in ax.spines.values():
+                    spine.set_edgecolor("#334155")
 
-        fig1, ax1 = plt.subplots(figsize=(6, 4), facecolor="#0f172a")
-        ax1.set_facecolor("#1e293b")
-        ax1.tick_params(colors="#94a3b8")
-        for spine in ax1.spines.values():
-            spine.set_edgecolor("#334155")
+            axes[0].bar(short, tokens, color=COLORS[:len(names)], width=0.5, edgecolor="#0f172a")
+            axes[0].set_title("Tokens Used", color="white", fontsize=9, pad=6)
+            axes[0].yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x/1000:.0f}k"))
+            axes[0].grid(True, axis="y", color="#334155", alpha=0.4)
 
-        ax1.plot(budgets, f_high, "o-", color="#22c55e", lw=2.2, ms=6,
-                 label=f"Low-J queries  τ={tau_low:.0f}")
-        ax1.plot(budgets, f_low,  "s-", color="#ef4444", lw=2.2, ms=6,
-                 label=f"High-J queries τ={tau_high:.0f}")
+            axes[1].bar(short, costs, color=COLORS[:len(names)], width=0.5, edgecolor="#0f172a")
+            axes[1].set_title("Cost (USD)", color="white", fontsize=9, pad=6)
+            axes[1].grid(True, axis="y", color="#334155", alpha=0.4)
 
-        ax1.axvline(256, color="#6366f1", ls="--", lw=1.2, alpha=0.7, label="Budget=256")
-        ax1.set_xlabel("KV Budget (tokens)", color="#94a3b8")
-        ax1.set_ylabel("Answer Quality (F1)", color="#94a3b8")
-        ax1.set_title("τ_low < τ_high  →  High-J needs less budget",
-                      color="white", fontsize=10)
-        ax1.legend(facecolor="#1e293b", labelcolor="white", fontsize=8,
-                   edgecolor="#334155")
-        ax1.grid(True, color="#334155", alpha=0.5)
-        st.pyplot(fig1)
-        plt.close(fig1)
+            plt.tight_layout(pad=1.5)
+            st.pyplot(fig1)
+            plt.close(fig1)
 
-        st.markdown("""
-        **Reading the chart:**
-        Low-J (uncertain) queries need a larger KV budget to reach the same quality.
-        High-J (confident) queries saturate earlier.
-        This is the theoretical justification: route by confidence, not blindly.
+        with col_b:
+            st.markdown("**J-Zone vs Answer Quality**")
+            st.caption("Does HIGH confidence actually mean better answers? ↓")
 
-        *Source: Phase R-3B, Qwen 2.5-3B on SQuAD v2. R² > 0.97 for both fits.*
-        """)
+            zones_present = []
+            means_present = []
+            colors_present = []
+            zone_map = [("HIGH", high_rl, "#22c55e"),
+                        ("MEDIUM", med_rl, "#f59e0b"),
+                        ("LOW",    low_rl, "#ef4444")]
+            for z, rl_list, col in zone_map:
+                if rl_list:
+                    zones_present.append(z)
+                    means_present.append(sum(rl_list) / len(rl_list))
+                    colors_present.append(col)
 
-    with col_b:
-        st.markdown("#### Phase O — Statistical Confirmation")
-        st.caption(
-            "n=300 SQuAD v2 samples, Qwen 2.5-7B NF4, Wilcoxon signed-rank test."
+            fig2, ax2 = plt.subplots(figsize=(5, 3.5), facecolor="#0f172a")
+            ax2.set_facecolor("#1e293b")
+            ax2.tick_params(colors="#94a3b8", labelsize=9)
+            for spine in ax2.spines.values():
+                spine.set_edgecolor("#334155")
+
+            bars = ax2.bar(zones_present, means_present,
+                           color=colors_present, width=0.5, edgecolor="#0f172a")
+            ax2.set_title("Mean ROUGE-L by J-Zone", color="white", fontsize=10)
+            ax2.set_ylabel("ROUGE-L", color="#94a3b8")
+            ax2.set_ylim(0, 1)
+            ax2.grid(True, axis="y", color="#334155", alpha=0.4)
+            for bar, val in zip(bars, means_present):
+                ax2.text(bar.get_x() + bar.get_width()/2,
+                         bar.get_height() + 0.01,
+                         f"{val:.3f}", ha="center", va="bottom",
+                         color="white", fontsize=9)
+
+            plt.tight_layout(pad=1.5)
+            st.pyplot(fig2)
+            plt.close(fig2)
+            st.caption(
+                "HIGH-zone = confident responses. "
+                "If this bar is tallest, the J-proxy is calibrated correctly."
+            )
+
+        # ── Per-turn decision breakdown ──────────────────────────────────────
+        st.divider()
+        st.markdown("**Per-Turn Decision Log (CAMS)**")
+        turns = cams_result["turns"]
+        cols  = st.columns(min(len(turns), 5))
+        for i, (col, t) in enumerate(zip(cols, turns[:5])):
+            c = _j_color(t["zone"])
+            col.markdown(
+                f"<div style='background:#1e293b;border-radius:8px;padding:0.6rem;"
+                f"border-top:3px solid {c}'>"
+                f"<div style='font-size:0.7rem;color:#94a3b8'>Turn {i+1}</div>"
+                f"<div style='font-size:1.3rem;font-weight:700;color:{c}'>"
+                f"J={t['j_score']:.2f}</div>"
+                f"<div style='font-size:0.75rem;color:white'>{t['decision']}</div>"
+                f"<div style='font-size:0.7rem;color:#94a3b8'>-{t['tokens_saved']} tok</div>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+
+    else:
+        st.info(
+            "**No benchmark results yet.** "
+            "Run `python -m evals.benchmark` to generate all evidence charts. "
+            "Results auto-load here once `evals/results.json` exists.",
+            icon="📊",
         )
-
-        conditions  = ["Baseline\n(FP16, no evict)", "SnapKV-256\n(static)", "CAMS\n512/256 + rot"]
-        f1_means    = [0.4196, 0.3946, 0.4254]
-        f1_cis      = [0.008, 0.009, 0.008]
-        bar_colors  = ["#475569", "#f59e0b", "#22c55e"]
-
-        fig2, ax2 = plt.subplots(figsize=(6, 4), facecolor="#0f172a")
-        ax2.set_facecolor("#1e293b")
-        ax2.tick_params(colors="#94a3b8", labelsize=8)
-        for spine in ax2.spines.values():
-            spine.set_edgecolor("#334155")
-
-        bars = ax2.bar(conditions, f1_means, color=bar_colors, width=0.5,
-                       yerr=f1_cis, capsize=5, error_kw={"ecolor": "white", "lw": 1.5},
-                       edgecolor="#0f172a")
-        ax2.set_ylim(0.36, 0.45)
-        ax2.set_ylabel("SQuAD F1", color="#94a3b8")
-        ax2.set_title("CAMS beats SnapKV  (+3.08pp, p=0.00046)", color="white", fontsize=10)
-        ax2.grid(True, axis="y", color="#334155", alpha=0.5)
-
-        for bar, val in zip(bars, f1_means):
-            ax2.text(bar.get_x() + bar.get_width()/2,
-                     bar.get_height() + 0.001,
-                     f"{val:.4f}", ha="center", va="bottom", color="white", fontsize=8.5)
-
-        # Significance bracket
-        x1, x2 = 1, 2
-        y_max   = max(f1_means) + 0.012
-        ax2.plot([x1, x1, x2, x2], [y_max-0.003, y_max, y_max, y_max-0.003],
-                 color="white", lw=1.2)
-        ax2.text((x1+x2)/2, y_max + 0.001, "p=0.00046 ***",
-                 ha="center", va="bottom", color="#6ee7b7", fontsize=8.5, fontweight="bold")
-
-        st.pyplot(fig2)
-        plt.close(fig2)
-
         st.markdown("""
-        **What this means:**
-        CAMS statistically significantly outperforms the state-of-the-art
-        static eviction method (SnapKV) **and beats the uncompressed baseline**
-        — compression that makes the model *more* accurate, not less.
+        **What the benchmark measures — all from this project:**
 
-        *Wilcoxon signed-rank, one-sided, n=300. Phase O, April 2026.*
+        | Metric | What it proves |
+        |--------|---------------|
+        | Token reduction (CAMS vs Baseline) | Cost savings are real |
+        | ROUGE-L delta (CAMS vs Baseline) | Quality is preserved |
+        | ROUGE-L by J-zone (HIGH vs LOW) | The confidence signal is calibrated |
+        | Per-turn decision log | The routing logic fires correctly |
+        | Net savings (after compression cost) | The accounting is honest |
         """)
 
+    # ── Section 2: J-proxy live validation (no external data needed) ────────
     st.divider()
+    st.markdown("#### J-Proxy Signal: Live Validation")
+    st.caption(
+        "Paste any text and see how CAMS reads its confidence. "
+        "This runs entirely in your browser — no API call."
+    )
 
-    # J-proxy validation
-    st.markdown("#### J-Proxy Live Validation")
-    st.caption("Test the confidence signal on any text. See which factors fire.")
+    col_ex1, col_ex2 = st.columns(2)
+    if col_ex1.button("Load high-confidence example"):
+        st.session_state["probe_text"] = (
+            "The speed of light in a vacuum is exactly 299,792,458 metres per second. "
+            "This value is a defined constant in the International System of Units."
+        )
+    if col_ex2.button("Load low-confidence example"):
+        st.session_state["probe_text"] = (
+            "I think the effects might vary considerably, and it's quite difficult to say "
+            "with certainty. Perhaps some researchers believe one thing while others might "
+            "argue differently. It's possibly the case that it depends on context."
+        )
 
     test_input = st.text_area(
-        "Paste any Claude response here:",
-        value="The speed of light is exactly 299,792,458 metres per second. "
-              "This is a defined constant in the SI system.",
-        height=100,
+        "Response text to probe:",
+        value=st.session_state.get("probe_text",
+            "The speed of light in a vacuum is exactly 299,792,458 metres per second."),
+        height=110,
+        key="probe_area",
     )
-    if st.button("Compute J-score"):
+
+    if st.button("Compute J-score", key="compute_probe"):
         result = proxy.compute(test_input)
+        color  = _j_color(result.zone)
+
         c1, c2, c3 = st.columns(3)
-        color = _j_color(result.zone)
         c1.markdown(
             f"<div style='text-align:center'>"
-            f"<div style='font-size:2.5rem;font-weight:900;color:{color}'>"
+            f"<div style='font-size:3rem;font-weight:900;color:{color}'>"
             f"{result.j_score:.3f}</div>"
             f"<div style='color:#94a3b8;font-size:0.8rem'>J-SCORE</div></div>",
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
         c2.markdown(
             f"<div style='text-align:center'>"
             f"<div style='font-size:2rem;font-weight:700;color:{color}'>"
             f"{result.zone}</div>"
-            f"<div style='color:#94a3b8;font-size:0.8rem'>ZONE</div></div>",
-            unsafe_allow_html=True
+            f"<div style='color:#94a3b8;font-size:0.8rem'>CONFIDENCE ZONE</div></div>",
+            unsafe_allow_html=True,
         )
-        decision = "COMPRESS history" if result.zone == "HIGH" else \
-                   "TRIM to window" if result.zone == "MEDIUM" else "PRESERVE history"
+        action = {"HIGH": "⚡ COMPRESS history",
+                  "MEDIUM": "✂️ TRIM to window",
+                  "LOW": "🔒 PRESERVE history"}[result.zone]
         c3.markdown(
             f"<div style='text-align:center'>"
-            f"<div style='font-size:1.2rem;font-weight:700;color:{color}'>"
-            f"{decision}</div>"
-            f"<div style='color:#94a3b8;font-size:0.8rem'>CAMS ACTION</div></div>",
-            unsafe_allow_html=True
+            f"<div style='font-size:1.1rem;font-weight:700;color:{color}'>"
+            f"{action}</div>"
+            f"<div style='color:#94a3b8;font-size:0.8rem'>CAMS DECISION</div></div>",
+            unsafe_allow_html=True,
         )
 
         st.divider()
-        st.markdown("**Factor breakdown:**")
-        fc1, fc2, fc3, fc4, fc5 = st.columns(5)
-        for col, (name, val) in zip(
-            [fc1, fc2, fc3, fc4, fc5],
-            result.factors.items()
-        ):
-            col.metric(name.capitalize(), f"{val:.2f}")
+        st.markdown("**5-Factor Breakdown**")
+        scalar_factors = {k: v for k, v in result.factors.items()
+                          if isinstance(v, (int, float))}
+        fac_cols = st.columns(len(scalar_factors))
+        for col, (name, val) in zip(fac_cols, scalar_factors.items()):
+            col.metric(name.capitalize(), f"{val:.3f}")
+
+        if result.content_type != "text":
+            st.warning(
+                f"**Type Prior active:** content classified as `{result.content_type}` — "
+                f"J capped to prevent compression of structured content.",
+                icon="⚠️",
+            )
         st.caption(result.reasoning)
