@@ -187,7 +187,7 @@ User message
 
 ## What Was Added (April 22, 2026 session)
 
-- **Continuous thinking budget governor** (`_THINKING_MIN=500`, `_THINKING_MAX=2000`): thinking budget now scales continuously by `(theta_high - prev_j) / theta_high`. `_prev_j` tracked per turn.
+- **Thinking API updated for Opus 4.7**: now uses `thinking={"type":"adaptive"}` + `output_config={"effort":"high"|"medium"}`. `_THINKING_MIN=1024` (API minimum), `_THINKING_MAX=5000`. Opus 4.7 does NOT expose thinking blocks, so `thinking_tokens` and `thinking_utilization` are always 0 — dual-signal fusion is a no-op on this model. Forward-reserved for models that expose thinking blocks.
 - **Drift detector**: `_j_history` (rolling 5-turn list) + `_drift_state` bool. 3 consecutive LOW turns → `_drift_state=True` → `_apply_cams` returns PRESERVE.
 - **TurnResult new fields**: `thinking_budget_used: int`, `drift_state: bool`
 - **Demo**: drift badge on zone label, thinking budget value shown alongside utilization, drift marker in decision log

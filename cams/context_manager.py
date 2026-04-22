@@ -69,8 +69,8 @@ _MODEL_HAIKU = "claude-haiku-4-5-20251001"
 # Budget scales continuously between these by inverse J-score.
 # J=0 → _THINKING_MAX; J>=theta_high → 0 (no thinking)
 # ---------------------------------------------------------------------------
-_THINKING_MIN = 500
-_THINKING_MAX = 2000
+_THINKING_MIN = 1024   # API minimum; budget_tokens must be >= 1024
+_THINKING_MAX = 5000
 
 # ---------------------------------------------------------------------------
 # Novelty guard — entity change threshold
@@ -210,15 +210,17 @@ class CAMSContextManager:
         )
 
         # Continuous J-governed thinking budget.
-        # Budget scales inversely with prev-turn J: the less confident the last
-        # answer, the more compute this turn gets.
-        # J=0 → _THINKING_MAX (2000); J=theta_high → _THINKING_MIN (500); J≥theta_high → 0
+        # Opus 4.7 uses adaptive thinking (effort level) rather than a token budget.
+        # effort="high" when prev_j is low (uncertain); "medium" when mid-range.
+        # Note: Opus 4.7 does not expose thinking blocks, so thinking_tokens
+        # and thinking_utilization will always be 0 — dual-signal fusion is a no-op
+        # on this model. The feature is preserved for forward-compatibility.
         thinking_budget = 0
         if self.use_thinking and self._prev_j < self.proxy.theta_high:
-            ratio = (self.proxy.theta_high - self._prev_j) / self.proxy.theta_high
-            thinking_budget = int(_THINKING_MIN + ratio * (_THINKING_MAX - _THINKING_MIN))
-            call_kwargs["thinking"] = {"type": "enabled", "budget_tokens": thinking_budget}
-            call_kwargs["max_tokens"] = max(self.max_tokens, thinking_budget + 512)
+            effort = "high" if self._prev_j < self.proxy.theta_low else "medium"
+            call_kwargs["thinking"] = {"type": "adaptive"}
+            call_kwargs["output_config"] = {"effort": effort}
+            thinking_budget = _THINKING_MAX if effort == "high" else _THINKING_MIN
 
         resp = self.client.messages.create(**call_kwargs)
 

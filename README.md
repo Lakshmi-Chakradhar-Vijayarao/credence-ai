@@ -16,9 +16,9 @@ CAMS unifies two strands of prior research into a single production system:
 
 **Fisher J-signal** — a hidden-state reliability indicator derived from Fisher Information theory, validated on Qwen 2.5-7B hidden states (AUROC ~0.99 at layer 26 for easy vs. hard query discrimination across 12 experimental phases). The core insight: the model's internal state carries a signal about whether it is in a "resolved" or "unstable" configuration — and that signal predicts output quality.
 
-**The API boundary**: Opus 4.7 does not expose hidden states. CAMS implements a *language-level proxy* — five linguistic factors that correlate with the same resolved/unstable distinction. This is a deliberate surface adaptation, not an invented heuristic. The proxy is validated via AUARC, which confirms it captures genuine uncertainty rather than stylistic variation.
+**The API boundary**: Opus 4.7 does not expose hidden states. CAMS implements a *language-level proxy* — five linguistic factors that correlate with the same resolved/unstable distinction. This is a deliberate surface adaptation, not an invented heuristic. The proxy is validated via AUARC (0.270, 40.8% of the Φ(√J̄/2) theoretical ceiling), which confirms it captures genuine signal rather than stylistic noise. It does not prove the proxy *is* Fisher Information at the language surface — it proves it carries a real, calibrated uncertainty signal.
 
-**The unification**: CAMS applies a single signal — the J-proxy — to control both memory decisions (what to keep) and compute allocation (when to think harder). This is the practical realization of a unified signal governing both decision-making and memory in real time.
+**The unification**: CAMS applies a single signal — the J-proxy — to control memory decisions (what to keep). The dual-signal fusion (thinking utilization × J-proxy) was designed for Claude 3.7 Sonnet's exposed thinking blocks; Opus 4.7 uses adaptive thinking internally without exposing block-level utilization, so this component is forward-reserved.
 
 ---
 
@@ -177,6 +177,47 @@ The design constraint: COMPRESS only fires when **J is HIGH (≥ 0.65) AND histo
 
 ---
 
+### Realistic Session: TRIM on a Coding Session
+
+`demo/session_demo.py` runs a 15-turn FastAPI coding session — design questions, code snippets, debugging, reflection. This is the session type CAMS is actually built for.
+
+- TRIM fires **4 times** (turns 11–14), saving 1,273 tokens
+- COMPRESS never fires: code blocks trigger Type Prior (J capped at 0.64) → MEDIUM zone → TRIM is the right mechanism
+- Attention sink (T1-T2: project setup) always preserved — reflected correctly at T13 when asked to recall the original structure
+- 2.1% token reduction on a 15-turn session (savings grow with session length)
+
+> Run: `python demo/session_demo.py`
+
+---
+
+### Ablation Experiments
+
+`evals/experiments.py` runs three validated ablations (E3/E5 require thinking block access, not available on Opus 4.7):
+
+**E1 — Propagation Chain**: Do uncertain constraints survive long sessions?
+
+| Condition | Mean recall (4 callbacks) |
+|-----------|--------------------------|
+| Baseline (full context) | 0.875 |
+| Naive window (keep last 6) | 0.875 |
+| CAMS | 0.812 |
+
+*Honest finding*: CAMS attention sink (2 turns) only protects T1-T2. An uncertain constraint planted at T3 can be compressed away by HIGH-J filler turns. CDS study plants constraints at T1 specifically because the attention sink is the protection mechanism — this is where the guarantee holds.
+
+**E4 — Correctness Cliff**: Does quality degrade under naive compression over 20 turns?
+
+| Condition | Mean callback recall | T11 (mid) | T21 (late) |
+|-----------|---------------------|-----------|------------|
+| Baseline | 0.938 | 0.75 | 1.00 |
+| Naive window | 0.562 | **0.00** | **0.25** |
+| **CAMS** | **0.875** | **0.75** | **0.75** |
+
+CAMS stays 56% above naive window on late-session recall. Naive window drops to 0.00 at turn 11 (constraint dropped) and 0.25 at turn 21 — classic Telephone Game effect. CAMS maintains 0.75 both times.
+
+> Run: `python -m evals.experiments --exp E4`
+
+---
+
 ### The Honest Benchmark Interpretation
 
 On a diverse 30-question benchmark (30 different topics in one session), CAMS's novelty guard correctly identifies that every answer introduces new domain entities and applies PRESERVE on all turns. This is the right behavior for truly diverse Q&A — you should preserve everything when every topic is new. For context *management* to activate (COMPRESS/TRIM), you need a sustained, related-topic session. The CDS study and `demo/compress_demo.py` demonstrate these behaviors on appropriate inputs.
@@ -200,8 +241,15 @@ python -m evals.benchmark
 # Run the 5-variant CDS study — primary behavioral evidence
 python demo/cds_study.py
 
-# Run the COMPRESS demonstration — proves mechanism on 20-turn sustained session
+# Run the COMPRESS demonstration — proves mechanism on 20-turn prose session
 python demo/compress_demo.py
+
+# Run the realistic coding session — proves TRIM fires on code-heavy sessions
+python demo/session_demo.py
+
+# Run ablation experiments — E1 (propagation chain), E4 (correctness cliff)
+python -m evals.experiments --exp E1
+python -m evals.experiments --exp E4
 
 # Run the original failure demo (single session)
 python demo/failure_demo.py
@@ -269,10 +317,12 @@ cams-claude/
 ├── demo/
 │   ├── app.py                Streamlit: chat + J-gauge + benchmark + evidence
 │   ├── cds_study.py          5-variant CDS study (primary behavioral evidence)
-│   ├── compress_demo.py      20-turn sustained session — proves COMPRESS fires
+│   ├── compress_demo.py      20-turn prose session — proves COMPRESS fires
+│   ├── session_demo.py       15-turn coding session — proves TRIM fires correctly
 │   └── failure_demo.py       Original single-session failure demonstration
 ├── evals/
 │   ├── benchmark.py          4-condition benchmark: prompt effect isolated
+│   ├── experiments.py        E1/E2/E4 ablations (E3/E5 need thinking blocks)
 │   └── calibration.py        Grid-search + OOF validation of J thresholds
 ├── LICENSE                   MIT
 └── requirements.txt
@@ -304,11 +354,12 @@ python -m evals.calibration --api   # fetch live Claude responses + calibrate
 
 ## Limitations
 
-- **J-proxy is a language-surface approximation.** Opus 4.7 does not expose hidden states. The proxy captures ~43% of the signal achievable with full hidden-state access (Φ(√J̄/2) ceiling). This is a deliberate trade-off, not a design flaw — operating at the API boundary is the constraint.
-- **COMPRESS activates on sustained, high-J sessions.** On diverse Q&A benchmarks (unrelated topics per turn), the novelty guard correctly applies PRESERVE on all turns — the right behavior, since each answer is genuinely new context. Run `demo/compress_demo.py` (20-turn FastAPI session) to see COMPRESS firing in the appropriate setting.
-- **Calibration requires more data.** OOF calibration on 18 examples has high variance (±0.30). Use `python -m evals.calibration --api` to add live responses and stabilize threshold estimates.
-- **Token savings accounting is conservative.** The estimator uses char/4 as a token proxy. Real Opus token counts may be 20-40% higher (markdown formatting inflates token count vs character count), so actual savings are likely larger than reported.
-- **Thresholds are calibrated on the benchmark distribution.** Novel domains (legal, medical, code-heavy sessions) may benefit from re-calibration via `evals/calibration.py`.
+- **J-proxy is a language-surface approximation.** Opus 4.7 does not expose hidden states. The proxy captures ~41% of the signal achievable with full hidden-state access (Φ(√J̄/2) ceiling = 0.661; CAMS AUARC = 0.270). This is a deliberate trade-off — operating at the API boundary is the constraint.
+- **Attention sink protects T1-T2 only.** Uncertain constraints planted at T3+ can be compressed away by subsequent HIGH-J turns. E1 ablation shows CAMS recall (0.812) slightly below baseline (0.875) when the constraint is at T3. The CDS study is correct to plant constraints at T1 — that is where the guarantee holds.
+- **Dual-signal fusion is inactive on Opus 4.7.** The feature was designed for Claude 3.7 Sonnet's exposed thinking blocks. Opus 4.7 uses adaptive thinking internally without exposing utilization metrics, so thinking_utilization is always 0.
+- **COMPRESS activates on sustained prose sessions only.** Code blocks trigger Type Prior (J capped ≤ 0.64 → MEDIUM), so coding sessions use TRIM instead of COMPRESS. Both mechanisms save tokens; which fires depends on J zone.
+- **Calibration requires more data.** OOF calibration on 18 examples has high variance (±0.30). Use `python -m evals.calibration --api` to stabilize threshold estimates.
+- **Token savings accounting is conservative.** char/4 proxy underestimates real Opus tokens by 20-40% (markdown formatting), so actual savings are likely larger than reported.
 
 ---
 
