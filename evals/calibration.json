@@ -1,0 +1,134 @@
+{
+  "theta_high": 0.55,
+  "theta_low": 0.45,
+  "accuracy": 0.8889,
+  "n_samples": 18,
+  "by_zone": {
+    "HIGH": {
+      "correct": 8,
+      "total": 8
+    },
+    "MEDIUM": {
+      "correct": 1,
+      "total": 3
+    },
+    "LOW": {
+      "correct": 7,
+      "total": 7
+    }
+  },
+  "scored_samples": [
+    {
+      "j": 1.0,
+      "expected": "HIGH",
+      "preview": "The speed of light in a vacuum is exactly 299,792,458 meters per second."
+    },
+    {
+      "j": 0.6514,
+      "expected": "HIGH",
+      "preview": "Water is composed of two hydrogen atoms and one oxygen atom. Its chemical formul"
+    },
+    {
+      "j": 0.75,
+      "expected": "HIGH",
+      "preview": "Python was created by Guido van Rossum and first released in 1991."
+    },
+    {
+      "j": 0.8929,
+      "expected": "HIGH",
+      "preview": "The Eiffel Tower is located in Paris, France. It was constructed between 1887 an"
+    },
+    {
+      "j": 0.75,
+      "expected": "HIGH",
+      "preview": "The square root of 144 is 12."
+    },
+    {
+      "j": 0.75,
+      "expected": "HIGH",
+      "preview": "World War II ended in 1945 with Germany's surrender in May and Japan's in Septem"
+    },
+    {
+      "j": 0.6,
+      "expected": "HIGH",
+      "preview": "DNA stands for deoxyribonucleic acid. It encodes genetic information in all livi"
+    },
+    {
+      "j": 0.7296,
+      "expected": "HIGH",
+      "preview": "Earth orbits the Sun at an average distance of approximately 149.6 million kilom"
+    },
+    {
+      "j": 0.3,
+      "expected": "LOW",
+      "preview": "I think this might be related to quantum effects, but I'm not entirely certain. "
+    },
+    {
+      "j": 0.4336,
+      "expected": "LOW",
+      "preview": "It seems like maybe the best approach could be one of several options. This depe"
+    },
+    {
+      "j": 0.3218,
+      "expected": "LOW",
+      "preview": "In general, I believe this is probably true, though there are many differing vie"
+    },
+    {
+      "j": 0.4402,
+      "expected": "LOW",
+      "preview": "I'm not sure about this. It might work, or perhaps there's another explanation. "
+    },
+    {
+      "j": 0.3879,
+      "expected": "LOW",
+      "preview": "This is an open question. Some researchers think X, while others believe Y. It's"
+    },
+    {
+      "j": 0.35,
+      "expected": "LOW",
+      "preview": "I cannot say for certain. It could be several things. My understanding is limite"
+    },
+    {
+      "j": 0.3982,
+      "expected": "LOW",
+      "preview": "Maybe around 50 or so? I'm not entirely sure. It depends on the context, I think"
+    },
+    {
+      "j": 0.6436,
+      "expected": "MEDIUM",
+      "preview": "Quantum entanglement is generally understood as a correlation between particle s"
+    },
+    {
+      "j": 0.6847,
+      "expected": "MEDIUM",
+      "preview": "The Northern Lights are caused by charged particles from the sun interacting wit"
+    },
+    {
+      "j": 0.5046,
+      "expected": "MEDIUM",
+      "preview": "Machine learning models typically improve with more data, but the relationship i"
+    }
+  ],
+  "oof": {
+    "n_folds": 5,
+    "n_samples": 18,
+    "oof_accuracy": 0.8,
+    "oof_acc_std": 0.2667,
+    "oof_auarc": 0.8,
+    "oof_auarc_std": 0.3014,
+    "fold_accuracies": [
+      1.0,
+      1.0,
+      0.3333,
+      0.6667,
+      1.0
+    ],
+    "fold_auarcs": [
+      1.0,
+      1.0,
+      0.2222,
+      0.7778,
+      1.0
+    ]
+  }
+}

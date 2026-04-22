@@ -143,7 +143,7 @@ class CAMSContextManager:
         print(f"J={result.j_score:.2f}  saved={result.tokens_saved} tokens")
     """
 
-    COMPRESS_AFTER     = 6    # turns: compress history older than this on HIGH
+    COMPRESS_AFTER     = 3    # turns: compress history older than this on HIGH
     TRIM_WINDOW        = 10   # turns: keep last N turns on MEDIUM
     ATTENTION_SINK     = 2    # turns: never compress first N turns (attention sinks)
     MAX_COMPRESSIONS   = 3    # stop compressing after this many (quality guard)

@@ -223,6 +223,10 @@ with tab1:
         savings_ph       = m4.empty()
 
         st.divider()
+        st.markdown("**Session Health**")
+        health_placeholder = st.empty()
+
+        st.divider()
         st.markdown("**Decision Log**")
         log_placeholder = st.empty()
 
@@ -276,6 +280,46 @@ with tab1:
             cost_ph.metric("Cost",    _format_usd(st.session_state.session_cost))
             savings_ph.metric("Saved", _format_usd(st.session_state.session_savings))
 
+        def _refresh_health():
+            log = st.session_state.turn_log
+            if len(log) < 2:
+                health_placeholder.caption("Need 2+ turns.")
+                return
+
+            decisions = [e["decision"] for e in log]
+            j_scores  = [e["j_score"]  for e in log]
+
+            # switch_rate: fraction of consecutive turns where decision changed
+            switches    = sum(1 for i in range(1, len(decisions)) if decisions[i] != decisions[i-1])
+            switch_rate = switches / (len(decisions) - 1)
+
+            # preserve_ratio
+            preserve_ratio = sum(1 for d in decisions if d == "PRESERVE") / len(decisions)
+
+            # j_std
+            mean_j = sum(j_scores) / len(j_scores)
+            j_std  = (sum((x - mean_j) ** 2 for x in j_scores) / len(j_scores)) ** 0.5
+
+            # Risk level
+            if switch_rate > 0.7:
+                risk, risk_color = "HIGH OSCILLATION", "#ef4444"
+            elif preserve_ratio > 0.85:
+                risk, risk_color = "OVER-PRESERVING", "#f59e0b"
+            elif preserve_ratio < 0.05 and len(log) > 5:
+                risk, risk_color = "OVER-COMPRESSING", "#f59e0b"
+            else:
+                risk, risk_color = "HEALTHY", "#22c55e"
+
+            health_placeholder.markdown(
+                f"<div style='font-size:0.75rem;line-height:1.7'>"
+                f"<div>Switch rate: <b>{switch_rate:.0%}</b> &nbsp; "
+                f"Preserve: <b>{preserve_ratio:.0%}</b> &nbsp; "
+                f"J-σ: <b>{j_std:.2f}</b></div>"
+                f"<div style='color:{risk_color};font-weight:700'>{risk}</div>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+
         def _refresh_log():
             log = st.session_state.turn_log
             if not log:
@@ -302,6 +346,7 @@ with tab1:
         # Initial render
         _refresh_panel(0.0, "—", "Send a message to see the signal.", 0.0, 0, False)
         _refresh_stats()
+        _refresh_health()
         _refresh_log()
 
     with col_chat:
@@ -399,6 +444,7 @@ with tab1:
             _refresh_panel(j_score, zone, reasoning, thinking_util,
                            thinking_budget, drift_state)
             _refresh_stats()
+            _refresh_health()
             _refresh_log()
             st.rerun()
 

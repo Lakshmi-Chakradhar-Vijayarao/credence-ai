@@ -14,7 +14,9 @@ Results saved to evals/calibration.json.
 import os
 import sys
 import json
+import math
 import argparse
+import random
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from cams.confidence_proxy import ConfidenceProxy
@@ -136,6 +138,126 @@ def calibrate(items: list[dict]) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# OOF AUARC helper
+# ---------------------------------------------------------------------------
+
+def _auarc_from_pairs(pairs: list[dict]) -> float:
+    """
+    AUARC on labelled classification pairs.
+
+    pairs: list of {"j": float, "correct": bool}
+
+    Sort by J ascending. At each abstention cutoff (remove bottom k items),
+    measure accuracy on remaining. AUARC = trapezoid area over abstention rates.
+    > 0.5 means low-J items are harder to classify — J is a real signal.
+    """
+    if not pairs:
+        return 0.0
+    pairs_sorted = sorted(pairs, key=lambda x: x["j"])
+    n = len(pairs_sorted)
+    abstention_rates, accuracies = [], []
+    for k in range(n + 1):
+        retained = pairs_sorted[k:]
+        abstention_rates.append(k / n)
+        if retained:
+            acc = sum(1 for p in retained if p["correct"]) / len(retained)
+        else:
+            acc = 1.0  # 100% accurate if we abstain on everything
+        accuracies.append(acc)
+    # trapezoid integration
+    area = 0.0
+    for i in range(1, len(abstention_rates)):
+        dx = abstention_rates[i] - abstention_rates[i - 1]
+        area += dx * (accuracies[i] + accuracies[i - 1]) / 2
+    return area
+
+
+# ---------------------------------------------------------------------------
+# OOF 5-fold calibration
+# ---------------------------------------------------------------------------
+
+def calibrate_oof(items: list[dict], n_folds: int = 5, seed: int = 42) -> dict:
+    """
+    Out-of-fold calibration: train thresholds on 4 folds, evaluate on fold 5.
+
+    Returns honest (non-inflated) accuracy and AUARC across folds.
+    """
+    proxy = ConfidenceProxy(theta_high=0.65, theta_low=0.35)
+
+    # Score all items once
+    scored = []
+    for item in items:
+        text = item.get("text") or item.get("response", "")
+        cr = proxy.compute(text)
+        scored.append({"j": cr.j_score, "expected": item["expected"]})
+
+    # Shuffle deterministically
+    rng = random.Random(seed)
+    indices = list(range(len(scored)))
+    rng.shuffle(indices)
+    shuffled = [scored[i] for i in indices]
+
+    # Split into folds
+    fold_size = max(1, len(shuffled) // n_folds)
+    folds = []
+    for k in range(n_folds):
+        start = k * fold_size
+        end = start + fold_size if k < n_folds - 1 else len(shuffled)
+        folds.append(shuffled[start:end])
+
+    fold_accuracies, fold_auarcs = [], []
+
+    for k in range(n_folds):
+        # Train: all folds except k
+        train = [item for i, fold in enumerate(folds) for item in fold if i != k]
+        val   = folds[k]
+        if not val:
+            continue
+
+        # Fit thresholds on train fold
+        best_acc, best_th, best_tl = -1.0, 0.65, 0.35
+        for th_int in range(50, 90, 5):
+            th = th_int / 100
+            for tl_int in range(15, th_int - 5, 5):
+                tl = tl_int / 100
+                correct = sum(
+                    1 for s in train
+                    if (("HIGH" if s["j"] >= th else ("MEDIUM" if s["j"] >= tl else "LOW"))
+                        == s["expected"])
+                )
+                acc = correct / len(train) if train else 0
+                if acc > best_acc:
+                    best_acc, best_th, best_tl = acc, th, tl
+
+        # Evaluate on held-out fold
+        pairs = []
+        for s in val:
+            pred = "HIGH" if s["j"] >= best_th else ("MEDIUM" if s["j"] >= best_tl else "LOW")
+            pairs.append({"j": s["j"], "correct": pred == s["expected"]})
+
+        val_acc = sum(1 for p in pairs if p["correct"]) / len(pairs)
+        val_auarc = _auarc_from_pairs(pairs)
+        fold_accuracies.append(val_acc)
+        fold_auarcs.append(val_auarc)
+
+    mean_acc   = sum(fold_accuracies) / len(fold_accuracies)
+    std_acc    = math.sqrt(sum((x - mean_acc) ** 2 for x in fold_accuracies) / len(fold_accuracies))
+    mean_auarc = sum(fold_auarcs) / len(fold_auarcs)
+    std_auarc  = math.sqrt(sum((x - mean_auarc) ** 2 for x in fold_auarcs) / len(fold_auarcs))
+
+    return {
+        "n_folds":        n_folds,
+        "n_samples":      len(scored),
+        "oof_accuracy":   round(mean_acc, 4),
+        "oof_acc_std":    round(std_acc, 4),
+        "oof_auarc":      round(mean_auarc, 4),
+        "oof_auarc_std":  round(std_auarc, 4),
+        "fold_accuracies": [round(x, 4) for x in fold_accuracies],
+        "fold_auarcs":     [round(x, 4) for x in fold_auarcs],
+    }
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -168,12 +290,28 @@ def main():
             print(f"  + [{item['expected']}] {item['question'][:55]}")
 
     print(f"\nCalibrating on {len(texts)} labelled examples...")
-    result = calibrate(texts)
 
-    print(f"\nOptimal thresholds:")
+    # --- OOF: honest estimate first ---
+    oof = calibrate_oof(texts)
+    print(f"\n── OOF 5-Fold Calibration (honest, non-inflated) ──────────────")
+    print(f"  Accuracy  = {oof['oof_accuracy']*100:.1f}% ± {oof['oof_acc_std']*100:.1f}%  "
+          f"(per fold: {[f'{x*100:.0f}%' for x in oof['fold_accuracies']]})")
+    print(f"  AUARC     = {oof['oof_auarc']:.4f} ± {oof['oof_auarc_std']:.4f}  "
+          f"(per fold: {[f'{x:.3f}' for x in oof['fold_auarcs']]})")
+    print(f"  n_samples = {oof['n_samples']}  n_folds = {oof['n_folds']}")
+    if oof["oof_auarc"] > 0.5:
+        print(f"  ✓ AUARC > 0.5 — J-proxy captures genuine uncertainty (not noise)")
+    else:
+        print(f"  ✗ AUARC ≤ 0.5 — J-proxy signal weak on this calibration set")
+
+    # --- Full-data fit: best thresholds for deployment ---
+    result = calibrate(texts)
+    result["oof"] = oof
+
+    print(f"\n── Full-Data Threshold Fit (for deployment) ───────────────────")
     print(f"  theta_high = {result['theta_high']:.2f}")
     print(f"  theta_low  = {result['theta_low']:.2f}")
-    print(f"  Accuracy   = {result['accuracy'] * 100:.1f}%  (n={result['n_samples']})")
+    print(f"  In-sample accuracy = {result['accuracy'] * 100:.1f}%  (n={result['n_samples']})")
     print(f"\nPer-zone accuracy:")
     for zone in ("HIGH", "MEDIUM", "LOW"):
         stats = result["by_zone"].get(zone, {})
