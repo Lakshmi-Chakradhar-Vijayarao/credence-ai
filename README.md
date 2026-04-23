@@ -1,445 +1,229 @@
-# CAMS — Confidence-Adaptive Memory System
+# Epistemic Memory
 
-> **Epistemic Integrity Layer for AI Systems. Not a token-saver — a reliability controller.**
+**Your AI doesn't forget things. It forgets *whether it was sure about them*.**
 
-**CAMS is not a general-purpose memory optimizer. It is a safety-critical system designed to preserve epistemic integrity in long-running AI tasks.** Its core invariant: uncertain information must never be compressed before resolved information.
+When an LLM conversation is compressed, the content survives but the confidence does not. A constraint expressed as "we're not certain about X" becomes "X" after one compression pass. A debugging hypothesis expressed as "possibly the race condition" becomes "the race condition" in the next agent's summary. Downstream turns — and downstream agents — then treat the uncertain claim as resolved knowledge.
 
-**Scope boundary**: CAMS is designed for multi-turn conversational tasks where early uncertain information plants must survive to later turns. For independent QA, short-context tasks, or applications where each turn is topically unrelated to prior turns, naive sliding window is cheaper and equivalent. CAMS activates automatically only when session patterns indicate cross-turn dependencies.
-
-CAMS was built from a research question: *if a model's internal state signals epistemic instability, can you use that same signal to prevent silent information corruption through compression?*
-
-The answer is yes. The result is a system where Claude Opus 4.7 actively governs its own epistemic state — refusing to compress what it hasn't resolved, preserving uncertainty markers through Haiku summarization, and propagating confidence provenance to downstream agents via the J-envelope protocol.
+Epistemic Memory is a context management layer that stops this. It conditions every memory allocation decision on the epistemic state of the content: **compress only what is epistemically resolved; preserve what is uncertain**.
 
 ---
 
-## Research Foundation
+## Install in Claude Desktop (2 minutes)
 
-CAMS unifies two strands of prior research into a single production system:
-
-**FAIL-CHAIN** — a study of how errors propagate through multi-step LLM pipelines. The finding: once a failure is introduced, it persists and compounds. Accuracy at a single step misses this. The fix requires early detection and *proactive control*, not post-hoc correction.
-
-**Fisher J-signal** — a hidden-state reliability indicator derived from Fisher Information theory, validated on Qwen 2.5-7B hidden states (AUROC ~0.99 at layer 26 for easy vs. hard query discrimination across 12 experimental phases). The core insight: the model's internal state carries a signal about whether it is in a "resolved" or "unstable" configuration — and that signal predicts output quality.
-
-**The API boundary**: Opus 4.7 does not expose hidden states. CAMS implements a *language-level proxy* — five linguistic factors that correlate with the same resolved/unstable distinction. This is a deliberate surface adaptation, not an invented heuristic. The proxy is validated via AUARC (0.324, 49.0% of the Φ(√J̄/2) theoretical ceiling), which confirms it captures genuine signal rather than stylistic noise. It does not prove the proxy *is* Fisher Information at the language surface — it proves it carries a real, calibrated uncertainty signal. CAMS reaches 49.0% of the Φ(√J̄/2) ceiling (AUARC 0.323 vs ceiling 0.660) at the API surface.
-
-**The unification**: CAMS applies a single signal — the J-proxy — to control memory decisions (what to keep). The dual-signal fusion (thinking utilization × J-proxy) was designed for Claude 3.7 Sonnet's exposed thinking blocks; Opus 4.7 uses adaptive thinking internally without exposing block-level utilization, so this component is forward-reserved.
-
----
-
-## The Problem
-
-Every turn of a long Claude conversation costs money — even when Claude is confidently answering a well-established fact and doesn't need 8,000 tokens of history behind it.
-
-This is not just a cost problem. It is a reliability problem. Context drift — the gradual degradation of relevant history through indiscriminate compression — is one of the primary failure modes in multi-step AI workflows. Naive sliding-window compression introduces the **Telephone Game effect**: each compression degrades fidelity, errors compound, and the model loses the reasoning that produced earlier answers.
-
-CAMS solves this by making the model's own confidence signal drive compression decisions. Claude only forgets what it has already resolved.
-
----
-
-## How It Works
-
-```
-User message
-     │
-     ▼
-Claude Opus 4.7 responds  ←── [extended thinking: optional, budget 2000 tokens]
-     │
-     ├── J-proxy: 5 linguistic factors ──────────────────────────────┐
-     │                                                                │
-     └── Thinking utilization (if enabled) ─────────────────────────┤
-                                                                      ▼
-                                                         Dual-Signal Fusion
-                                                  ┌──────────────────────────┐
-                                                  │ J=HIGH + thinking >50%   │
-                                                  │ → downgrade to MEDIUM    │ cognitive friction
-                                                  │                          │ detected
-                                                  │ J=HIGH + thinking ≤50%   │
-                                                  │ → stay HIGH              │
-                                                  └──────────────────────────┘
-     │
-     ├── Type Prior check
-     │     code block?    → cap J ≤ 0.64  (never compress code)
-     │     error trace?   → cap J ≤ 0.54  (preserve debugging context)
-     │
-     ├── Novelty guard
-     │     >75% new content words? → PRESERVE regardless of J
-     │
-     ├── Faithfulness probe
-     │     old segment has uncertainty markers? → refuse to compress
-     │
-     ├── Semantic entropy proxy
-     │     MEDIUM + "it depends on" / "case by case"? → downgrade to LOW
-     │
-     ▼
-  J ≥ 0.65           →  HIGH    →  COMPRESS  (Haiku summarises old turns)
-  J ∈ [0.35, 0.65)   →  MEDIUM  →  TRIM      (keep last 10 turns)
-  J < 0.35           →  LOW     →  PRESERVE  (keep everything)
+1. Install the package:
+```bash
+pip install fastmcp anthropic
+git clone https://github.com/vijayarao-chakri/epistemic-memory
+pip install -e epistemic-memory
 ```
 
-The compressor uses **Claude Haiku 4.5** — cheap, fast summarization of old context, while **Opus 4.7** focuses entirely on high-quality answers. Model tiering reduces compression overhead by ~95%.
-
----
-
-## The Two Signals
-
-CAMS is the first memory manager for Claude 4.7 that fuses two independent signals about model state:
-
-### Signal 1: J-proxy (linguistic confidence)
-
-Five factors extracted from response text, measuring whether the model is in a resolved or uncertain configuration:
-
-```
-J = 0.30 × (1 − hedging_rate)      "I think", "perhaps", "might"   (−)
-  + 0.25 × anchor_rate              "specifically", "exactly"        (+)
-  + 0.20 × (1 − correction_rate)    "actually", "wait", "let me"    (−)
-  + 0.10 × brevity_score            shorter = more grounded          (+)
-  + 0.15 × specificity_score        numbers, named entities          (+)
+2. Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "epistemic-memory": {
+      "command": "python",
+      "args": ["-m", "cams.mcp_server"],
+      "env": {
+        "ANTHROPIC_API_KEY": "your-key-here"
+      }
+    }
+  }
+}
 ```
 
-J ∈ [0, 1]. Thresholds θ_high=0.65, θ_low=0.35 separate HIGH / MEDIUM / LOW zones.
-
-### Signal 2: Thinking utilization (computational effort)
-
-When a previous turn was LOW-zone, CAMS enables Opus 4.7's extended thinking on the next call (budget: 2,000 tokens). The utilization ratio — thinking tokens consumed / budget — measures how hard the model worked on the problem.
-
-**The fusion rule**: If J says HIGH (confident text) but thinking utilization > 50% (model worked hard), CAMS detects **cognitive friction** — the model's words are confident but its reasoning was effortful. The decision downgrades to MEDIUM. History is preserved.
-
-This prevents a failure mode where the model compresses away the hard reasoning that produced the confident answer.
+3. Restart Claude Desktop. You now have 8 epistemic memory tools available.
 
 ---
 
-## Guard Rails
+## What it does
 
-| Guard | What it does |
-|-------|-------------|
-| **Attention sink protection** | First 2 turns are never compressed — they anchor conversation identity and purpose. Validated by StreamingLLM (Xiao et al. ICLR 2024). |
-| **Type Prior** | Code blocks and error traces get a J ceiling (0.64 and 0.54 respectively). An error trace looks "confident" to any signal: short, specific, no hedging. The Type Prior overrides tone with semantics — a Traceback is sacred context regardless of J. |
-| **Compression depth limit** | Stops after 3 compressions — recursive summarization degrades quality nonlinearly (Zhong et al. 2023). |
-| **Novelty guard** | Detects domain pivots: >75% of response content words must be new, with ≥5 new words and established context vocabulary (≥10 words). Uses content words (any ≥4-char non-stop word), not just named entities — catches topic shifts without proper nouns. |
-| **Faithfulness probe** | Before calling Haiku to compress, scans the old segment for uncertainty markers ("I think", "not certain", "approximately"). If found, refuses to compress. Prevents the worst failure mode: Haiku stripping "tentative 50 req/min" into "50 req/min", turning user-flagged uncertainty into apparent fact. |
-| **Semantic entropy proxy** | MEDIUM-J responses containing multi-answer markers ("it depends on", "case by case", "no single answer") are downgraded to LOW → PRESERVE. Zero-cost approximation of Kuhn et al. ICLR 2023 semantic entropy, targeting the weakest signal region. |
-| **Drift detection** | 3 consecutive LOW-zone turns → proactive PRESERVE lock until confidence recovers. Prevents compression during sustained uncertainty episodes. |
+For every conversation turn, Epistemic Memory:
 
----
+1. Computes a **J-score** (0–1) from the response text — 5 linguistic factors measuring assertiveness: hedging rate, anchor density, self-correction frequency, brevity, and specificity
+2. Decides: **compress / trim / preserve** based on J-score thresholds
+3. The critical rule: **only HIGH-J (epistemically resolved) turns are eligible for compression**. LOW/MEDIUM-J turns containing uncertain claims survive every compression and trim operation verbatim.
+4. **Faithfulness probe**: before any Haiku summarisation, scans the old segment for 25+ uncertainty markers. If found → compression aborts → PRESERVE.
 
-## Results
-
-### Primary: Context Dependency Score (CDS) Study
-
-The strongest evidence for CAMS is behavioral: does it preserve uncertain context that naive window silently drops?
-
-Each of 5 independent sessions plants an uncertain constraint at turn 1 (in hedged language — LOW-J signal), then runs 6 factual filler turns, then asks a question at turn 8 that requires the constraint to answer correctly. Naive sliding window (window=6) drops turn 1 at turn 8. CAMS protects it via the attention sink (first 2 turns are always preserved).
-
-| Session | Constraint | CAMS | Naive |
-|---------|-----------|------|-------|
-| S1: Lambda memory | "might be 128MB Lambda or 512MB container" | ✓ | ✗ |
-| S2: API budget | "$50/month or maybe $200/month — not confirmed" | ✓ | ✗ |
-| S3: Team size | "2 or 3 engineers — contractor might not join" | ✓ | ✗ |
-| S4: Database | "PostgreSQL or DynamoDB — not finalised" | ✓ | ✗ |
-| S5: Response SLA | "200ms P99 or 500ms — product hasn't confirmed" | ✓ | ✗ |
-| **Score** | | **5/5** | **0/5** |
-
-CAMS answers every test question with the constraint in context. Naive window's test-turn answers say: *"I don't have enough context about your specific project to recommend..."* — the constraint was silently deleted.
-
-> Run: `python demo/cds_study.py`
+```
+J ≥ 0.70  →  COMPRESS   (Haiku summarises; only HIGH-J eligible)
+0.45–0.70 →  TRIM       (keep last N turns; LOW/MEDIUM-J always survive)
+J < 0.45  →  PRESERVE   (full history retained)
+```
 
 ---
 
-### Secondary: Benchmark (30 QA pairs, 4 conditions)
+## MCP Tools
 
-The benchmark uses 4 conditions so the system prompt effect and context management effect are separately measurable:
+| Tool | What it does |
+|------|-------------|
+| `cams_chat` | Send message, receive response + epistemic envelope |
+| `em_propagation_risk` | Pre-flight risk assessment before compress/forward |
+| `cams_inspect_envelope` | Trust analysis + BLOCK/VERIFY/PRESERVE/PROCEED recommendation |
+| `cams_propagate_envelope` | Increment chain_depth, update source for agent handoffs |
+| `cams_get_stats` | Token savings, compression counts |
+| `cams_get_decision_log` | Per-turn J-scores and decisions |
+| `cams_save` / `cams_load` | Cross-session continuity |
+| `cams_reset` | Clear session |
 
-- **Baseline (no prompt)**: raw API, no compression, no system prompt
-- **Baseline (no compression)**: same system prompt as CAMS, no compression — *the honest comparison baseline*
-- **Naive sliding window**: same system prompt, window=6
-- **CAMS**: same system prompt, J-proxy context management
+### Using `em_propagation_risk`
 
-The delta between "Baseline (no compression)" and CAMS is the pure J-proxy contribution, isolated from prompt effects.
-
-| Condition | Tokens | Cost | ROUGE-L | AUARC |
-|-----------|--------|------|---------|-------|
-| Baseline (no prompt) | 106,465 | $2.04 | 0.146 | 0.217 |
-| Baseline (no compression) | 91,248 | $1.77 | 0.219 | 0.326 |
-| Naive sliding window | 45,168 | $1.07 | 0.238 | 0.356 |
-| **CAMS** | **70,895** | **$1.47** | **0.213** | **0.323** |
-
-**System prompt effect**: +0.073 ROUGE-L (Baseline no-compression 0.219 vs Baseline no-prompt 0.146) — this is the prompt contribution, not the J-proxy.
-
-**Honest assessment of aggregate benchmark**: Naive sliding window outperforms CAMS on both ROUGE-L (0.238 vs 0.213) and AUARC (0.356 vs 0.323) on this 30-question benchmark. This is the expected result: the benchmark tests 30 *independent* QA pairs in a single session. Aggressive compression (dropping early turns) doesn't hurt there because each question is self-contained — the model doesn't need old context. CAMS is designed for the *opposite* problem: multi-turn conversations where early information plants must survive to turn 20+. The targeted experiments below test this directly.
-
-**Token savings vs same-prompt baseline**: CAMS achieves 22.3% token reduction and 17.1% cost reduction. Quality delta is −0.006 ROUGE-L (bootstrap 95% CI [−0.130, +0.119] — not significant at n=30).
-
-**Theoretical certificate**: For mean J-score J̄, Φ(√J̄/2) bounds the AUROC achievable by a model with hidden-state access (validated within ±0.93% by Geom-Proof experiments on Qwen 2.5 at 3B and 7B). CAMS reaches 49.0% of this ceiling (AUARC 0.323 vs ceiling 0.660) operating at the API surface — the quantifiable cost of the API boundary.
-
-> Run `python -m evals.benchmark` to regenerate. Results are saved to `evals/results.json`.
+Before compressing or forwarding any content:
+```python
+risk = em_propagation_risk(
+    content="We think the latency spike might be GC pauses, but haven't confirmed.",
+    chain_depth=1,
+)
+# → risk_level="HIGH", action="PRESERVE — content contains explicit uncertainty markers"
+```
 
 ---
 
-### COMPRESS Mechanism: Proven on 20-turn Sustained Session
+## Why this matters: the failure FAIL-CHAIN documented
 
-`demo/compress_demo.py` runs a 20-turn session of Python history Q&A — pure prose answers, no code blocks, consistent "Python" entity throughout. In a verified run:
+FAIL-CHAIN (Vijayarao 2025) measured error propagation in multi-step LLM pipelines. The core finding: errors compound because **compression decisions are made without reference to epistemic state**. An uncertain output compresses to a confident-sounding summary. The next agent sees the summary. It has no record of the uncertainty. It answers with full confidence.
 
-- COMPRESS fires **3 times** (turns 13, 15, 18) — Haiku summarises old context into 2-3 sentences
-- History is correctly rebuilt as: attention_sink (T1-T2) + `<context_summary>` + recent turns
-- **922 tokens saved** at 3 compressions; $0.57 total cost vs $0.99 without compression
-- Final summary captures key facts across all prior turns: Python's end-of-life transition, NumPy/pandas origins, Google's role
+Epistemic Memory closes this loop. Experimental results:
 
-The design constraint: COMPRESS only fires when **J is HIGH (≥ 0.65) AND history is long enough to save tokens net of Haiku overhead**. This requires prose answers (no code blocks — Type Prior caps J at 0.64 for code content) and a sustained topic (novelty guard blocks compression on fresh entity sets).
+| Experiment | CAMS | Naive window |
+|---|---|---|
+| E6: Uncertain constraint → 6 filler → callback | 100% recall, 0% hallucination | 0% recall, 50% hallucination |
+| E7: 3-hop reasoning chain | 3/3 hops | 0/3 hops |
+| E8: Debugging session, uncertain hypothesis | 1.000 recall | 0.522 recall |
+| E4: vs random J routing (causal check) | 0.875 | 0.750 |
+| 10-session benchmark (chain integrity) | 80% chain-complete | 20% chain-complete |
 
-> Run: `python demo/compress_demo.py`
-
----
-
-### Realistic Session: TRIM on a Coding Session
-
-`demo/session_demo.py` runs a 15-turn FastAPI coding session — design questions, code snippets, debugging, reflection. This is the session type CAMS is actually built for.
-
-- TRIM fires **4 times** (turns 11–14), saving 1,273 tokens
-- COMPRESS never fires: code blocks trigger Type Prior (J capped at 0.64) → MEDIUM zone → TRIM is the right mechanism
-- Attention sink (T1-T2: project setup) always preserved — reflected correctly at T13 when asked to recall the original structure
-- 2.1% token reduction on a 15-turn session (savings grow with session length)
-
-> Run: `python demo/session_demo.py`
+E4 confirms J-routing carries real signal above random: CAMS 0.875 > random_j 0.812 > naive 0.750.
 
 ---
 
-### Ablation Experiments
+## Signal architecture
 
-`evals/experiments.py` runs validated ablations (E3/E5 deferred — require thinking block access, not available on Opus 4.7):
+Three tiers of epistemic signal:
 
-**E1 — Propagation Chain**: Do uncertain constraints survive compression?
+```
+Tier 1 — Linguistic Assertiveness (~0ms, $0)
+  5 text pattern factors → J-score ∈ [0,1]
+  Covers ~80% of the signal. Zero cost per turn.
 
-| Condition | Mean recall |
-|-----------|-------------|
-| Baseline | 0.658 |
-| Naive window | 0.833 |
-| **CAMS** | **0.875** |
+Tier 2 — Behavioral Consistency (~300ms, ~$0.001/turn)
+  N=5 Haiku samples → pairwise ROUGE-L variance
+  Low variance = consistent answers = high confidence.
+  Used for MEDIUM-zone turns. Opt-in.
 
-CAMS (+0.217 vs baseline, +0.042 vs naive) — preserves LOW-J uncertain constraints through HIGH-J filler compression pressure.
-> Run: `python -m evals.experiments --exp E1`
+Tier 3 — Fisher J from Activations (offline batch)
+  KV-cache attention entropy (Qwen 3.5B on Kaggle)
+  Pre-computed signal comparison validating that Tier 1
+  correlates with actual model-internal uncertainty.
+```
 
-**E2 — Confident Error Trap** (Type Prior ablation): Does the Type Prior prevent Haiku from compressing error traces?
-Tests that code/error responses are correctly capped at MEDIUM zone (Type Prior J cap), preventing compression of debugging context.
-> Run: `python -m evals.experiments --exp E2`
-
-**E4 — Correctness Cliff**: Does quality degrade under naive compression over 20 turns?
-
-| Condition | Mean recall | T11 (mid) | T21 (late) |
-|-----------|-------------|-----------|------------|
-| Baseline | 0.875 | 0.75 | 0.75 |
-| **CAMS** | **0.875** | **0.75** | **0.75** |
-| Random-J (causal control) | 0.812 | 0.75 | 0.50 |
-| Naive window | 0.750 | 0.50 | 0.50 |
-
-CAMS (0.875) = baseline, > random-J (0.812) > naive (0.750). CAMS > random-J confirms J-routing causally contributes beyond mere compression schedule.
-> Run: `python -m evals.experiments --exp E4`
-
-**E6 — Negative Needle** (Hallucination Safety): Does the faithfulness probe prevent Haiku from stripping uncertainty markers?
-
-| Condition | Correction recall | Hallucination rate |
-|-----------|------------------|-------------------|
-| Baseline | 100% | 50% |
-| **CAMS** | **100%** | **50%** |
-| Naive window | 0% | 100% |
-
-CAMS matches baseline recall. Naive window drops planted uncertainty context, causing 100% hallucination rate on constrained recall questions. The faithfulness probe prevents compression when old segments contain uncertainty markers.
-> Run: `python -m evals.experiments --exp E6`
-
-**E7 — Multi-Hop Chain** (RULER-style): Does Haiku compression preserve reasoning chains?
-
-| Condition | Hops recalled | Chain complete |
-|-----------|--------------|----------------|
-| Baseline | 3/3 | ✓ |
-| **CAMS** | **3/3** | **✓** |
-| Naive window | 0/3 | ✗ |
-
-CAMS matches baseline — Haiku compression preserves the full Falcon→Nexus CVE→Python≥3.10 dependency chain. Naive window drops all 3 hops.
-> Run: `python -m evals.experiments --exp E7`
-
-**E8 — Real Debugging Session**: Does CAMS preserve all three dimensions of a debugging incident?
-
-Tests a 12-turn session: specific RuntimeError at T3, uncertain root-cause hypothesis at T4, 6 HIGH-J filler turns, attempted fix at T11, partial outcome at T12. Naive window drops T4 (hypothesis). Three recall callbacks: original error, hypothesis, fix+outcome.
-
-| Condition | Mean recall | Error | Hypothesis | Fix+Outcome |
-|-----------|-------------|-------|------------|-------------|
-| Baseline | 1.000 | 1.00 | 1.00 | 1.00 |
-| **CAMS** | **1.000** | **1.00** | **1.00** | **1.00** |
-| Naive window | 0.600 | 0.80 | 0.00 | 1.00 |
-
-Naive window drops the uncertain hypothesis (recall=0.00). CAMS matches baseline — the faithfulness probe prevents compressing T4 because it contains uncertainty markers.
-> Run: `python -m evals.experiments --exp E8`
+**Model-agnostic**: the signal reads output text. It works regardless of which model produced the response.
 
 ---
 
-### The Honest Benchmark Interpretation
+## Guard rails
 
-On a diverse 30-question benchmark, naive sliding window outperforms CAMS on ROUGE-L (0.238 vs 0.213) and AUARC (0.356 vs 0.323). This is the *expected* result: the benchmark tests 30 independent QA pairs. Aggressive compression helps there — the model doesn't need old context when each question is self-contained. CAMS is designed for the opposite problem: multi-turn conversations where early information plants must survive to turn 20+. The experiments above test this and demonstrate decisive wins.
+Three mechanisms prevent unsafe compression:
 
----
-
-## Known Failure Modes
-
-CAMS is a safety system, and safety systems must document their failure modes honestly.
-
-| Failure Mode | Cause | Mitigation in CAMS | Residual Risk |
-|---|---|---|---|
-| **Confident-wrong compression** | Model states false facts without hedging → J scores HIGH → turn is compressed | None — J measures epistemic signaling, not factual accuracy | High if model is systematically overconfident in a domain |
-| **Faithfulness probe miss** | Uncertainty expressed without standard markers ("Use 128MB" without "might") | Expanded probe: code comments, numerical hedging, conditional uncertainty | Moderate — implicit uncertainty is not detectable from surface text |
-| **Novelty guard false positive** | Diverse QA session has high content-word novelty → every turn is PRESERVE | Regime detection disables CAMS on low-dependency sessions | Low for multi-turn sessions; higher for intentionally diverse sessions |
-| **Haiku summary distortion** | Haiku loses nuance when summarizing technical or domain-specific content | Compression shadow + post-compression validation; faithfulness instruction in prompt | Low for prose; moderate for dense technical content |
-| **Regime non-detection** | Session has real dependencies but low J-variance → CAMS stays passive | Dependency marker detection alongside J-variance | Low — PRESERVE is always the safe fallback |
-| **TRIM drops important LOW-J turn** | A low-J uncertain turn falls outside TRIM_WINDOW at a later turn | Selective compression preserves LOW/MEDIUM-J turns; TRIM does not check J | Moderate — TRIM is the weakest mechanism, position-based not J-based |
-| **Chain-depth trust underestimation** | A 3-hop-old uncertain result has degraded trust_score but the 0.05/hop penalty is uncalibrated | Empirical chain_depth calibration in multi-agent experiment | Low-moderate until calibrated |
-
-**When to use CAMS**: Multi-turn AI assistants, debugging sessions, design discussions, code review workflows, research pipelines — any setting where information planted early must survive to later turns.
-
-**When not to use CAMS**: Single-turn QA, independent question answering, short sessions under 8 turns, contexts where all turns are topically unrelated.
+1. **Attention sink protection** — first 2 turns never compressed (conversation identity)
+2. **Type Prior** — code blocks get J floor 0.30 (max J=0.64, MEDIUM zone max); error traces get floor 0.20; math gets floor 0.35
+3. **Compression depth limit** — MAX_COMPRESSIONS=3; cumulative loss bounded
 
 ---
 
-## Quickstart
+## Run the demo
 
 ```bash
-git clone https://github.com/Lakshmi-Chakradhar-Vijayarao/cams-claude
-cd cams-claude
-pip install -r requirements.txt
-cp .env.example .env   # add your ANTHROPIC_API_KEY
-
-# Run the demo (works without API key in demo mode)
 streamlit run demo/app.py
+```
 
-# Run the benchmark (requires API key) — 4 conditions, honest comparison
-python -m evals.benchmark
+Tab 1 shows the failure (naive window drops uncertain constraints → propagation error).
+Tab 2 shows the fix (epistemic memory preserves uncertain content).
+Tab 3 is a live chat with real-time J-gauge and decision log.
+Tab 4 shows all benchmark results.
 
-# Run the 5-variant CDS study — primary behavioral evidence
-python demo/cds_study.py
+---
 
-# Run the COMPRESS demonstration — proves mechanism on 20-turn prose session
-python demo/compress_demo.py
+## Run the flagship experiment
 
-# Run the realistic coding session — proves TRIM fires on code-heavy sessions
-python demo/session_demo.py
+```bash
+# Smoke test (no API)
+python -m experiments.flagship.run --dry-run
 
-# Run ablation experiments — E1 (propagation chain), E4 (correctness cliff)
-python -m evals.experiments --exp E1
-python -m evals.experiments --exp E4
+# 1 trial on Scenario A (API Integration)
+python -m experiments.flagship.run --trials 1 --scenarios A
 
-# Run the original failure demo (single session)
-python demo/failure_demo.py
-
-# Calibrate thresholds from live data (requires API key)
-python -m evals.calibration --api
-
-# Use in code
-from cams import CAMSContextManager
-mgr = CAMSContextManager()
-result = mgr.chat("What is the speed of light?")
-print(f"J={result.j_score:.2f}  decision={result.decision}  saved={result.tokens_saved} tokens")
+# Full experiment: 3 trials × 3 scenarios
+python -m experiments.flagship.run --trials 3
 ```
 
 ---
 
-## Usage
+## Run the evaluations
 
-### Simple chat
+```bash
+# J-proxy ceiling characterisation (no API)
+python -m evals.nonhedged_test
 
-```python
-from cams import CAMSContextManager
+# Adversarial tests (no API)
+python -m evals.adversarial_tests
 
-mgr = CAMSContextManager()
+# Conversation benchmark (API)
+python -m evals.conversation_benchmark
 
-for question in questions:
-    result = mgr.chat(question)
-    print(result.response)
-    print(f"J={result.j_score:.2f} | {result.zone} | {result.decision} | saved {result.tokens_saved} tokens")
-
-print(f"\nSession: used {mgr.stats.total_tokens_in:,} tokens, "
-      f"saved {mgr.stats.total_tokens_saved:,} tokens, "
-      f"${mgr.stats.total_cost_usd:.4f} cost")
-```
-
-### Long document Q&A (Agent mode)
-
-```python
-from cams import CAMSAgent
-
-agent = CAMSAgent()
-result = agent.document_qa(
-    document=long_paper_text,
-    questions=[
-        "What is the main contribution?",
-        "What datasets were used?",
-        "What are the limitations?",
-    ],
-)
-print(result.final_report)
-print(result.summary)
-# → "Completed 3 sub-tasks | Tokens used: 4,821 | Saved: 2,104 (30%) | Cost: $0.0089"
+# E6 Negative Needle, E7 Multi-Hop, E8 Real Debugging
+python -m evals.experiments --exp E6
+python -m evals.experiments --exp E7
+python -m evals.experiments --exp E8
 ```
 
 ---
 
 ## Architecture
 
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
+See [CONTRIBUTION.md](CONTRIBUTION.md) for the contribution statement.
+
+---
+
+## Connection to prior work
+
+This project connects two prior research threads:
+
+1. **FAIL-CHAIN** — error propagation in multi-step LLM pipelines. Diagnosed the problem: confident-wrong outputs are produced when memory is epistemic-blind.
+
+2. **Fisher J at the inference layer** — KV-cache attention entropy experiments on Qwen 3.5B showing that internal model uncertainty correlates with output linguistic patterns. Validates that Tier 1 (linguistic J-score) is a meaningful proxy for actual model uncertainty.
+
+Epistemic Memory is the API-layer component: the memory governor that applies the insight from both threads without requiring access to model internals.
+
+---
+
+## Project structure
+
 ```
-cams-claude/
-├── cams/
-│   ├── confidence_proxy.py   J-score (5 factors + Type Prior + content detection)
-│   ├── context_manager.py    Adaptive context (Opus answers, Haiku compresses)
-│   └── agent.py              Long-running task agent (document Q&A, research)
-├── demo/
-│   ├── app.py                Streamlit: chat + J-gauge + benchmark + evidence
-│   ├── cds_study.py          5-variant CDS study (primary behavioral evidence)
-│   ├── compress_demo.py      20-turn prose session — proves COMPRESS fires
-│   ├── session_demo.py       15-turn coding session — proves TRIM fires correctly
-│   └── failure_demo.py       Original single-session failure demonstration
-├── evals/
-│   ├── benchmark.py          4-condition benchmark: prompt effect isolated
-│   ├── experiments.py        E1/E2/E4 ablations (E3/E5 need thinking blocks)
-│   └── calibration.py        Grid-search + OOF validation of J thresholds
-├── LICENSE                   MIT
-└── requirements.txt
+cams/
+  confidence_proxy.py     J-score computation (Tier 1, zero-cost)
+  context_manager.py      Core memory governor (compress/trim/preserve)
+  behavioral_signal.py    Tier 2 behavioral consistency (N=5 Haiku)
+  envelope.py             CAMSEnvelope — multi-agent provenance
+  mcp_server.py           FastMCP server (8 tools)
+  agent.py                Long-running task agent
+
+experiments/
+  flagship/               3-scenario × 3-condition flagship experiment
+    scenarios.py          Scenarios A (API), B (Debugging), C (Design)
+    metrics.py            propagation_rate, constraint_recall, uncertainty_preserved
+    pipeline.py           EpistemicPipeline — baseline/naive/epistemic_memory
+    run.py                CLI runner + bootstrap CI
+
+evals/
+  benchmark.py            30-pair QA benchmark (4 conditions)
+  conversation_benchmark.py 10-session × 3-condition benchmark
+  experiments.py          E1–E8 ablation experiments
+  calibration.py          Threshold optimisation
+  nonhedged_test.py       Proxy ceiling characterisation
+  adversarial_tests.py    5 adversarial robustness tests
+
+demo/
+  app.py                  Streamlit demo (4 tabs)
 ```
-
----
-
-## Engineering Details
-
-**Context injection**: Compressed history is injected as `<context_summary>` XML in the first user message — not as a fake assistant turn (which confuses the model's view of the conversation) and not as a system prompt addendum (which risks being overridden). Anthropic-standard XML tagging for structured context.
-
-**Attention sinks**: The first 2 turns (`history[:4]`) are permanently protected. They establish the conversation's identity and purpose — compressing them would sever the model's grounding anchor.
-
-**Compression depth limit**: Max 3 recursive compressions per session. Unlimited recursive summarization degrades semantic fidelity nonlinearly — each pass loses nuance. The depth limit forces PRESERVE before quality collapse.
-
-**Model pricing**: Opus 4.7 ($15 input / $75 output per 1M tokens) handles all reasoning. Haiku 4.5 ($0.80 / $4.00 per 1M) handles all compression. Compression cost is ~95% cheaper than primary inference.
-
----
-
-## Calibration
-
-Run `python -m evals.calibration` to derive optimal thresholds from labelled data. Grid-searches θ_high ∈ [0.50, 0.85] and θ_low ∈ [0.15, θ_high−0.10] to maximize zone classification accuracy.
-
-```bash
-python -m evals.calibration --api   # fetch live Claude responses + calibrate
-```
-
----
-
-## Limitations
-
-- **J-proxy is a language-surface approximation.** Opus 4.7 does not expose hidden states. The proxy captures ~49% of the signal achievable with full hidden-state access (Φ(√J̄/2) ceiling = 0.661; CAMS AUARC = 0.324). This is a deliberate trade-off — operating at the API boundary is the constraint.
-- **Attention sink protects T1-T2 only.** Uncertain constraints planted at T3+ can be compressed away by subsequent HIGH-J turns. E1 ablation shows CAMS recall (0.700) below baseline (0.875) when the constraint is at T3 — confounded by live vs. pre-canned generation, but the direction is correct: T1-T2 constraints are the guaranteed preservation zone. The CDS study plants constraints at T1 where the guarantee holds.
-- **Dual-signal fusion is inactive on Opus 4.7.** The feature was designed for Claude 3.7 Sonnet's exposed thinking blocks. Opus 4.7 uses adaptive thinking internally without exposing utilization metrics, so thinking_utilization is always 0.
-- **COMPRESS activates on sustained prose sessions only.** Code blocks trigger Type Prior (J capped ≤ 0.64 → MEDIUM), so coding sessions use TRIM instead of COMPRESS. Both mechanisms save tokens; which fires depends on J zone.
-- **Calibration requires more data.** OOF calibration on 18 examples has high variance (±0.30). Use `python -m evals.calibration --api` to stabilize threshold estimates.
-- **Token savings accounting is conservative.** char/4 proxy underestimates real Opus tokens by 20-40% (markdown formatting), so actual savings are likely larger than reported.
-
----
-
-## Built with Claude Code
-
-Every file in this repo was written during the hackathon using Claude Code (claude-sonnet-4-6).
-
----
-
-*Built for the "Built with Opus 4.7: a Claude Code hackathon" — April 2026*

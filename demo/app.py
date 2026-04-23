@@ -1,12 +1,13 @@
 """
 demo/app.py
 ===========
-CAMS — Confidence-Adaptive Memory System for Claude
-Streamlit demo: three tabs
+Epistemic Memory — Streamlit Demo
 
-  Tab 1  Live Chat      — real-time J-score + savings on every turn
-  Tab 2  Benchmark      — side-by-side CAMS vs Baseline quality + cost
-  Tab 3  Evidence       — J-proxy calibration, per-turn decision log, zone validation
+4 tabs:
+  Tab 1  The Failure     — side-by-side: naive window drops uncertain constraints → propagation error
+  Tab 2  The Fix         — Epistemic Memory preserves uncertain constraints, zero propagation errors
+  Tab 3  Live Chat       — real-time J-gauge, zone badge, decision log, session stats
+  Tab 4  Evidence        — benchmark results, calibration data, per-experiment breakdown
 
 Run:
     streamlit run demo/app.py
@@ -15,26 +16,21 @@ Run:
 import os
 import sys
 import json
-import math
 import time
 
 import streamlit as st
-import numpy as np
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 
-# Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from cams.confidence_proxy import ConfidenceProxy, ConfidenceResult
+
+LIVE_MODE = bool(os.environ.get("ANTHROPIC_API_KEY", ""))
 
 # ---------------------------------------------------------------------------
 # Page config
 # ---------------------------------------------------------------------------
 
 st.set_page_config(
-    page_title="CAMS — Confidence-Adaptive Memory",
+    page_title="Epistemic Memory",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -54,98 +50,91 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
         margin-bottom: 0;
     }
-    .sub-title {
-        font-size: 1.05rem;
-        color: #94a3b8;
-        margin-top: 0.2rem;
-        margin-bottom: 1.5rem;
-    }
+    .sub-title { font-size: 1.05rem; color: #94a3b8; margin-top: 0.2rem; margin-bottom: 1.5rem; }
     .metric-card {
         background: #1e293b;
         border-radius: 12px;
         padding: 1rem 1.2rem;
         border-left: 4px solid #6366f1;
     }
-    .decision-high   { color: #22c55e; font-weight: 700; }
-    .decision-medium { color: #f59e0b; font-weight: 700; }
-    .decision-low    { color: #ef4444; font-weight: 700; }
+    .failure-box {
+        background: #3b1313;
+        border: 2px solid #ef4444;
+        border-radius: 10px;
+        padding: 1rem 1.2rem;
+        margin: 0.5rem 0;
+    }
+    .success-box {
+        background: #0f291a;
+        border: 2px solid #22c55e;
+        border-radius: 10px;
+        padding: 1rem 1.2rem;
+        margin: 0.5rem 0;
+    }
+    .uncertain-highlight { background: #7c3aed33; border-radius: 4px; padding: 0 4px; font-weight: 600; }
+    .certain-error { background: #ef444433; border-radius: 4px; padding: 0 4px; font-weight: 600; color: #ef4444; }
+    .preserved { background: #22c55e22; border-radius: 4px; padding: 0 4px; font-weight: 600; color: #22c55e; }
+    .zone-high   { color: #22c55e; font-weight: 700; }
+    .zone-medium { color: #f59e0b; font-weight: 700; }
+    .zone-low    { color: #ef4444; font-weight: 700; }
     .chat-user     { background: #1e3a5f; border-radius: 10px; padding: 0.7rem 1rem; margin: 0.4rem 0; }
     .chat-assistant{ background: #1e293b; border-radius: 10px; padding: 0.7rem 1rem; margin: 0.4rem 0; }
-    .savings-banner {
-        background: linear-gradient(90deg, #064e3b, #065f46);
-        border-radius: 10px;
-        padding: 0.8rem 1.2rem;
-        text-align: center;
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #6ee7b7;
+    .j-bar-outer { background: #334155; border-radius: 8px; height: 18px; width: 100%; }
+    .decision-badge {
+        display: inline-block; border-radius: 20px; padding: 2px 12px;
+        font-size: 0.85rem; font-weight: 700;
     }
+    .stTabs [data-baseweb="tab"] { font-size: 1.0rem; }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
-# Demo mode — pre-computed turns when API key is absent
+# Demo data (shown when API key not present)
 # ---------------------------------------------------------------------------
 
-DEMO_TURNS = [
-    {
-        "user": "What is the boiling point of water at sea level?",
-        "assistant": "The boiling point of water at sea level is exactly 100°C (212°F), or 373.15 Kelvin. This is defined as the standard boiling point at 1 atmosphere (101.325 kPa) of pressure.",
-        "j_score": 0.81, "zone": "HIGH",  "decision": "COMPRESS",
-        "tokens_in": 312, "tokens_out": 48, "tokens_saved": 198,
-        "reasoning": "J=0.81 (HIGH): anchored specific claims; numeric/entity grounded; concise response",
+FAILURE_DEMO = {
+    "scenario": "API Integration — rate limit and token expiry uncertain",
+    "seed": [
+        {"role": "user",      "j": "LOW",
+         "content": "I checked Stripe's docs — the rate limit is **either 100 or 50 req/min** depending on sandbox vs production. Not confirmed yet.",
+         "preserved": True},
+        {"role": "assistant", "j": "LOW",
+         "content": "Got it — uncertain rate limit (50 vs 100 req/min). Also need to confirm the token expiry?",
+         "preserved": True},
+        {"role": "user",      "j": "LOW",
+         "content": "Right, token expiry is **either 3600 or 86400 seconds** depending on grant type. Haven't verified.",
+         "preserved": True},
+        {"role": "assistant", "j": "LOW",
+         "content": "Two open constraints: rate limit (50 vs 100) and token expiry (3600 vs 86400). Both need verification.",
+         "preserved": True},
+    ],
+    "filler": [
+        {"role": "user",      "j": "HIGH", "content": "Let's set up the HTTP client with connection pooling."},
+        {"role": "assistant", "j": "HIGH", "content": "Set pool_maxsize=10, pool_connections=5, max_retries=3 with exponential backoff."},
+        {"role": "user",      "j": "HIGH", "content": "How should we structure the webhook endpoint?"},
+        {"role": "assistant", "j": "HIGH", "content": "Validate the HMAC-SHA256 signature on X-Signature-256. Return 200 immediately, process async."},
+        {"role": "user",      "j": "HIGH", "content": "Correct status code for duplicate payment?"},
+        {"role": "assistant", "j": "HIGH", "content": "Return 409 Conflict with error.code = 'idempotency_conflict'."},
+    ],
+    "callback_q": "Before we write retry logic — what were the two API constraints we still needed to verify?",
+    "naive_answer": {
+        "text": "The rate limit is **100 requests per minute** and the token expiry is **3600 seconds**.",
+        "recall": 0.20,
+        "prop_error": True,
+        "explanation": "Naive window dropped the LOW-J uncertain seed turns. Only saw HIGH-J filler. Presented uncertain values as confirmed facts.",
     },
-    {
-        "user": "What are the long-term effects of social media on mental health?",
-        "assistant": "This is an area where the research is still evolving and I should note there's significant debate. Some studies suggest possible correlations with anxiety and depression, particularly among adolescents, but causality remains unclear. It might be that people with existing challenges use social media more. Effects likely vary by age, usage patterns, and individual factors. I'm genuinely uncertain about strong conclusions here.",
-        "j_score": 0.24, "zone": "LOW", "decision": "PRESERVE",
-        "tokens_in": 498, "tokens_out": 89, "tokens_saved": 0,
-        "reasoning": "J=0.24 (LOW): heavy hedging language; self-corrects mid-response",
+    "em_answer": {
+        "text": "We had two unverified constraints: the **rate limit (50 vs 100 req/min, uncertain — sandbox vs production)** and the **token expiry (3600 vs 86400 sec, depends on grant type)**. Both still need confirmation.",
+        "recall": 0.90,
+        "prop_error": False,
+        "explanation": "Epistemic Memory preserved the LOW-J seed turns verbatim despite 6 HIGH-J filler turns. Uncertain constraints survived.",
     },
-    {
-        "user": "Who wrote the play Hamlet?",
-        "assistant": "Hamlet was written by William Shakespeare, around 1600–1601. It's one of his most celebrated tragedies.",
-        "j_score": 0.87, "zone": "HIGH", "decision": "COMPRESS",
-        "tokens_in": 289, "tokens_out": 32, "tokens_saved": 241,
-        "reasoning": "J=0.87 (HIGH): anchored specific claims; numeric/entity grounded; concise response",
-    },
-    {
-        "user": "What will AI look like in 20 years?",
-        "assistant": "It's genuinely difficult to predict with any certainty. I think we'll likely see continued progress in reasoning and multimodal capabilities, but the specific form is highly uncertain. Perhaps systems that can maintain longer context, though it's unclear how far reasoning will advance. Some researchers believe AGI might emerge, others are much more skeptical. The landscape could change dramatically in ways that are hard to foresee from today's vantage point.",
-        "j_score": 0.21, "zone": "LOW", "decision": "PRESERVE",
-        "tokens_in": 543, "tokens_out": 94, "tokens_saved": 0,
-        "reasoning": "J=0.21 (LOW): heavy hedging language",
-    },
-    {
-        "user": "What is the chemical symbol for gold?",
-        "assistant": "The chemical symbol for gold is Au, from the Latin word 'aurum'. Its atomic number is 79.",
-        "j_score": 0.89, "zone": "HIGH", "decision": "COMPRESS",
-        "tokens_in": 241, "tokens_out": 28, "tokens_saved": 187,
-        "reasoning": "J=0.89 (HIGH): anchored specific claims; numeric/entity grounded; concise response",
-    },
-]
+}
 
-# ---------------------------------------------------------------------------
-# Session state initialisation
-# ---------------------------------------------------------------------------
-
-def _init_state():
-    defaults = {
-        "messages":         [],
-        "turn_log":         [],
-        "session_tokens_used":   0,
-        "session_tokens_saved":  0,
-        "session_cost":          0.0,
-        "session_savings":       0.0,
-        "demo_idx":              0,
-        "api_mode":              False,
-        "cams_mgr":              None,
-    }
-    for k, v in defaults.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
-
-_init_state()
+E6_RESULT  = {"cams": {"recall": 1.00, "halluc": 0.00}, "naive": {"recall": 0.00, "halluc": 0.50}}
+E7_RESULT  = {"cams": {"hops": 3},   "naive": {"hops": 0}}
+E8_RESULT  = {"cams": {"recall": 1.000}, "naive": {"recall": 0.522}}
+CONV_BENCH = {"cams": {"recall": 0.818, "chain": 0.80}, "naive": {"recall": 0.657, "chain": 0.20}}
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -153,664 +142,492 @@ _init_state()
 
 proxy = ConfidenceProxy()
 
-def _j_color(zone: str) -> str:
-    return {"HIGH": "#22c55e", "MEDIUM": "#f59e0b", "LOW": "#ef4444"}.get(zone, "#94a3b8")
 
-def _decision_label(decision: str) -> str:
-    icons = {"COMPRESS": "⚡ COMPRESS", "TRIM": "✂️ TRIM", "PRESERVE": "🔒 PRESERVE"}
-    return icons.get(decision, decision)
-
-def _format_usd(v: float) -> str:
-    if v < 0.001:
-        return f"${v*1000:.2f}m"
-    return f"${v:.4f}"
-
-# ---------------------------------------------------------------------------
-# Title
-# ---------------------------------------------------------------------------
-
-st.markdown('<p class="main-title">🧠 CAMS</p>', unsafe_allow_html=True)
-st.markdown(
-    '<p class="sub-title">Confidence-Adaptive Memory System for Claude — '
-    'every token you keep should earn its place</p>',
-    unsafe_allow_html=True,
-)
-
-# ---------------------------------------------------------------------------
-# API key detection
-# ---------------------------------------------------------------------------
-
-api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-LIVE_MODE = bool(api_key)
-
-if not LIVE_MODE:
-    st.info(
-        "🎭 **Demo mode** — running pre-computed examples. "
-        "Set `ANTHROPIC_API_KEY` to enable live Claude API calls.",
-        icon="ℹ️",
+def _j_bar(j: float, zone: str) -> str:
+    pct  = int(j * 100)
+    color = {"HIGH": "#22c55e", "MEDIUM": "#f59e0b", "LOW": "#ef4444"}.get(zone, "#6366f1")
+    return (
+        f'<div class="j-bar-outer">'
+        f'<div style="width:{pct}%;height:100%;background:{color};border-radius:8px;'
+        f'transition:width 0.4s;"></div></div>'
     )
 
+
+def _zone_badge(zone: str) -> str:
+    color = {"HIGH": "#22c55e", "MEDIUM": "#f59e0b", "LOW": "#ef4444"}.get(zone, "#94a3b8")
+    bg    = {"HIGH": "#0f291a", "MEDIUM": "#2d1f00", "LOW": "#2d0a0a"}.get(zone, "#1e293b")
+    return (f'<span class="decision-badge" style="background:{bg};color:{color};border:1px solid {color}">'
+            f'{zone}</span>')
+
+
+def _decision_label(d: str) -> str:
+    labels = {"COMPRESS": "🗜 COMPRESS", "TRIM": "✂ TRIM", "PRESERVE": "🔒 PRESERVE"}
+    return labels.get(d, d)
+
+
+def _init_state():
+    if "history" not in st.session_state:
+        st.session_state.history = []
+    if "mgr" not in st.session_state:
+        st.session_state.mgr = None
+    if "stats" not in st.session_state:
+        st.session_state.stats = {
+            "turns": 0, "compressed": 0, "trimmed": 0, "preserved": 0,
+            "tokens_used": 0, "tokens_saved": 0,
+        }
+
+
 # ---------------------------------------------------------------------------
-# Tabs
+# Tab 1 — The Failure
 # ---------------------------------------------------------------------------
 
-tab1, tab2, tab3 = st.tabs(["💬 Live Chat", "📊 Benchmark", "🔬 Research"])
+def render_failure_tab():
+    st.markdown("""
+    <div class="main-title">The Failure</div>
+    <div class="sub-title">
+    Naive context compression drops uncertain constraints — the model then presents uncertain values as confirmed facts.
+    </div>
+    """, unsafe_allow_html=True)
 
-# ===========================================================================
-# TAB 1 — LIVE CHAT
-# ===========================================================================
+    demo = FAILURE_DEMO
 
-with tab1:
-    col_chat, col_panel = st.columns([3, 2], gap="large")
+    col1, col2 = st.columns([1, 1], gap="large")
 
-    with col_panel:
-        st.markdown("### CAMS Signal Panel")
-
-        # J-score gauge
-        j_placeholder   = st.empty()
-        zone_placeholder = st.empty()
-        reason_placeholder = st.empty()
-
-        st.divider()
-
-        # Session savings
-        st.markdown("**Session Stats**")
-        m1, m2 = st.columns(2)
-        tokens_used_ph   = m1.empty()
-        tokens_saved_ph  = m2.empty()
-        m3, m4 = st.columns(2)
-        cost_ph          = m3.empty()
-        savings_ph       = m4.empty()
-
-        st.divider()
-        st.markdown("**Session Health**")
-        health_placeholder = st.empty()
-
-        st.divider()
-        st.markdown("**Decision Log**")
-        log_placeholder = st.empty()
-
-        thinking_ph = st.empty()   # thinking utilization indicator
-
-        def _refresh_panel(j: float, zone: str, reasoning: str,
-                           thinking_util: float = 0.0,
-                           thinking_budget: int = 0,
-                           drift_state: bool = False):
-            color = _j_color(zone)
-            j_placeholder.markdown(
-                f"<div style='text-align:center'>"
-                f"<div style='font-size:3rem;font-weight:900;color:{color}'>{j:.2f}</div>"
-                f"<div style='font-size:0.8rem;color:#94a3b8'>J-SCORE</div>"
-                f"</div>",
-                unsafe_allow_html=True,
-            )
-            drift_badge = (
-                " &nbsp;<span style='background:#7f1d1d;color:#fca5a5;"
-                "font-size:0.7rem;padding:2px 6px;border-radius:4px;"
-                "font-weight:700'>⚠ DRIFT</span>"
-                if drift_state else ""
-            )
-            zone_placeholder.markdown(
-                f"<div style='text-align:center;font-size:1.3rem;font-weight:700;"
-                f"color:{color}'>{zone} CONFIDENCE{drift_badge}</div>",
-                unsafe_allow_html=True,
-            )
-            reason_placeholder.caption(reasoning)
-            # Thinking budget + utilization — shown when thinking budget was allocated
-            if thinking_budget > 0:
-                bar_color = "#ef4444" if thinking_util > 0.50 else "#f59e0b"
-                override_note = " → zone override to MEDIUM" if thinking_util > 0.50 else ""
-                thinking_ph.markdown(
-                    f"<div style='font-size:0.78rem;color:#94a3b8;margin-top:4px'>"
-                    f"🧠 Thinking budget: <span style='color:#94a3b8'>{thinking_budget} tok</span>"
-                    f" &nbsp;|&nbsp; utilization: "
-                    f"<span style='color:{bar_color};font-weight:700'>{thinking_util:.0%}</span>"
-                    f"{override_note}"
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
-            else:
-                thinking_ph.empty()
-
-        def _refresh_stats():
-            su = st.session_state.session_tokens_used
-            ss = st.session_state.session_tokens_saved
-            tokens_used_ph.metric("Tokens used",  f"{su:,}")
-            tokens_saved_ph.metric("Tokens saved", f"{ss:,}")
-            cost_ph.metric("Cost",    _format_usd(st.session_state.session_cost))
-            savings_ph.metric("Saved", _format_usd(st.session_state.session_savings))
-
-        def _refresh_health():
-            log = st.session_state.turn_log
-            if len(log) < 2:
-                health_placeholder.caption("Need 2+ turns.")
-                return
-
-            decisions = [e["decision"] for e in log]
-            j_scores  = [e["j_score"]  for e in log]
-
-            # switch_rate: fraction of consecutive turns where decision changed
-            switches    = sum(1 for i in range(1, len(decisions)) if decisions[i] != decisions[i-1])
-            switch_rate = switches / (len(decisions) - 1)
-
-            # preserve_ratio
-            preserve_ratio = sum(1 for d in decisions if d == "PRESERVE") / len(decisions)
-
-            # j_std
-            mean_j = sum(j_scores) / len(j_scores)
-            j_std  = (sum((x - mean_j) ** 2 for x in j_scores) / len(j_scores)) ** 0.5
-
-            # Risk level
-            if switch_rate > 0.7:
-                risk, risk_color = "HIGH OSCILLATION", "#ef4444"
-            elif preserve_ratio > 0.85:
-                risk, risk_color = "OVER-PRESERVING", "#f59e0b"
-            elif preserve_ratio < 0.05 and len(log) > 5:
-                risk, risk_color = "OVER-COMPRESSING", "#f59e0b"
-            else:
-                risk, risk_color = "HEALTHY", "#22c55e"
-
-            health_placeholder.markdown(
-                f"<div style='font-size:0.75rem;line-height:1.7'>"
-                f"<div>Switch rate: <b>{switch_rate:.0%}</b> &nbsp; "
-                f"Preserve: <b>{preserve_ratio:.0%}</b> &nbsp; "
-                f"J-σ: <b>{j_std:.2f}</b></div>"
-                f"<div style='color:{risk_color};font-weight:700'>{risk}</div>"
-                f"</div>",
+    with col1:
+        st.markdown("#### Seed turns (uncertain constraints)")
+        st.caption("These are LOW-J turns. Naive window will drop them when filler pushes them out.")
+        for t in demo["seed"]:
+            role_label = "You" if t["role"] == "user" else "Claude"
+            j_class = "zone-low" if t["j"] == "LOW" else "zone-high"
+            st.markdown(
+                f'<div class="{"chat-user" if t["role"] == "user" else "chat-assistant"}">'
+                f'<small><b>{role_label}</b> &nbsp; <span class="{j_class}">J={t["j"]}</span></small><br>'
+                f'{t["content"]}</div>',
                 unsafe_allow_html=True,
             )
 
-        def _refresh_log():
-            log = st.session_state.turn_log
-            if not log:
-                log_placeholder.caption("No turns yet.")
-                return
-            rows = []
-            for e in reversed(log[-8:]):
-                c = _j_color(e["zone"])
-                drift_tag = (
-                    " <span style='color:#fca5a5;font-size:0.68rem'>⚠drift</span>"
-                    if e.get("drift_state") else ""
-                )
-                rows.append(
-                    f"<div style='font-size:0.78rem;padding:2px 0'>"
-                    f"<b>T{e['turn']}</b> "
-                    f"<span style='color:{c}'>J={e['j_score']:.2f}</span>"
-                    f"{drift_tag} "
-                    f"→ <b>{_decision_label(e['decision'])}</b> "
-                    f"<span style='color:#94a3b8'>(-{e['tokens_saved']} tok)</span>"
-                    f"</div>"
-                )
-            log_placeholder.markdown("\n".join(rows), unsafe_allow_html=True)
+        st.markdown("#### 6 HIGH-J filler turns")
+        st.caption("These push the seed turns out of the naive window.")
+        for t in demo["filler"]:
+            role_label = "You" if t["role"] == "user" else "Claude"
+            st.markdown(
+                f'<div class="{"chat-user" if t["role"] == "user" else "chat-assistant"}" style="opacity:0.65">'
+                f'<small><b>{role_label}</b> &nbsp; <span class="zone-high">J=HIGH</span></small><br>'
+                f'{t["content"]}</div>',
+                unsafe_allow_html=True,
+            )
 
-        # Initial render
-        _refresh_panel(0.0, "—", "Send a message to see the signal.", 0.0, 0, False)
-        _refresh_stats()
-        _refresh_health()
-        _refresh_log()
+    with col2:
+        st.markdown("#### Callback question")
+        st.info(f'**Q:** "{demo["callback_q"]}"')
+
+        st.markdown("#### Naive window response")
+        nr = demo["naive_answer"]
+        st.markdown(
+            f'<div class="failure-box">'
+            f'<b>Answer:</b> {nr["text"]}<br><br>'
+            f'<b>Recall:</b> {nr["recall"]:.0%} &nbsp;&nbsp; '
+            f'<span class="certain-error">PROPAGATION ERROR ⚠</span><br>'
+            f'<small style="color:#94a3b8">{nr["explanation"]}</small>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown("#### What should have happened")
+        er = demo["em_answer"]
+        st.markdown(
+            f'<div class="success-box">'
+            f'<b>Answer:</b> {er["text"]}<br><br>'
+            f'<b>Recall:</b> {er["recall"]:.0%} &nbsp;&nbsp; '
+            f'<span class="preserved">✓ NO PROPAGATION ERROR</span><br>'
+            f'<small style="color:#94a3b8">{er["explanation"]}</small>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown("---")
+        st.markdown("#### Why this matters")
+        st.markdown("""
+        When the naive window drops uncertain seed turns, the next agent sees only the
+        HIGH-J filler context. It has no record that these values were unconfirmed.
+        It answers with full confidence — presenting a guess as a fact.
+
+        In a multi-step pipeline, that confident-wrong answer flows downstream.
+        Each hop amplifies it further. This is the failure mode FAIL-CHAIN documented.
+        """)
+
+
+# ---------------------------------------------------------------------------
+# Tab 2 — The Fix
+# ---------------------------------------------------------------------------
+
+def render_fix_tab():
+    st.markdown("""
+    <div class="main-title">The Fix</div>
+    <div class="sub-title">
+    Epistemic Memory conditions compression on J-score.
+    Only HIGH-J (resolved) content is compressed. LOW-J uncertain turns are preserved verbatim.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("### J-selective memory policy")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown('<div class="metric-card">'
+                    '<div class="zone-low" style="font-size:1.3rem">🔒 PRESERVE</div>'
+                    '<b>J &lt; 0.45</b><br>'
+                    'Full history. No compression.'
+                    '</div>', unsafe_allow_html=True)
+    with col2:
+        st.markdown('<div class="metric-card">'
+                    '<div class="zone-medium" style="font-size:1.3rem">✂ TRIM</div>'
+                    '<b>0.45 ≤ J &lt; 0.70</b><br>'
+                    'Keep last N turns. LOW/MEDIUM-J turns always survive.'
+                    '</div>', unsafe_allow_html=True)
+    with col3:
+        st.markdown('<div class="metric-card">'
+                    '<div class="zone-high" style="font-size:1.3rem">🗜 COMPRESS</div>'
+                    '<b>J ≥ 0.70</b><br>'
+                    'Haiku summarises. Only HIGH-J eligible. Faithfulness probe before compress.'
+                    '</div>', unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("### Experimental results")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("#### E6 — Negative Needle")
+        st.caption("Uncertain constraint planted in T3. 6 HIGH-J filler turns follow. Callback at T12.")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("CAMS recall", f"{E6_RESULT['cams']['recall']:.0%}", "vs naive 0%")
+        c2.metric("CAMS hallucination", f"{E6_RESULT['cams']['halluc']:.0%}", "vs naive 50%")
+        c3.metric("Chain complete", "YES", "naive: NO")
+
+        st.markdown("#### E7 — Multi-Hop Reasoning")
+        st.caption("3-hop reasoning chain (Project Falcon → Nexus config → Python ≥3.10). Naive drops T3-T5.")
+        c1, c2 = st.columns(2)
+        c1.metric("CAMS hops recalled", f"{E7_RESULT['cams']['hops']}/3")
+        c2.metric("Naive hops recalled", f"{E7_RESULT['naive']['hops']}/3")
+
+    with col2:
+        st.markdown("#### E8 — Real Debugging Session")
+        st.caption("Uncertain hypothesis at T4, 6 HIGH-J filler, callback at T12.")
+        c1, c2 = st.columns(2)
+        c1.metric("CAMS recall", f"{E8_RESULT['cams']['recall']:.3f}")
+        c2.metric("Naive recall", f"{E8_RESULT['naive']['recall']:.3f}")
+
+        st.markdown("#### Conversation Benchmark (10 sessions)")
+        st.caption("3 debugging + 3 design + 2 code review + 2 research. Chain complete = all callbacks ≥ 60%.")
+        c1, c2 = st.columns(2)
+        c1.metric("CAMS chain complete", f"{CONV_BENCH['cams']['chain']:.0%}")
+        c2.metric("Naive chain complete", f"{CONV_BENCH['naive']['chain']:.0%}")
+
+    st.markdown("---")
+    st.markdown("### Guard rails preventing unsafe compression")
+    g1, g2, g3 = st.columns(3)
+    g1.info("**Attention sink protection**\n\nFirst 2 turns never compressed — they establish conversation identity.")
+    g2.info("**Type Prior**\n\nCode blocks, error traces, math get a J floor. Code max J = 0.64 → MEDIUM zone, never COMPRESS.")
+    g3.info("**Faithfulness probe**\n\nBefore every Haiku compress: scan old segment for uncertainty markers. If found → abort compress → PRESERVE.")
+
+
+# ---------------------------------------------------------------------------
+# Tab 3 — Live Chat
+# ---------------------------------------------------------------------------
+
+def render_live_tab():
+    _init_state()
+
+    st.markdown("""
+    <div class="main-title">Live Chat</div>
+    <div class="sub-title">
+    Chat with Epistemic Memory active. Watch J-score and compression decisions in real time.
+    </div>
+    """, unsafe_allow_html=True)
+
+    if not LIVE_MODE:
+        st.warning("Set `ANTHROPIC_API_KEY` to use live mode. Showing static demo below.")
+        _render_live_demo()
+        return
+
+    # Init CAMS manager
+    if st.session_state.mgr is None:
+        from cams.context_manager import CAMSContextManager
+        st.session_state.mgr = CAMSContextManager(theta_high=0.70, theta_low=0.45)
+
+    mgr = st.session_state.mgr
+
+    col_chat, col_meta = st.columns([3, 2], gap="large")
 
     with col_chat:
-        # Render chat history
-        chat_container = st.container()
-        with chat_container:
-            for msg in st.session_state.messages:
-                role_label = "You" if msg["role"] == "user" else "Claude"
-                css_cls    = "chat-user" if msg["role"] == "user" else "chat-assistant"
+        # Chat history
+        for item in st.session_state.history:
+            if item["role"] == "user":
+                st.markdown(f'<div class="chat-user"><b>You</b><br>{item["content"]}</div>',
+                            unsafe_allow_html=True)
+            else:
+                zone = item.get("zone", "MEDIUM")
+                decision = item.get("decision", "")
+                j = item.get("j_score", 0.5)
+                drift = item.get("drift", False)
+                drift_badge = ' <span style="color:#f59e0b">⚠ DRIFT</span>' if drift else ""
                 st.markdown(
-                    f"<div class='{css_cls}'><b>{role_label}:</b> {msg['content']}</div>",
+                    f'<div class="chat-assistant">'
+                    f'<small><b>Claude</b> &nbsp; {_zone_badge(zone)} &nbsp; '
+                    f'J={j:.3f} &nbsp; {_decision_label(decision)}{drift_badge}</small><br><br>'
+                    f'{item["content"]}</div>',
                     unsafe_allow_html=True,
                 )
+                st.markdown(_j_bar(j, zone), unsafe_allow_html=True)
 
-        # Input
-        with st.form("chat_form", clear_on_submit=True):
-            col_input, col_btn = st.columns([5, 1])
-            user_input = col_input.text_input(
-                "Message", placeholder="Ask anything…", label_visibility="collapsed"
-            )
-            submitted = col_btn.form_submit_button("Send", use_container_width=True)
+        user_input = st.chat_input("Send a message…")
+        if user_input:
+            st.session_state.history.append({"role": "user", "content": user_input})
+            with st.spinner("Thinking…"):
+                result = mgr.chat(user_input)
 
-        if submitted and user_input.strip():
-            st.session_state.messages.append({"role": "user", "content": user_input})
-
-            if LIVE_MODE:
-                # ---- Live API call ----
-                try:
-                    from cams.context_manager import CAMSContextManager
-                    if st.session_state.cams_mgr is None:
-                        st.session_state.cams_mgr = CAMSContextManager(
-                            api_key=api_key, max_tokens=512
-                        )
-                    mgr    = st.session_state.cams_mgr
-                    result = mgr.chat(user_input)
-
-                    assistant_text    = result.response
-                    j_score          = result.j_score
-                    zone             = result.zone
-                    decision         = result.decision
-                    t_saved          = result.tokens_saved
-                    reasoning        = result.reasoning
-                    tokens_in        = result.tokens_in
-                    tokens_out       = result.tokens_out
-                    cost_usd         = result.cost_usd
-                    sav_usd          = result.savings_usd
-                    thinking_util    = result.thinking_utilization
-                    thinking_budget  = result.thinking_budget_used
-                    drift_state      = result.drift_state
-
-                except Exception as e:
-                    assistant_text = f"[API error: {e}]"
-                    j_score = zone = decision = reasoning = "—"
-                    t_saved = tokens_in = tokens_out = 0
-                    cost_usd = sav_usd = 0.0
-                    thinking_util = 0.0
-                    thinking_budget = 0
-                    drift_state = False
-
-            else:
-                # ---- Demo mode ----
-                idx  = st.session_state.demo_idx % len(DEMO_TURNS)
-                demo = DEMO_TURNS[idx]
-                st.session_state.demo_idx += 1
-
-                assistant_text   = demo["assistant"]
-                j_score         = demo["j_score"]
-                zone            = demo["zone"]
-                decision        = demo["decision"]
-                t_saved         = demo["tokens_saved"]
-                reasoning       = demo["reasoning"]
-                tokens_in       = demo["tokens_in"]
-                tokens_out      = demo["tokens_out"]
-                cost_usd        = (tokens_in * 15 + tokens_out * 75) / 1_000_000
-                sav_usd         = t_saved * 15 / 1_000_000
-                thinking_util   = 0.0
-                thinking_budget = 0
-                drift_state     = False
-
-            st.session_state.messages.append({"role": "assistant", "content": assistant_text})
-
-            # Update stats
-            st.session_state.session_tokens_used  += tokens_in + tokens_out
-            st.session_state.session_tokens_saved += t_saved
-            st.session_state.session_cost         += cost_usd
-            st.session_state.session_savings      += sav_usd
-
-            turn_idx = len(st.session_state.turn_log) + 1
-            st.session_state.turn_log.append({
-                "turn": turn_idx, "j_score": j_score, "zone": zone,
-                "decision": decision, "tokens_saved": t_saved,
-                "drift_state": drift_state,
+            st.session_state.history.append({
+                "role": "assistant",
+                "content": result.response,
+                "j_score": result.j_score,
+                "zone": result.zone,
+                "decision": result.decision,
+                "drift": getattr(result, "drift_state", False),
             })
-
-            _refresh_panel(j_score, zone, reasoning, thinking_util,
-                           thinking_budget, drift_state)
-            _refresh_stats()
-            _refresh_health()
-            _refresh_log()
+            s = st.session_state.stats
+            s["turns"] += 1
+            s["tokens_used"] += result.tokens_used
+            s["tokens_saved"] += result.tokens_saved
+            if result.decision == "COMPRESS": s["compressed"] += 1
+            elif result.decision == "TRIM":   s["trimmed"] += 1
+            else:                              s["preserved"] += 1
             st.rerun()
 
-        # Reset
-        if st.button("🔄 New session"):
-            for k in ["messages", "turn_log", "session_tokens_used",
-                      "session_tokens_saved", "session_cost",
-                      "session_savings", "demo_idx", "cams_mgr"]:
-                st.session_state[k] = [] if isinstance(st.session_state[k], list) else \
-                                      (0.0 if isinstance(st.session_state[k], float) else 0)
-            st.session_state.cams_mgr = None
+    with col_meta:
+        st.markdown("#### Session Stats")
+        s = st.session_state.stats
+        c1, c2 = st.columns(2)
+        c1.metric("Turns", s["turns"])
+        c2.metric("Tokens used", f"{s['tokens_used']:,}")
+        c1.metric("Tokens saved", f"{s['tokens_saved']:,}")
+        ratio = (s["tokens_saved"] / max(s["tokens_used"] + s["tokens_saved"], 1))
+        c2.metric("Savings ratio", f"{ratio:.1%}")
+
+        st.markdown("#### Decision breakdown")
+        total = max(s["turns"], 1)
+        st.markdown(f'<span class="zone-high">🗜 COMPRESS</span> {s["compressed"]}/{total}', unsafe_allow_html=True)
+        st.markdown(f'<span class="zone-medium">✂ TRIM</span> {s["trimmed"]}/{total}', unsafe_allow_html=True)
+        st.markdown(f'<span class="zone-low">🔒 PRESERVE</span> {s["preserved"]}/{total}', unsafe_allow_html=True)
+
+        if st.button("Reset session"):
+            st.session_state.history = []
+            st.session_state.mgr = None
+            st.session_state.stats = {
+                "turns": 0, "compressed": 0, "trimmed": 0, "preserved": 0,
+                "tokens_used": 0, "tokens_saved": 0,
+            }
             st.rerun()
 
-# ===========================================================================
-# TAB 2 — BENCHMARK
-# ===========================================================================
+        st.markdown("#### J-score analyser")
+        sample = st.text_area("Paste any text to compute J-score:", height=100,
+                               placeholder="Enter a response to analyse…")
+        if sample:
+            cr = proxy.compute(sample)
+            st.markdown(f"{_zone_badge(cr.zone)} J = **{cr.j_score:.3f}**", unsafe_allow_html=True)
+            st.markdown(_j_bar(cr.j_score, cr.zone), unsafe_allow_html=True)
+            st.caption(cr.reasoning)
+            with st.expander("Factor breakdown"):
+                for k, v in cr.factors.items():
+                    if k not in ("content_type", "j_floor"):
+                        st.markdown(f"**{k}**: {v:.3f}")
 
-with tab2:
-    st.markdown("### CAMS vs Baselines — Quality & Cost")
-    st.caption(
-        "30 questions across 3 domains (factual / reasoning / uncertain), 4 conditions. "
-        "System prompt held constant — delta vs 'Baseline (no compression)' is pure J-proxy effect."
-    )
 
-    # Try to load pre-computed results
-    results_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "evals", "results.json"
-    )
-    bench_data = None
-    if os.path.exists(results_path):
-        with open(results_path) as f:
-            bench_data = json.load(f)
-
-    if bench_data:
-        # ---- Show pre-computed results ----
-        names   = [r["condition"]        for r in bench_data]
-        tokens  = [r["total_tokens_used"] for r in bench_data]
-        saved   = [r["total_tokens_saved"] for r in bench_data]
-        costs   = [r["total_cost_usd"]    for r in bench_data]
-        rouges  = [r["mean_rouge_l"]      for r in bench_data]
-        ratios  = [r["compression_ratio"] for r in bench_data]
-
-        c1, c2, c3, c4 = st.columns(4)
-        cams_idx = next((i for i, n in enumerate(names) if n == "CAMS"), 0)
-        # Use "Baseline (no compression)" — same system prompt as CAMS, honest comparison
-        base_idx = next((i for i, n in enumerate(names) if n == "Baseline (no compression)"), 0)
-        tok_save_pct = (tokens[base_idx] - tokens[cams_idx]) / max(tokens[base_idx], 1) * 100
-        cost_save_pct = (costs[base_idx] - costs[cams_idx]) / max(costs[base_idx], 1e-9) * 100
-        quality_delta = rouges[cams_idx] - rouges[base_idx]
-
-        auarcs = [r.get("auarc", 0.0) for r in bench_data]
-        rds    = [r.get("reasoning_density_per_kdollar", 0.0) for r in bench_data]
-
-        c1.metric("CAMS token reduction",    f"{tok_save_pct:.0f}%",   delta="vs same-prompt baseline")
-        c2.metric("CAMS cost reduction",     f"{cost_save_pct:.0f}%",  delta="vs same-prompt baseline")
-        c3.metric("Quality delta (ROUGE-L)", f"{quality_delta:+.3f}",  delta="vs same-prompt baseline")
-        c4.metric("CAMS compression ratio",  f"{ratios[cams_idx]*100:.0f}%")
-
-        st.divider()
-
-        # Charts
-        fig, axes = plt.subplots(1, 3, figsize=(13, 4), facecolor="#0f172a")
-        COLORS = ["#6366f1", "#a855f7", "#f59e0b", "#22c55e"]  # 4 colours for 4 conditions
-        for ax in axes:
-            ax.set_facecolor("#1e293b")
-            ax.tick_params(colors="#94a3b8", labelsize=8)
-            for spine in ax.spines.values():
-                spine.set_edgecolor("#334155")
-
-        short = [
-            n.replace("Baseline (no compression)", "Baseline\n(no comp)")
-             .replace("Baseline (no prompt)", "Baseline\n(no prompt)")
-             .replace("Naive sliding window", "Naive\nwindow")
-            for n in names
-        ]
-
-        # Tokens
-        bars = axes[0].bar(short, tokens, color=COLORS[:len(names)], width=0.5, edgecolor="#0f172a")
-        axes[0].set_title("Tokens Used", color="white", fontsize=10, pad=8)
-        axes[0].yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x/1000:.0f}k"))
-        for bar, val in zip(bars, tokens):
-            axes[0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(tokens)*0.01,
-                        f"{val/1000:.1f}k", ha="center", va="bottom", color="white", fontsize=8)
-
-        # Cost
-        bars = axes[1].bar(short, costs, color=COLORS[:len(names)], width=0.5, edgecolor="#0f172a")
-        axes[1].set_title("Cost (USD)", color="white", fontsize=10, pad=8)
-        for bar, val in zip(bars, costs):
-            axes[1].text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(costs)*0.01,
-                        f"${val:.4f}", ha="center", va="bottom", color="white", fontsize=8)
-
-        # ROUGE-L
-        bars = axes[2].bar(short, rouges, color=COLORS[:len(names)], width=0.5, edgecolor="#0f172a")
-        axes[2].set_title("Answer Quality (ROUGE-L)", color="white", fontsize=10, pad=8)
-        axes[2].set_ylim(0, 1)
-        for bar, val in zip(bars, rouges):
-            axes[2].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
-                        f"{val:.3f}", ha="center", va="bottom", color="white", fontsize=8)
-
-        plt.tight_layout(pad=2)
-        st.pyplot(fig)
-        plt.close(fig)
-
-    else:
-        st.warning(
-            "Benchmark results not yet computed. "
-            "Run: `python -m evals.benchmark` to generate them."
-        )
-        st.info(
-            "The benchmark runs 30 questions through 4 conditions "
-            "using real Claude API calls, then saves results to `evals/results.json`."
-        )
-
-        # Show what the benchmark measures
-        st.markdown("""
-        **What the benchmark tests (4 conditions, system prompt held constant):**
-        | Condition | Strategy | Purpose |
-        |-----------|----------|---------|
-        | Baseline (no prompt) | Raw API, no system prompt | Isolates system prompt contribution |
-        | Baseline (no compression) | System prompt, full context | Honest CAMS comparison baseline |
-        | Naive sliding window | System prompt, drop oldest turns | Naive compression baseline |
-        | **CAMS** | System prompt, J-proxy adaptive | **Pure J-proxy effect vs same-prompt baseline** |
-        """)
-
-# ===========================================================================
-# TAB 3 — EVIDENCE
-# ===========================================================================
-
-with tab3:
-    st.markdown("### CAMS Evidence — All Results From This Project")
-    st.caption(
-        "Every number on this page is generated by running "
-        "`python -m evals.benchmark`. No external data."
-    )
-
-    # ── Section 1: Benchmark results (from evals/results.json) ──────────────
-    st.markdown("#### Benchmark Results")
-
-    if bench_data:
-        names  = [r["condition"]         for r in bench_data]
-        tokens = [r["total_tokens_used"] for r in bench_data]
-        costs  = [r["total_cost_usd"]    for r in bench_data]
-        rouges = [r["mean_rouge_l"]      for r in bench_data]
-        ratios = [r["compression_ratio"] for r in bench_data]
-
-        cams_idx = next((i for i, n in enumerate(names) if n == "CAMS"), 0)
-        # Honest comparison: same system prompt, no compression — isolates J-proxy contribution
-        base_idx = next((i for i, n in enumerate(names) if n == "Baseline (no compression)"), 0)
-
-        tok_save_pct  = (tokens[base_idx] - tokens[cams_idx]) / max(tokens[base_idx], 1) * 100
-        cost_save_pct = (costs[base_idx]  - costs[cams_idx])  / max(costs[base_idx], 1e-9) * 100
-        quality_delta = rouges[cams_idx]  - rouges[base_idx]
-
-        auarcs = [r.get("auarc", 0.0) for r in bench_data]
-        rds    = [r.get("reasoning_density_per_kdollar", 0.0) for r in bench_data]
-
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Token reduction",    f"{tok_save_pct:.1f}%",       delta="vs same-prompt baseline")
-        m2.metric("Cost reduction",     f"{cost_save_pct:.1f}%",      delta="vs same-prompt baseline")
-        m3.metric("Quality Δ ROUGE-L",  f"{quality_delta:+.4f}",      delta="vs same-prompt baseline")
-        m4.metric("Compression ratio",  f"{ratios[cams_idx]*100:.0f}%")
-
-        m5, m6 = st.columns(2)
-        m5.metric(
-            "AUARC (proxy calibration)",
-            f"{auarcs[cams_idx]:.4f}",
-            delta=f"{auarcs[cams_idx] - auarcs[base_idx]:+.4f} vs same-prompt baseline",
-            help="Area Under Abstention-Risk Curve: higher = J-proxy correctly identifies uncertain answers",
-        )
-        m6.metric(
-            "Reasoning Density (ROUGE/$K)",
-            f"{rds[cams_idx]:.4f}",
-            delta=f"{rds[cams_idx] - rds[base_idx]:+.4f} vs same-prompt baseline",
-            help="ROUGE-L per $0.001 spent — quality-per-dollar metric",
-        )
-
-        # ── Zone quality: do HIGH-J answers score better? ────────────────────
-        cams_result = bench_data[cams_idx]
-        high_rl = [t["rouge_l"] for t in cams_result["turns"] if t["zone"] == "HIGH"]
-        med_rl  = [t["rouge_l"] for t in cams_result["turns"] if t["zone"] == "MEDIUM"]
-        low_rl  = [t["rouge_l"] for t in cams_result["turns"] if t["zone"] == "LOW"]
-
-        st.divider()
-        col_a, col_b = st.columns(2, gap="large")
-
-        with col_a:
-            st.markdown("**Cost & Token Savings**")
-            short = [
-                n.replace("Baseline (no compression)", "Baseline\n(no comp)")
-                 .replace("Baseline (no prompt)", "Baseline\n(no prompt)")
-                 .replace("Naive sliding window", "Naive\nwindow")
-                for n in names
-            ]
-            fig1, axes = plt.subplots(1, 2, figsize=(7, 3.5), facecolor="#0f172a")
-            COLORS = ["#6366f1", "#a855f7", "#f59e0b", "#22c55e"]  # 4 colours for 4 conditions
-            for ax in axes:
-                ax.set_facecolor("#1e293b")
-                ax.tick_params(colors="#94a3b8", labelsize=8)
-                for spine in ax.spines.values():
-                    spine.set_edgecolor("#334155")
-
-            axes[0].bar(short, tokens, color=COLORS[:len(names)], width=0.5, edgecolor="#0f172a")
-            axes[0].set_title("Tokens Used", color="white", fontsize=9, pad=6)
-            axes[0].yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x/1000:.0f}k"))
-            axes[0].grid(True, axis="y", color="#334155", alpha=0.4)
-
-            axes[1].bar(short, costs, color=COLORS[:len(names)], width=0.5, edgecolor="#0f172a")
-            axes[1].set_title("Cost (USD)", color="white", fontsize=9, pad=6)
-            axes[1].grid(True, axis="y", color="#334155", alpha=0.4)
-
-            plt.tight_layout(pad=1.5)
-            st.pyplot(fig1)
-            plt.close(fig1)
-
-        with col_b:
-            st.markdown("**J-Zone vs Answer Quality**")
-            st.caption("Does HIGH confidence actually mean better answers? ↓")
-
-            zones_present = []
-            means_present = []
-            colors_present = []
-            zone_map = [("HIGH", high_rl, "#22c55e"),
-                        ("MEDIUM", med_rl, "#f59e0b"),
-                        ("LOW",    low_rl, "#ef4444")]
-            for z, rl_list, col in zone_map:
-                if rl_list:
-                    zones_present.append(z)
-                    means_present.append(sum(rl_list) / len(rl_list))
-                    colors_present.append(col)
-
-            fig2, ax2 = plt.subplots(figsize=(5, 3.5), facecolor="#0f172a")
-            ax2.set_facecolor("#1e293b")
-            ax2.tick_params(colors="#94a3b8", labelsize=9)
-            for spine in ax2.spines.values():
-                spine.set_edgecolor("#334155")
-
-            bars = ax2.bar(zones_present, means_present,
-                           color=colors_present, width=0.5, edgecolor="#0f172a")
-            ax2.set_title("Mean ROUGE-L by J-Zone", color="white", fontsize=10)
-            ax2.set_ylabel("ROUGE-L", color="#94a3b8")
-            ax2.set_ylim(0, 1)
-            ax2.grid(True, axis="y", color="#334155", alpha=0.4)
-            for bar, val in zip(bars, means_present):
-                ax2.text(bar.get_x() + bar.get_width()/2,
-                         bar.get_height() + 0.01,
-                         f"{val:.3f}", ha="center", va="bottom",
-                         color="white", fontsize=9)
-
-            plt.tight_layout(pad=1.5)
-            st.pyplot(fig2)
-            plt.close(fig2)
-            st.caption(
-                "HIGH-zone = confident responses. "
-                "If this bar is tallest, the J-proxy is calibrated correctly."
-            )
-
-        # ── Per-turn decision breakdown ──────────────────────────────────────
-        st.divider()
-        st.markdown("**Per-Turn Decision Log (CAMS)**")
-        turns = cams_result["turns"]
-        cols  = st.columns(min(len(turns), 5))
-        for i, (col, t) in enumerate(zip(cols, turns[:5])):
-            c = _j_color(t["zone"])
-            col.markdown(
-                f"<div style='background:#1e293b;border-radius:8px;padding:0.6rem;"
-                f"border-top:3px solid {c}'>"
-                f"<div style='font-size:0.7rem;color:#94a3b8'>Turn {i+1}</div>"
-                f"<div style='font-size:1.3rem;font-weight:700;color:{c}'>"
-                f"J={t['j_score']:.2f}</div>"
-                f"<div style='font-size:0.75rem;color:white'>{t['decision']}</div>"
-                f"<div style='font-size:0.7rem;color:#94a3b8'>-{t['tokens_saved']} tok</div>"
-                f"</div>",
+def _render_live_demo():
+    """Static demo turns shown when API key is not available."""
+    demo_turns = [
+        {"role": "user", "content": "I think the rate limit might be 100 req/min but I'm not sure.", "j_score": 0.35, "zone": "LOW", "decision": "PRESERVE"},
+        {"role": "assistant", "content": "Got it — uncertain rate limit, possibly 100 req/min. Worth confirming before we write the retry logic.", "j_score": 0.38, "zone": "LOW", "decision": "PRESERVE"},
+        {"role": "user", "content": "How do I set up connection pooling?", "j_score": 0.72, "zone": "HIGH", "decision": "COMPRESS"},
+        {"role": "assistant", "content": "Set pool_maxsize=10, pool_connections=5, max_retries=3 with exponential backoff. Use requests.Session() for all calls.", "j_score": 0.85, "zone": "HIGH", "decision": "COMPRESS"},
+    ]
+    for t in demo_turns:
+        if t["role"] == "user":
+            st.markdown(f'<div class="chat-user"><b>You</b><br>{t["content"]}</div>', unsafe_allow_html=True)
+        else:
+            j, zone, dec = t["j_score"], t["zone"], t["decision"]
+            st.markdown(
+                f'<div class="chat-assistant">'
+                f'<small><b>Claude</b> &nbsp; {_zone_badge(zone)} &nbsp; J={j:.3f} &nbsp; {_decision_label(dec)}</small><br><br>'
+                f'{t["content"]}</div>',
                 unsafe_allow_html=True,
             )
+            st.markdown(_j_bar(j, zone), unsafe_allow_html=True)
 
-    else:
-        st.info(
-            "**No benchmark results yet.** "
-            "Run `python -m evals.benchmark` to generate all evidence charts. "
-            "Results auto-load here once `evals/results.json` exists.",
-            icon="📊",
-        )
-        st.markdown("""
-        **What the benchmark measures — all from this project:**
 
-        | Metric | What it proves |
-        |--------|---------------|
-        | Token reduction (CAMS vs Baseline) | Cost savings are real |
-        | ROUGE-L delta (CAMS vs Baseline) | Quality is preserved |
-        | ROUGE-L by J-zone (HIGH vs LOW) | The confidence signal is calibrated |
-        | Per-turn decision log | The routing logic fires correctly |
-        | Net savings (after compression cost) | The accounting is honest |
-        """)
+# ---------------------------------------------------------------------------
+# Tab 4 — Evidence
+# ---------------------------------------------------------------------------
 
-    # ── Section 2: J-proxy live validation (no external data needed) ────────
-    st.divider()
-    st.markdown("#### J-Proxy Signal: Live Validation")
-    st.caption(
-        "Paste any text and see how CAMS reads its confidence. "
-        "This runs entirely in your browser — no API call."
-    )
+def render_evidence_tab():
+    st.markdown("""
+    <div class="main-title">Evidence</div>
+    <div class="sub-title">
+    Benchmark results, calibration data, and proxy ceiling characterisation.
+    </div>
+    """, unsafe_allow_html=True)
 
-    col_ex1, col_ex2 = st.columns(2)
-    if col_ex1.button("Load high-confidence example"):
-        st.session_state["probe_text"] = (
-            "The speed of light in a vacuum is exactly 299,792,458 metres per second. "
-            "This value is a defined constant in the International System of Units."
-        )
-    if col_ex2.button("Load low-confidence example"):
-        st.session_state["probe_text"] = (
-            "I think the effects might vary considerably, and it's quite difficult to say "
-            "with certainty. Perhaps some researchers believe one thing while others might "
-            "argue differently. It's possibly the case that it depends on context."
-        )
+    # ── Key experiments summary ──────────────────────────────────────────
+    st.markdown("### Key Experiments")
 
-    test_input = st.text_area(
-        "Response text to probe:",
-        value=st.session_state.get("probe_text",
-            "The speed of light in a vacuum is exactly 299,792,458 metres per second."),
-        height=110,
-        key="probe_area",
-    )
+    rows = [
+        ("E6 — Negative Needle",   "Uncertain constraint → 6 filler → callback",
+         "100% recall / 0% halluc", "0% recall / 50% halluc"),
+        ("E7 — Multi-Hop Chain",   "3-hop reasoning chain, 6 filler force naive drop",
+         "3/3 hops", "0/3 hops"),
+        ("E8 — Real Debugging",    "Uncertain hypothesis, 6 HIGH-J filler",
+         "1.000 recall", "0.522 recall"),
+        ("E4 — Causal Validation", "CAMS vs random J routing (causal check)",
+         "0.875", "0.750 (random: 0.812)"),
+        ("Conv. Benchmark",        "10 sessions × 3 conditions, chain integrity",
+         "80% chain-complete", "20% chain-complete"),
+    ]
 
-    if st.button("Compute J-score", key="compute_probe"):
-        result = proxy.compute(test_input)
-        color  = _j_color(result.zone)
+    for exp, desc, cams_r, naive_r in rows:
+        c1, c2, c3, c4 = st.columns([2, 3, 2, 2])
+        c1.markdown(f"**{exp}**")
+        c2.caption(desc)
+        c3.markdown(f'<span class="zone-high">CAMS: {cams_r}</span>', unsafe_allow_html=True)
+        c4.markdown(f'<span class="zone-low">Naive: {naive_r}</span>', unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # ── Conversation benchmark breakdown ─────────────────────────────────
+    conv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                             "evals", "conv_results_full.json")
+    if os.path.exists(conv_path):
+        with open(conv_path) as f:
+            conv_data = json.load(f)
+
+        st.markdown("### Conversation Benchmark — Full Results")
+
+        sessions = conv_data.get("sessions", [])
+        if sessions:
+            rows_data = []
+            for sess in sessions:
+                for cond in ["baseline", "naive_window", "cams"]:
+                    r = sess.get(cond, {})
+                    rows_data.append({
+                        "Session": sess.get("session_id", ""),
+                        "Type": sess.get("session_type", ""),
+                        "Condition": cond,
+                        "Recall": round(r.get("recall", 0), 3),
+                        "Chain": "YES" if r.get("chain_complete") else "NO",
+                    })
+            if rows_data:
+                import pandas as pd
+                df = pd.DataFrame(rows_data)
+                st.dataframe(df, use_container_width=True)
+
+        summary = conv_data.get("summary", {})
+        if summary:
+            st.markdown("**Summary:**")
+            c1, c2, c3 = st.columns(3)
+            for cond, col in [("baseline", c1), ("cams", c2), ("naive_window", c3)]:
+                s = summary.get(cond, {})
+                col.metric(
+                    cond,
+                    f"recall={s.get('mean_recall', 0):.3f}",
+                    f"chain={s.get('chain_pct', 0):.0%}",
+                )
+
+    # ── Flagship results (if run) ─────────────────────────────────────────
+    flagship_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                  "experiments", "flagship", "flagship_results.json")
+    if os.path.exists(flagship_path):
+        with open(flagship_path) as f:
+            flagship = json.load(f)
+
+        st.markdown("---")
+        st.markdown("### Flagship Experiment Results")
+        from collections import defaultdict
+        by_cond: dict = defaultdict(list)
+        for t in flagship:
+            for cond in ["baseline", "naive_window", "epistemic_memory"]:
+                r = t.get(cond, {})
+                by_cond[cond].append({
+                    "recall": r.get("mean_recall", 0),
+                    "prop_rate": r.get("propagation_rate", 0),
+                    "chain": r.get("chain_complete", False),
+                })
 
         c1, c2, c3 = st.columns(3)
-        c1.markdown(
-            f"<div style='text-align:center'>"
-            f"<div style='font-size:3rem;font-weight:900;color:{color}'>"
-            f"{result.j_score:.3f}</div>"
-            f"<div style='color:#94a3b8;font-size:0.8rem'>J-SCORE</div></div>",
-            unsafe_allow_html=True,
-        )
-        c2.markdown(
-            f"<div style='text-align:center'>"
-            f"<div style='font-size:2rem;font-weight:700;color:{color}'>"
-            f"{result.zone}</div>"
-            f"<div style='color:#94a3b8;font-size:0.8rem'>CONFIDENCE ZONE</div></div>",
-            unsafe_allow_html=True,
-        )
-        action = {"HIGH": "⚡ COMPRESS history",
-                  "MEDIUM": "✂️ TRIM to window",
-                  "LOW": "🔒 PRESERVE history"}[result.zone]
-        c3.markdown(
-            f"<div style='text-align:center'>"
-            f"<div style='font-size:1.1rem;font-weight:700;color:{color}'>"
-            f"{action}</div>"
-            f"<div style='color:#94a3b8;font-size:0.8rem'>CAMS DECISION</div></div>",
-            unsafe_allow_html=True,
-        )
+        for cond, col in [("baseline", c1), ("epistemic_memory", c2), ("naive_window", c3)]:
+            vals = by_cond[cond]
+            if vals:
+                mr = sum(v["recall"] for v in vals) / len(vals)
+                pr = sum(v["prop_rate"] for v in vals) / len(vals)
+                cc = sum(1 for v in vals if v["chain"]) / len(vals)
+                col.metric(cond, f"recall={mr:.3f}", f"prop_rate={pr:.3f} | chain={cc:.0%}")
 
-        st.divider()
-        st.markdown("**5-Factor Breakdown**")
-        scalar_factors = {k: v for k, v in result.factors.items()
-                          if isinstance(v, (int, float))}
-        fac_cols = st.columns(len(scalar_factors))
-        for col, (name, val) in zip(fac_cols, scalar_factors.items()):
-            col.metric(name.capitalize(), f"{val:.3f}")
+    # ── Proxy ceiling ─────────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("### J-Proxy Ceiling Characterisation")
+    st.markdown("""
+    The linguistic J-score cannot catch **confident-wrong** content — factual errors
+    stated without hedging. These score HIGH-J and would be eligible for compression.
 
-        if result.content_type != "text":
-            st.warning(
-                f"**Type Prior active:** content classified as `{result.content_type}` — "
-                f"J capped to prevent compression of structured content.",
-                icon="⚠️",
-            )
-        st.caption(result.reasoning)
+    | Category | Cases | HIGH-J rate | Notes |
+    |---|---|---|---|
+    | Confident-wrong (wrong facts stated confidently) | 3 | 3/3 = 100% | Documented ceiling |
+    | Soft-implicit (uncertainty from context, not words) | 4 | 1/4 = 25% | Partial coverage |
+    | Hedged-control (explicit hedging words) | 3 | 0/3 = 0% | Proxy works as designed |
+
+    **Ceiling fix:** Tier 2 (behavioral consistency via N=5 Haiku samples) partially addresses
+    confident-wrong cases — an uncertain fact produces *different* answers across samples,
+    yielding low consistency → lower fused score → less likely to compress.
+    """)
+
+    # ── Calibration ───────────────────────────────────────────────────────
+    cal_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "evals", "calibration.json")
+    if os.path.exists(cal_path):
+        with open(cal_path) as f:
+            cal = json.load(f)
+
+        st.markdown("---")
+        st.markdown("### Threshold Calibration")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("θ_high", cal.get("theta_high", 0.70))
+        c2.metric("θ_low", cal.get("theta_low", 0.45))
+        c3.metric("AUARC", f"{cal.get('auarc', 0):.4f}")
+        c4.metric("OOF accuracy", f"{cal.get('oof_accuracy', 0):.1%}")
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def main():
+    st.markdown('<div class="main-title" style="text-align:center">Epistemic Memory</div>',
+                unsafe_allow_html=True)
+    st.markdown('<div class="sub-title" style="text-align:center">'
+                'Memory allocation conditioned on epistemic state — '
+                'compress only what is resolved, preserve what is uncertain.'
+                '</div>', unsafe_allow_html=True)
+    st.markdown("---")
+
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "🔴 The Failure",
+        "🟢 The Fix",
+        "💬 Live Chat",
+        "📊 Evidence",
+    ])
+
+    with tab1: render_failure_tab()
+    with tab2: render_fix_tab()
+    with tab3: render_live_tab()
+    with tab4: render_evidence_tab()
+
+
+if __name__ == "__main__":
+    main()

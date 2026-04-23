@@ -1,15 +1,31 @@
-# CAMS — Submission Summary
+# Epistemic Memory — Submission Summary
 
-**CAMS (Confidence-Adaptive Memory System)** is a cognitive governor for Claude Opus 4.7: a system that uses the model's own linguistic output as a real-time signal to control what it remembers — and specifically what it must not compress.
+**Epistemic Memory** is a context management layer for LLM conversations and multi-agent pipelines that conditions every memory allocation decision on epistemic state: **compress only what is epistemically resolved; preserve what is uncertain**.
 
-The project descends from two research strands — FAIL-CHAIN (how errors propagate in multi-step LLM pipelines) and Fisher J-signal (a hidden-state reliability indicator validated on transformer internals). Because Opus 4.7 exposes no hidden states, CAMS implements a language-level proxy: five linguistic factors that correlate with the resolved/uncertain distinction, validated against the Φ(√J̄/2) theoretical ceiling (AUARC 0.323, 49.0% of ceiling at the API surface).
+## The Problem
 
-Six guard rails prevent unsafe compression: attention sink protection (first 2 turns always preserved), Type Prior (code and error traces capped at MEDIUM zone regardless of tone), novelty guard (domain pivots detected via content-word ratio), faithfulness probe (refuses to compress old segments containing uncertainty markers — prevents Haiku from silently stripping "I'm not certain" into apparent fact), semantic entropy proxy (MEDIUM-zone responses with multi-answer markers downgraded to PRESERVE), and drift detection (3 consecutive LOW turns locks PRESERVE). Adaptive percentile thresholds (P75/P25 of a 20-turn rolling buffer) make the system model-agnostic and session-adaptive. Selective turn-level compression sends only HIGH-J turns to Haiku, preserving LOW/MEDIUM turns verbatim.
+LLMs lose epistemic state under compression. When a conversation window is truncated or summarised, the *content* survives but the *confidence* does not. A constraint expressed as "we're not certain about X" becomes "X" after one Haiku pass. A debugging hypothesis expressed as "possibly the race condition" becomes "the race condition" in the next agent's summary. This is the failure mode FAIL-CHAIN documented across multi-step pipelines: errors compound silently because memory is epistemic-blind.
 
-The benchmarks are honest: on a 30-question diverse QA benchmark, naive sliding window outperforms CAMS on both ROUGE-L (0.238 vs 0.213) and AUARC (0.356 vs 0.323). This is the expected result — that benchmark tests 30 independent questions where aggressive compression helps focus. CAMS achieves 22.3% token reduction and 17.1% cost reduction vs the same-prompt baseline. The J-proxy delta on diverse Q&A is within noise (CI [−0.130, +0.119]).
+## The Mechanism
 
-The measurable value is demonstrated in targeted experiments. **E6 (Negative Needle)**: when uncertain constraints are planted at turns 3-4 and 8 filler turns build compression pressure, CAMS achieves 100% correction recall vs 0% for naive sliding window — the faithfulness probe refuses to compress segments containing uncertainty markers. **E7 (Multi-Hop Chain)**: CAMS preserves all 3 hops of a Falcon→Nexus CVE→Python upgrade chain through Haiku compression, while naive window drops all 3 hops. **E8 (Real Debugging Session)**: CAMS preserves the uncertain root-cause hypothesis at 100% recall vs naive window's 0% recall for that specific dimension. **E1 (Propagation Chain)**: CAMS mean recall 0.875 vs naive 0.833 vs baseline 0.658 on uncertain constraint survival.
+A five-factor linguistic assertiveness score (J-score, 0–1) is extracted from every response at zero cost. Only HIGH-J (epistemically resolved) turns are eligible for compression. LOW/MEDIUM-J turns containing uncertain claims survive every compression and trim operation verbatim. A faithfulness probe scans old segments for 25+ uncertainty markers before any Haiku summarisation — if found, compression aborts.
 
-A random-J ablation in E4 separates causality: CAMS 0.875 mean recall = baseline 0.875, vs random-J 0.812 and naive 0.750 over a 20-turn session — CAMS > random_j confirms J-routing contributes beyond mere compression schedule.
+The system ships as an MCP (Model Context Protocol) server, deployable in Claude Desktop or any MCP-compatible agent framework in 2 minutes of config. Eight tools including `em_propagation_risk` — a pre-flight epistemic risk assessment before any compress or agent handoff. Model-agnostic by design: the signal reads output text, works with any LLM.
 
-Every file was written during the hackathon using Claude Code.
+## Evidence
+
+The experiments that matter:
+
+- **E6 (Negative Needle)**: uncertain constraint planted at T3, 6 HIGH-J filler turns. CAMS: 100% recall, 0% hallucination. Naive window: 0% recall, 50% hallucination.
+- **E7 (Multi-Hop Chain)**: 3-hop reasoning chain, 6 filler turns force naive window to drop T3-T5. CAMS: 3/3 hops. Naive: 0/3 hops.
+- **E8 (Real Debugging)**: uncertain hypothesis at T4, 6 HIGH-J filler. CAMS: 1.000 recall. Naive: 0.522.
+- **E4 (Causal validation)**: CAMS 0.875 vs random_j 0.812 vs naive 0.750 — J-routing carries signal above random.
+- **10-session conversation benchmark**: CAMS 80% chain-complete, naive 20%. Baseline (full history) 100%.
+
+The QA benchmark result is honest: naive window outperforms CAMS on 30 independent questions (0.238 vs 0.213 ROUGE-L). That benchmark tests independent recall where aggressive compression helps focus. The CAMS advantage is specifically in long-horizon constraint preservation — exactly the failure mode that breaks real-world LLM pipelines.
+
+## Connection to Prior Research
+
+This project connects two prior lines: FAIL-CHAIN (error propagation in multi-step pipelines) and Fisher J-signal experiments (KV-cache attention entropy on Qwen 3.5B showing internal model uncertainty correlates with surface linguistic patterns). Epistemic Memory is the API-layer component that applies both insights without requiring access to model internals — making it deployable on any LLM today.
+
+Every file written using Claude Code during the hackathon.

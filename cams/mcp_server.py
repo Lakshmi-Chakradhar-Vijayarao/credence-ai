@@ -1,10 +1,14 @@
 """
 cams/mcp_server.py
 ==================
-CAMS MCP Server — Epistemic Integrity Layer as a Model Context Protocol service.
+Epistemic Memory MCP Server — context management conditioned on epistemic state.
 
-Exposes CAMSContextManager as 7 MCP tools callable from Claude Desktop
+Exposes CAMSContextManager as 8 MCP tools callable from Claude Desktop
 or any MCP-compatible agent framework.
+
+Core principle: memory allocation decisions should be conditioned on epistemic
+state. Only HIGH-J (epistemically resolved) content is safe to compress. Uncertain
+content is preserved verbatim through every compression and trim operation.
 
 Every cams_chat response includes a CAMSEnvelope dict so downstream agents
 can inspect epistemic provenance before compressing or acting on information.
@@ -21,7 +25,11 @@ Requires:
 Trust boundary:
     Envelopes from unknown sources (not in _TRUSTED_SOURCES) receive a
     trust penalty, making should_verify=True more likely. This prevents
-    CAMS from blindly trusting envelopes injected from untrusted agents.
+    the system from blindly trusting envelopes injected from untrusted agents.
+
+Model-agnostic:
+    The epistemic signal reads output text. It works regardless of which
+    model produced the response — Claude, GPT-4o, Llama, or any other LLM.
 """
 
 import os
@@ -41,12 +49,16 @@ from .envelope import CAMSEnvelope, _TRUSTED_SOURCES
 # ---------------------------------------------------------------------------
 
 mcp = FastMCP(
-    "CAMS",
+    "Epistemic Memory",
     instructions=(
-        "CAMS is an epistemic integrity layer. Every cams_chat response includes "
-        "an 'envelope' field with a J-score and trust metadata. Check "
-        "envelope['should_verify'] before treating uncertain information as fact. "
-        "Check envelope['safe_to_compress'] before summarizing a response. "
+        "Epistemic Memory is a context management layer that conditions memory "
+        "allocation on epistemic state. Only epistemically resolved (HIGH-J) content "
+        "is compressed. Uncertain content is preserved verbatim.\n\n"
+        "Every cams_chat response includes an 'envelope' with a J-score and trust "
+        "metadata. ALWAYS check envelope['should_verify'] before treating uncertain "
+        "information as fact. ALWAYS check envelope['safe_to_compress'] before "
+        "summarizing or passing content to another agent.\n\n"
+        "Use em_propagation_risk before compressing or forwarding any response. "
         "Use cams_save / cams_load for cross-session continuity."
     ),
 ) if _FASTMCP_AVAILABLE else None
@@ -273,6 +285,73 @@ if _FASTMCP_AVAILABLE:
         if session_id in _sessions:
             _sessions[session_id].reset()
         return {"status": "reset", "session_id": session_id}
+
+    @mcp.tool()
+    def em_propagation_risk(content: str, chain_depth: int = 0) -> dict:
+        """
+        Pre-flight epistemic risk assessment before compressing or forwarding content.
+
+        Call this before:
+          - Summarising a conversation segment
+          - Passing content to another agent
+          - Storing content in long-term memory
+          - Including content in a system prompt
+
+        Returns a risk level and recommended action based on the epistemic
+        state of the content.
+
+        Args:
+            content:     The text to assess (response or conversation segment)
+            chain_depth: How many agent hops this content has already traversed (default 0)
+
+        Returns:
+            risk_level, j_score, zone, action, reasoning, safe_to_compress, should_verify
+        """
+        from .confidence_proxy import ConfidenceProxy
+        from .context_manager import _UNCERTAINTY_MARKERS
+
+        proxy = ConfidenceProxy(theta_high=0.70, theta_low=0.45)
+        cr = proxy.compute(content)
+
+        # Check for uncertainty markers
+        lower = content.lower()
+        uncertainty_hits = [m for m in _UNCERTAINTY_MARKERS if m in lower]
+        has_uncertainty = len(uncertainty_hits) > 0
+
+        # Trust degradation with chain depth
+        chain_penalty = chain_depth * 0.05
+        effective_trust = max(0.0, cr.j_score - chain_penalty)
+
+        # Risk assessment
+        if has_uncertainty and cr.zone in ("LOW", "MEDIUM"):
+            risk_level = "HIGH"
+            action = "PRESERVE — content contains explicit uncertainty markers. Do not compress or summarise."
+        elif has_uncertainty and cr.zone == "HIGH":
+            risk_level = "MEDIUM"
+            action = "VERIFY — linguistic J-score is high but uncertainty markers detected. Check for confident-sounding uncertain claims."
+        elif cr.zone == "LOW" or effective_trust < 0.40:
+            risk_level = "MEDIUM"
+            action = "PRESERVE — low confidence zone or trust degraded by chain depth. Keep verbatim."
+        elif cr.zone == "MEDIUM":
+            risk_level = "LOW"
+            action = "TRIM — medium confidence. Safe to trim but not compress. Preserve exact wording of any hedged claims."
+        else:
+            risk_level = "NONE"
+            action = "COMPRESS — high confidence, no uncertainty markers, trust sufficient. Safe to summarise."
+
+        return {
+            "risk_level":       risk_level,
+            "j_score":          cr.j_score,
+            "zone":             cr.zone,
+            "effective_trust":  round(effective_trust, 3),
+            "chain_depth":      chain_depth,
+            "has_uncertainty":  has_uncertainty,
+            "uncertainty_markers_found": uncertainty_hits[:5],  # first 5
+            "safe_to_compress": risk_level == "NONE",
+            "should_verify":    risk_level in ("HIGH", "MEDIUM"),
+            "action":           action,
+            "reasoning":        cr.reasoning,
+        }
 
 
 # ---------------------------------------------------------------------------
