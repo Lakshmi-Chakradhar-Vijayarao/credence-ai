@@ -72,7 +72,7 @@ def _validate_source(source: str) -> str:
 
 if _FASTMCP_AVAILABLE:
 
-    @mcp.tool
+    @mcp.tool()
     def cams_chat(session_id: str, message: str) -> dict:
         """
         Send a message through CAMS and receive a response with epistemic envelope.
@@ -106,7 +106,7 @@ if _FASTMCP_AVAILABLE:
             "adaptive_theta_low":  result.adaptive_theta_low,
         }
 
-    @mcp.tool
+    @mcp.tool()
     def cams_inspect_envelope(envelope_dict: dict) -> dict:
         """
         Inspect a CAMSEnvelope received from another agent.
@@ -147,7 +147,7 @@ if _FASTMCP_AVAILABLE:
             "recommendation":      recommendation,
         }
 
-    @mcp.tool
+    @mcp.tool()
     def cams_propagate_envelope(envelope_dict: dict, new_source: str) -> dict:
         """
         Propagate a CAMSEnvelope to the next agent hop.
@@ -171,7 +171,7 @@ if _FASTMCP_AVAILABLE:
         propagated = env.propagate(new_source=_validate_source(new_source))
         return propagated.to_dict()
 
-    @mcp.tool
+    @mcp.tool()
     def cams_get_stats(session_id: str) -> dict:
         """
         Return session statistics: tokens used, saved, cost, compression counts.
@@ -197,7 +197,7 @@ if _FASTMCP_AVAILABLE:
             "regime_active":      mgr._should_enable_cams(),
         }
 
-    @mcp.tool
+    @mcp.tool()
     def cams_get_decision_log(session_id: str) -> list:
         """
         Return per-turn decision log with J-scores, zones, decisions, and reasoning.
@@ -212,7 +212,7 @@ if _FASTMCP_AVAILABLE:
         """
         return _get_session(session_id).decision_log
 
-    @mcp.tool
+    @mcp.tool()
     def cams_save(session_id: str, path: str) -> dict:
         """
         Persist full session state to disk for cross-session continuity.
@@ -236,7 +236,7 @@ if _FASTMCP_AVAILABLE:
             "version":    "1.1",
         }
 
-    @mcp.tool
+    @mcp.tool()
     def cams_load(session_id: str, path: str) -> dict:
         """
         Load a previously saved session state.
@@ -259,7 +259,7 @@ if _FASTMCP_AVAILABLE:
             "history_len": len(mgr._history),
         }
 
-    @mcp.tool
+    @mcp.tool()
     def cams_reset(session_id: str) -> dict:
         """
         Reset a CAMS session, clearing all history and stats.

@@ -107,7 +107,7 @@ class ConfidenceProxy:
         print(result.zone)      # HIGH
     """
 
-    def __init__(self, theta_high: float = 0.65, theta_low: float = 0.35):
+    def __init__(self, theta_high: float = 0.70, theta_low: float = 0.45):
         self.theta_high = theta_high
         self.theta_low  = theta_low
 

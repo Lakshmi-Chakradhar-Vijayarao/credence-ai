@@ -988,7 +988,7 @@
       "line_number_recall": 1.0,
       "exception_recall": 1.0,
       "mean_recall": 1.0,
-      "tokens_used": 7515
+      "tokens_used": 20096
     },
     {
       "condition": "without_type_prior",
@@ -996,7 +996,7 @@
       "line_number_recall": 1.0,
       "exception_recall": 1.0,
       "mean_recall": 1.0,
-      "tokens_used": 6381
+      "tokens_used": 20477
     }
   ],
   "E8": [

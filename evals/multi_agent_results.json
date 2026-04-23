@@ -1,0 +1,80 @@
+[
+  {
+    "scenario": "S1",
+    "condition": "with_envelope",
+    "agent_a_response": "Based on my knowledge, here's what I can share about Stripe API timeouts, with appropriate caveats:\n\n**Stripe's server-s",
+    "agent_a_j_score": 0.6094,
+    "agent_a_zone": "MEDIUM",
+    "agent_b_action": "envelope_inspect (should_verify=False, trust=0.46)",
+    "agent_c_answer": "# Technical Spec: Stripe API Call Timeout\n\n## Recommendation\n\n**I cannot provide a specific, defensible timeout value fr",
+    "uncertainty_preserved": true,
+    "hallucination_present": false,
+    "chain_depth_final": 2,
+    "trust_score_final": 0.4094
+  },
+  {
+    "scenario": "S1",
+    "condition": "without_envelope",
+    "agent_a_response": "Based on my knowledge, here's what I can share about Stripe API timeouts, with appropriate caveats:\n\n**Stripe's server-s",
+    "agent_a_j_score": 0.6094,
+    "agent_a_zone": "MEDIUM",
+    "agent_b_action": "naive_passthrough",
+    "agent_c_answer": "# Technical Spec: Stripe API Call Timeout Configuration\n\n## Recommendation\n\n**Set client-side timeout for Stripe API cal",
+    "uncertainty_preserved": true,
+    "hallucination_present": false,
+    "chain_depth_final": 2,
+    "trust_score_final": 0.4094
+  },
+  {
+    "scenario": "S2",
+    "condition": "with_envelope",
+    "agent_a_response": "# OAuth Access Token Lifetimes\n\nThere's no single standard \u2014 the OAuth 2.0 spec (RFC 6749) deliberately leaves token lif",
+    "agent_a_j_score": 0.6509,
+    "agent_a_zone": "HIGH",
+    "agent_b_action": "envelope_inspect (should_verify=False, trust=0.50)",
+    "agent_c_answer": "# OAuth Access Token Expiry \u2014 Recommendation\n\n**We cannot specify a definitive expiry value from the available source ma",
+    "uncertainty_preserved": false,
+    "hallucination_present": false,
+    "chain_depth_final": 2,
+    "trust_score_final": 0.4509
+  },
+  {
+    "scenario": "S2",
+    "condition": "without_envelope",
+    "agent_a_response": "# OAuth Access Token Lifetimes\n\nThere's no single standard \u2014 the OAuth 2.0 spec (RFC 6749) deliberately leaves token lif",
+    "agent_a_j_score": 0.6509,
+    "agent_a_zone": "HIGH",
+    "agent_b_action": "naive_passthrough",
+    "agent_c_answer": "I can't give you a specific access token expiry value from this note \u2014 the note is incomplete and, more importantly, doe",
+    "uncertainty_preserved": true,
+    "hallucination_present": false,
+    "chain_depth_final": 2,
+    "trust_score_final": 0.4509
+  },
+  {
+    "scenario": "S3",
+    "condition": "with_envelope",
+    "agent_a_response": "**429 Too Many Requests**\n\nDefined in RFC 6585, this status code indicates the user has sent too many requests in a give",
+    "agent_a_j_score": 0.64,
+    "agent_a_zone": "MEDIUM",
+    "agent_b_action": "envelope_inspect (should_verify=False, trust=0.49)",
+    "agent_c_answer": "# Rate Limiting Status Code\n\n**Status Code:** `429 Too Many Requests`\n\n**Definition:** Indicates the client has sent too",
+    "uncertainty_preserved": true,
+    "hallucination_present": true,
+    "chain_depth_final": 2,
+    "trust_score_final": 0.44
+  },
+  {
+    "scenario": "S3",
+    "condition": "without_envelope",
+    "agent_a_response": "**429 Too Many Requests**\n\nDefined in RFC 6585, this status code indicates the user has sent too many requests in a give",
+    "agent_a_j_score": 0.64,
+    "agent_a_zone": "MEDIUM",
+    "agent_b_action": "naive_passthrough",
+    "agent_c_answer": "# Rate Limiting Status Code\n\n**Status Code:** `429 Too Many Requests`\n\n**Reliability:** Yes \u2014 this is a standardized, re",
+    "uncertainty_preserved": true,
+    "hallucination_present": false,
+    "chain_depth_final": 2,
+    "trust_score_final": 0.44
+  }
+]

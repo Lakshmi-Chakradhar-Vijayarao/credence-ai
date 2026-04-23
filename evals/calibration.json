@@ -1,20 +1,20 @@
 {
-  "theta_high": 0.55,
+  "theta_high": 0.7,
   "theta_low": 0.45,
-  "accuracy": 0.8889,
-  "n_samples": 18,
+  "accuracy": 0.7692,
+  "n_samples": 26,
   "by_zone": {
     "HIGH": {
-      "correct": 8,
-      "total": 8
+      "correct": 9,
+      "total": 11
     },
     "MEDIUM": {
-      "correct": 1,
-      "total": 3
+      "correct": 4,
+      "total": 5
     },
     "LOW": {
       "correct": 7,
-      "total": 7
+      "total": 10
     }
   },
   "scored_samples": [
@@ -107,28 +107,68 @@
       "j": 0.5046,
       "expected": "MEDIUM",
       "preview": "Machine learning models typically improve with more data, but the relationship i"
+    },
+    {
+      "j": 0.75,
+      "expected": "HIGH",
+      "preview": "7 multiplied by 8 equals **56**."
+    },
+    {
+      "j": 0.72,
+      "expected": "HIGH",
+      "preview": "The capital of Japan is **Tokyo**."
+    },
+    {
+      "j": 0.7467,
+      "expected": "HIGH",
+      "preview": "Python was first released in **1991** by Guido van Rossum. He began developing i"
+    },
+    {
+      "j": 0.6416,
+      "expected": "LOW",
+      "preview": "Predicting the global economy 50 years out involves enormous uncertainty, but he"
+    },
+    {
+      "j": 0.6566,
+      "expected": "LOW",
+      "preview": "Honestly? Nobody knows for certain, and anyone who tells you otherwise is overse"
+    },
+    {
+      "j": 0.6562,
+      "expected": "LOW",
+      "preview": "The causes of human consciousness remain genuinely unresolved. Here's an honest "
+    },
+    {
+      "j": 0.7307,
+      "expected": "MEDIUM",
+      "preview": "# How Transformer Neural Networks Work\n\nTransformers are a deep learning archite"
+    },
+    {
+      "j": 0.6878,
+      "expected": "MEDIUM",
+      "preview": "# Microservices vs. Monoliths: Key Trade-offs\n\n## Monoliths\n\n**Advantages:**\n- *"
     }
   ],
   "oof": {
     "n_folds": 5,
-    "n_samples": 18,
-    "oof_accuracy": 0.8,
-    "oof_acc_std": 0.2667,
-    "oof_auarc": 0.8,
-    "oof_auarc_std": 0.3014,
+    "n_samples": 26,
+    "oof_accuracy": 0.6867,
+    "oof_acc_std": 0.1067,
+    "oof_auarc": 0.7526,
+    "oof_auarc_std": 0.1323,
     "fold_accuracies": [
-      1.0,
-      1.0,
-      0.3333,
-      0.6667,
-      1.0
+      0.6,
+      0.6,
+      0.6,
+      0.8,
+      0.8333
     ],
     "fold_auarcs": [
-      1.0,
-      1.0,
-      0.2222,
-      0.7778,
-      1.0
+      0.6267,
+      0.6933,
+      0.6267,
+      0.8633,
+      0.9528
     ]
   }
 }

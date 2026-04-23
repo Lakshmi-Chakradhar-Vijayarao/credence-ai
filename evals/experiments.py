@@ -208,17 +208,25 @@ class E2Result:
 
 def run_e2() -> list[E2Result]:
     """
-    E2 — Confident Error Trap (Type Prior ablation) — fixed with short code snippets.
+    E2 — Confident Error Trap (Type Prior ablation) — redesigned for real pressure.
 
-    The original design used full multi-hundred-line function implementations.
-    Those naturally stay MEDIUM due to the brevity factor (long text → low brevity score),
-    making the Type Prior redundant. This version uses short one-liner fixes and
-    single-function patches — responses that would score HIGH without Type Prior.
+    Problem with previous design: max_tokens=150 meant code responses were too
+    short to build real compression pressure (brevity factor lowered J naturally).
+    This design uses max_tokens=400 with 8 seed turns to guarantee compression
+    fires and demonstrates whether Type Prior prevents it.
 
-    With Type Prior:    code response J capped at 0.64 → MEDIUM → no compression
-    Without Type Prior: short code response J ~ 0.72 → HIGH → COMPRESS fires → traceback lost
+    Setup:
+      T1-T2 : identity (attention sink, no code)
+      T3    : plant traceback — this is what we protect
+      T4-T8 : code fix responses (specific, anchored, no hedging)
+                → WITHOUT Type Prior: score HIGH → COMPRESS fires → traceback in old segment
+                → WITH Type Prior: code capped at 0.64 → MEDIUM → selective trim keeps traceback
+
+    Pass condition:
+      with_type_prior:    compression does NOT fire on code turns → traceback preserved
+      without_type_prior: compression fires on code turns (J ≥ 0.65) → traceback recall drops
     """
-    print("\n[E2] Confident Error Trap (Type Prior ablation) — short code snippets ...")
+    print("\n[E2] Confident Error Trap (Type Prior ablation) — redesigned ...")
 
     TRACEBACK = """\
 Traceback (most recent call last):
@@ -228,29 +236,24 @@ Traceback (most recent call last):
     return encoder.fit_transform(data)
 ValueError: Found unknown categories ['premium_v3', 'beta_access'] in column 0 during transform"""
 
-    SYSTEM = "You are a senior Python engineer helping debug a production pipeline."
+    SYSTEM = "You are a senior Python engineer helping debug a production pipeline. Be precise."
 
-    # T1-T2: identity (no code in response → attention sink)
-    # T3: traceback inject → first compressible turn → what we protect
-    # T4-T6: SHORT code fixes (one-liners / single-function patches)
-    #        → without Type Prior these score HIGH and trigger COMPRESS
-    #        → with Type Prior they score MEDIUM and COMPRESS never fires
     USER_MESSAGES = [
         "I'll be working through a Python ML pipeline bug with you today.",
-        "It's a preprocessing pipeline for our nightly batch.",
-        "Here's the traceback I'm seeing:\n\n" + TRACEBACK,
-        "What's the one-line fix to handle unknown categories in the encoder? Just the parameter change.",
-        "What's the pytest assertion to check that unknown categories don't raise? One line.",
-        "What's the type hint for the transform function's return value? One line.",
+        "It's a preprocessing pipeline that runs nightly for a fraud detection model.",
+        "Here's the traceback I'm seeing in production:\n\n" + TRACEBACK,
+        # Code turns — these should score HIGH without Type Prior
+        "Show me the fix for the OrdinalEncoder to handle unknown categories.",
+        "Now show me the handle_unknown parameter for sklearn's OrdinalEncoder. Include the import.",
+        "Write a pytest test that verifies unknown categories do not raise.",
+        "Show me how to log which unknown categories were encountered during transform.",
+        "Write a wrapper function that catches the ValueError and returns None for failed rows.",
     ]
 
     CALLBACKS = [
-        ("What was the exact line number where the error occurred in pipeline.py?",
-         ["23"]),
-        ("What was the exception type raised?",
-         ["ValueError"]),
-        ("What were the two unknown category strings that caused the error?",
-         ["premium_v3", "beta_access"]),
+        ("What was the exact line number where the error occurred in pipeline.py?", ["23"]),
+        ("What was the exception type raised?",                                      ["ValueError"]),
+        ("What were the two unknown category strings that caused the error?",        ["premium_v3", "beta_access"]),
     ]
 
     results = []
@@ -262,7 +265,7 @@ ValueError: Found unknown categories ['premium_v3', 'beta_access'] in column 0 d
         mgr = CAMSContextManager(
             api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
             theta_high=0.65, theta_low=0.35,
-            system_prompt=SYSTEM, max_tokens=150,   # force short responses
+            system_prompt=SYSTEM, max_tokens=400,
         )
 
         if condition == "without_type_prior":
@@ -274,8 +277,9 @@ ValueError: Found unknown categories ['premium_v3', 'beta_access'] in column 0 d
             time.sleep(0.3)
 
         n_compress = sum(1 for log in mgr.stats.decision_log if log["decision"] == "COMPRESS")
-        print(f"  [{condition}] compressions_fired={n_compress} "
-              f"(expected: {'>=1' if condition == 'without_type_prior' else '0'})")
+        n_trim     = sum(1 for log in mgr.stats.decision_log if log["decision"] == "TRIM")
+        print(f"  [{condition}] compress={n_compress} trim={n_trim} "
+              f"(expected compress: {'>=1' if condition == 'without_type_prior' else '0'})")
 
         for q, fragments in CALLBACKS:
             result = mgr.chat(q)
@@ -288,7 +292,7 @@ ValueError: Found unknown categories ['premium_v3', 'beta_access'] in column 0 d
         r = E2Result(
             condition=condition,
             traceback_recall=recall_scores[2] if len(recall_scores) > 2 else 0.0,
-            line_number_recall=recall_scores[0] if len(recall_scores) > 0 else 0.0,
+            line_number_recall=recall_scores[0] if recall_scores else 0.0,
             exception_recall=recall_scores[1] if len(recall_scores) > 1 else 0.0,
             mean_recall=sum(recall_scores) / len(recall_scores) if recall_scores else 0.0,
             tokens_used=tokens_total,

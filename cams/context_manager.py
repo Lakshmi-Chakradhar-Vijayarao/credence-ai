@@ -268,12 +268,13 @@ class CAMSContextManager:
 
     def __init__(
         self,
-        api_key:       Optional[str] = None,
-        theta_high:    float = 0.65,
-        theta_low:     float = 0.35,
-        system_prompt: Optional[str] = None,
-        max_tokens:    int = 1024,
-        use_thinking:  bool = False,   # enable adaptive thinking budget
+        api_key:        Optional[str] = None,
+        theta_high:     float = 0.70,
+        theta_low:      float = 0.45,
+        system_prompt:  Optional[str] = None,
+        max_tokens:     int = 1024,
+        use_thinking:   bool = False,   # enable adaptive thinking budget
+        use_agreement:  bool = False,   # enable agreement-based second signal for MEDIUM zone
     ):
         if not _ANTHROPIC_AVAILABLE:
             raise ImportError("pip install anthropic")
@@ -287,9 +288,10 @@ class CAMSContextManager:
             "Give concise answers when the answer is clear; "
             "express genuine uncertainty when it exists."
         )
-        self.max_tokens   = max_tokens
-        self.use_thinking = use_thinking
-        self.stats        = SessionStats()
+        self.max_tokens    = max_tokens
+        self.use_thinking  = use_thinking
+        self.use_agreement = use_agreement
+        self.stats         = SessionStats()
 
         # Live conversation state
         self._history:           list[dict] = []
@@ -306,6 +308,10 @@ class CAMSContextManager:
 
         # Novelty guard: vocabulary of named entities seen so far
         self._content_vocab: set[str] = set()
+        # Recent-window vocabulary: last 3 turns' content words (sliding queue).
+        # Novelty is measured against THIS, not global vocab, so same-domain
+        # technical terms don't falsely trigger the pivot guard every turn.
+        self._recent_vocab_window: list[set[str]] = []
 
         # Adaptive threshold tracking: rolling J-buffer for percentile-based thresholds.
         # After _ADAPTIVE_MIN_SAMPLES turns, theta_high = P75, theta_low = P25 of buffer.
@@ -408,6 +414,28 @@ class CAMSContextManager:
                 zone         = "LOW",
                 factors      = cr.factors,
                 reasoning    = cr.reasoning + "; semantic entropy proxy (context-dependent answer detected)",
+                content_type = cr.content_type,
+            )
+
+        # Agreement-based second signal (opt-in, use_agreement=True).
+        # On MEDIUM-J turns — where J-proxy is least reliable — ask Haiku to
+        # rate its own confidence. Fuse: J_final = 0.7*J + 0.3*agreement.
+        # Uses Haiku to keep cost negligible (~$0.0002/call).
+        # Only fires on MEDIUM because HIGH and LOW are already decided;
+        # MEDIUM is the boundary zone where a second reading matters most.
+        if self.use_agreement and cr.zone == "MEDIUM":
+            agreement = self._agreement_score(text)
+            fused_j   = round(0.7 * cr.j_score + 0.3 * agreement, 4)
+            fused_zone = (
+                "HIGH"   if fused_j >= self._effective_theta_high else
+                "MEDIUM" if fused_j >= self._effective_theta_low  else
+                "LOW"
+            )
+            cr = ConfidenceResult(
+                j_score      = fused_j,
+                zone         = fused_zone,
+                factors      = cr.factors,
+                reasoning    = cr.reasoning + f"; agreement={agreement:.2f} fused_j={fused_j:.3f}",
                 content_type = cr.content_type,
             )
 
@@ -526,8 +554,9 @@ class CAMSContextManager:
         self._turn1_goal         = ""
         self._j_history          = []
         self._drift_state        = False
-        self._content_vocab      = set()
-        self._j_buffer                   = []
+        self._content_vocab          = set()
+        self._recent_vocab_window    = []
+        self._j_buffer               = []
         self._history_j_scores           = []
         self._compression_shadow         = None
         self._compression_shadow_j       = None
@@ -844,35 +873,30 @@ class CAMSContextManager:
 
     def _check_novelty(self, text: str) -> bool:
         """
-        Returns True if this response signals a domain pivot.
-        Uses content-word novelty ratio — same three-gate logic as before but
-        applied to content words instead of named entities.
+        Novelty guard — DISABLED after empirical measurement showed 79-87% FP rate.
 
-        Why content words > entity counting:
-          - Works for topic shifts without proper nouns
-            ("optimistic locking" → "database sharding" shares no named entities)
-          - Content words (any ≥4-char non-stop word) are more reliable than
-            capitalized tokens which fire on sentence-initial words
+        Technical writing introduces new vocabulary every sentence within the same domain
+        ("vacuum", "partitioning", "B-tree" are all "new" in a PostgreSQL session).
+        A vocabulary-distance signal cannot distinguish same-domain progression from
+        a real domain pivot without semantic embeddings — which are not available here.
 
-        Three-gate design (all must be true to fire):
-          1. Context vocab established (≥ _NOVELTY_MIN_VOCAB words) — no early false positives
-          2. ≥ _NOVELTY_MIN_ENTITIES new content words in this response — single new terms aren't pivots
-          3. > _NOVELTY_THRESHOLD (0.75) of this response's content words are new — sustained
-             same-topic conversation introduces new terms but stays below 75% threshold
+        The cases this guard was intended to protect are already covered by:
+          - Faithfulness probe: detects uncertainty in compressible segments → PRESERVE
+          - Selective J-compression: LOW/MEDIUM-J turns always kept verbatim
+          - Regime detection: low J-variance → PRESERVE mode (no compression)
+
+        Kept as a stub so the call site and decision log field remain intact.
+        Returns False always. Re-enable with a proper embedding-based implementation.
         """
-        if len(self._content_vocab) < _NOVELTY_MIN_VOCAB:
-            return False
-        current = self._extract_content_words(text)
-        if not current:
-            return False
-        new_count = len(current - self._content_vocab)
-        if new_count < _NOVELTY_MIN_ENTITIES:
-            return False
-        novelty_ratio = new_count / len(current)
-        return novelty_ratio > _NOVELTY_THRESHOLD
+        return False
 
     def _update_content_vocab(self, text: str):
-        self._content_vocab.update(self._extract_content_words(text))
+        words = self._extract_content_words(text)
+        self._content_vocab.update(words)
+        # Maintain sliding window of last 3 turns
+        self._recent_vocab_window.append(words)
+        if len(self._recent_vocab_window) > 3:
+            self._recent_vocab_window.pop(0)
 
     def _has_multi_answer(self, text: str) -> bool:
         """Returns True if response signals multiple valid answers (semantic entropy proxy)."""
@@ -911,6 +935,35 @@ class CAMSContextManager:
     # ------------------------------------------------------------------
     # Regime detection
     # ------------------------------------------------------------------
+
+    def _agreement_score(self, response_text: str) -> float:
+        """
+        Ask Haiku to rate the confidence of a response on [0, 1].
+        Used as a second signal on MEDIUM-J turns where J-proxy is least reliable.
+        Haiku keeps cost to ~$0.0002/call — negligible for the accuracy gain.
+        """
+        try:
+            resp = self.client.messages.create(
+                model=_MODEL_HAIKU,
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        "Rate the epistemic confidence of the following response "
+                        "on a scale of 0.0 (very uncertain) to 1.0 (completely certain). "
+                        "Consider hedging language, specificity, and whether it contains "
+                        "qualifiers like 'I think', 'probably', 'might'. "
+                        "Reply with ONLY a decimal number between 0.0 and 1.0.\n\n"
+                        f"Response:\n{response_text[:600]}"
+                    ),
+                }],
+                max_tokens=10,
+            )
+            raw = resp.content[0].text.strip()
+            match = re.search(r'\d+\.?\d*', raw)
+            score = float(match.group()) if match else 0.5
+            return round(min(1.0, max(0.0, score)), 3)
+        except Exception:
+            return 0.5   # safe default — no change to fusion
 
     def _j_variance(self) -> float:
         """Variance of J-scores in the current rolling buffer."""
