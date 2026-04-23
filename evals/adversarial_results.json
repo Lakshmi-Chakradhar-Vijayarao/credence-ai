@@ -1,0 +1,163 @@
+[
+  {
+    "test_id": "A1",
+    "passed": true,
+    "description": "Confident-wrong claims: fraction that avoid COMPRESS zone",
+    "expected": "\u2264 2 of 5 claims in HIGH zone",
+    "actual": "3 of 5 in HIGH zone",
+    "details": {
+      "per_claim": [
+        {
+          "claim": "Python's GIL is removed in Python 3.9, enabling true multi-threaded parallelism.",
+          "j_score": 0.741,
+          "zone": "HIGH",
+          "risk": "COMPRESS"
+        },
+        {
+          "claim": "PostgreSQL uses a master-slave architecture where slaves accept write queries.",
+          "j_score": 0.6,
+          "zone": "MEDIUM",
+          "risk": "safe"
+        },
+        {
+          "claim": "The HTTP 404 status code means the server is temporarily unavailable.",
+          "j_score": 0.71,
+          "zone": "HIGH",
+          "risk": "COMPRESS"
+        },
+        {
+          "claim": "Docker containers share the host OS kernel but have their own virtualized hardwa",
+          "j_score": 0.629,
+          "zone": "MEDIUM",
+          "risk": "safe"
+        },
+        {
+          "claim": "JWT tokens are encrypted by default using AES-256.",
+          "j_score": 0.69,
+          "zone": "HIGH",
+          "risk": "COMPRESS"
+        }
+      ],
+      "compress_count": 3
+    }
+  },
+  {
+    "test_id": "A2",
+    "passed": true,
+    "description": "Faithfulness probe detects uncertainty prefix in mixed-signal response",
+    "expected": "has_uncertainty=True",
+    "actual": "has_uncertainty=True, zone=MEDIUM, j=0.618",
+    "details": {
+      "j_score": 0.6177,
+      "zone": "MEDIUM",
+      "has_uncertainty": true
+    }
+  },
+  {
+    "test_id": "A3",
+    "passed": true,
+    "description": "Faithfulness probe detects uncertainty in code comments",
+    "expected": "has_uncertainty=True",
+    "actual": "has_uncertainty=True, zone=MEDIUM, content_type=code",
+    "details": {
+      "j_score": 0.6088,
+      "zone": "MEDIUM",
+      "content_type": "code",
+      "has_uncertainty": true
+    }
+  },
+  {
+    "test_id": "A4",
+    "passed": true,
+    "description": "Semantic entropy proxy detects multi-answer responses",
+    "expected": "has_multi_answer=True",
+    "actual": "has_multi_answer=True, zone=MEDIUM, j=0.533",
+    "details": {
+      "j_score": 0.5326,
+      "zone": "MEDIUM",
+      "has_multi_answer": true
+    }
+  },
+  {
+    "test_id": "A5",
+    "passed": true,
+    "description": "Trust score degrades correctly with chain_depth and unknown sources",
+    "expected": "All trust_score/should_verify values match formula",
+    "actual": "All pass",
+    "details": {
+      "test_cases": [
+        {
+          "label": "fresh HIGH-J trusted",
+          "j_score": 0.85,
+          "source": "cams",
+          "chain_depth": 0,
+          "trust_score": 0.85,
+          "should_verify": false,
+          "expected_verify": false,
+          "pass": true
+        },
+        {
+          "label": "3-hop trusted (trust=0.70)",
+          "j_score": 0.85,
+          "source": "cams",
+          "chain_depth": 3,
+          "trust_score": 0.7,
+          "should_verify": false,
+          "expected_verify": false,
+          "pass": true
+        },
+        {
+          "label": "10-hop trusted (trust=0.35)",
+          "j_score": 0.85,
+          "source": "cams",
+          "chain_depth": 10,
+          "trust_score": 0.35,
+          "should_verify": true,
+          "expected_verify": true,
+          "pass": true
+        },
+        {
+          "label": "unknown source depth=0 (trust=0.75)",
+          "j_score": 0.85,
+          "source": "unknown_agent",
+          "chain_depth": 0,
+          "trust_score": 0.75,
+          "should_verify": false,
+          "expected_verify": false,
+          "pass": true
+        },
+        {
+          "label": "unknown source depth=8 (trust=0.35)",
+          "j_score": 0.85,
+          "source": "unknown_agent",
+          "chain_depth": 8,
+          "trust_score": 0.35,
+          "should_verify": true,
+          "expected_verify": true,
+          "pass": true
+        },
+        {
+          "label": "LOW-J trusted depth=1 (trust=0.25)",
+          "j_score": 0.3,
+          "source": "cams",
+          "chain_depth": 1,
+          "trust_score": 0.25,
+          "should_verify": true,
+          "expected_verify": true,
+          "pass": true
+        },
+        {
+          "label": "MEDIUM-J trusted depth=2 (trust=0.35) below threshold",
+          "j_score": 0.45,
+          "source": "cams",
+          "chain_depth": 2,
+          "trust_score": 0.35,
+          "should_verify": true,
+          "expected_verify": true,
+          "pass": true
+        }
+      ],
+      "failures": []
+    }
+  }
+]

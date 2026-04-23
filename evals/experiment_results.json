@@ -654,92 +654,14 @@
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "Exponential backoff is a retry strategy where you progressively increase the wai"
+          "answer": "Exponential backoff is a retry strategy where the wait time between retries grow"
         },
         {
           "turn": 6,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "HTTP **429 Too Many Requests** is the standard status code indicating rate limit"
-        },
-        {
-          "turn": 7,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**Access tokens** and **refresh tokens** serve complementary roles in OAuth 2.0 "
-        },
-        {
-          "turn": 8,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "The **circuit breaker pattern** is a resilience pattern that prevents an applica"
-        },
-        {
-          "turn": 9,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**Idempotency** means an operation produces the same result whether executed onc"
-        },
-        {
-          "turn": 10,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**Connection pooling** is a technique where a set of reusable network connection"
-        },
-        {
-          "turn": 11,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "The **`Retry-After`** HTTP response header tells the client how long to wait bef"
-        },
-        {
-          "turn": 12,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "A **webhook** is a mechanism where a server sends an HTTP request to a client-de"
-        },
-        {
-          "turn": 13,
-          "is_callback": true,
-          "correct_recall": true,
-          "hallucinated": false,
-          "answer": "Based on what you've established earlier: **approximately 50 requests per minute**, though this was flagged as **uncerta"
-        },
-        {
-          "turn": 14,
-          "is_callback": true,
-          "correct_recall": true,
-          "hallucinated": true,
-          "answer": "Based on what you established earlier: token expiry is **approximately 24 hours**, marked as **tentative pending documen"
-        }
-      ],
-      "correction_recall": 1.0,
-      "hallucination_rate": 0.5,
-      "tokens_used": 26832
-    },
-    {
-      "condition": "naive_window",
-      "needle_logs": [
-        {
-          "turn": 5,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "Exponential backoff is a retry strategy where the wait time between successive r"
-        },
-        {
-          "turn": 6,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**HTTP 429 Too Many Requests** is the standard status code indicating the client"
+          "answer": "HTTP **429 Too Many Requests** indicates rate limiting.\n\nServers typically inclu"
         },
         {
           "turn": 7,
@@ -747,84 +669,6 @@
           "correct_recall": false,
           "hallucinated": false,
           "answer": "**Access tokens** and **refresh tokens** serve distinct roles in OAuth 2.0 and s"
-        },
-        {
-          "turn": 8,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "The **circuit breaker pattern** is a resilience mechanism that prevents an appli"
-        },
-        {
-          "turn": 9,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**Idempotency** means an operation produces the same result whether executed onc"
-        },
-        {
-          "turn": 10,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**Connection pooling** is the practice of maintaining a cache of reusable open c"
-        },
-        {
-          "turn": 11,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "The **Retry-After** HTTP response header tells the client how long to wait befor"
-        },
-        {
-          "turn": 12,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "A **webhook** is an HTTP callback: instead of a client repeatedly polling a serv"
-        },
-        {
-          "turn": 13,
-          "is_callback": true,
-          "correct_recall": false,
-          "hallucinated": true,
-          "answer": "I don't have a rate limit value established in our conversation \u2014 you haven't shared the specifics of the API(s) your in"
-        },
-        {
-          "turn": 14,
-          "is_callback": true,
-          "correct_recall": false,
-          "hallucinated": true,
-          "answer": "We haven't discussed a token refresh window in this conversation. The topics covered so far have been:\n\n1. Circuit break"
-        }
-      ],
-      "correction_recall": 0.0,
-      "hallucination_rate": 1.0,
-      "tokens_used": 22331
-    },
-    {
-      "condition": "cams",
-      "needle_logs": [
-        {
-          "turn": 5,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "Exponential backoff is a retry strategy where the wait time between attempts gro"
-        },
-        {
-          "turn": 6,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**`429 Too Many Requests`** is the standard HTTP status code indicating rate lim"
-        },
-        {
-          "turn": 7,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**Access tokens** and **refresh tokens** are a pair used in OAuth2 and similar a"
         },
         {
           "turn": 8,
@@ -845,6 +689,162 @@
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
+          "answer": "**Connection pooling** reuses established network connections across multiple re"
+        },
+        {
+          "turn": 11,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "The **`Retry-After`** header tells the client how long to wait before making ano"
+        },
+        {
+          "turn": 12,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "A **webhook** is a mechanism where a server sends an HTTP request to a client-pr"
+        },
+        {
+          "turn": 13,
+          "is_callback": true,
+          "correct_recall": true,
+          "hallucinated": false,
+          "answer": "Based on what you've established earlier in our conversation:\n\n**Rate limit: approximately 50 requests per minute** \u2014 fl"
+        },
+        {
+          "turn": 14,
+          "is_callback": true,
+          "correct_recall": true,
+          "hallucinated": false,
+          "answer": "Based on what you established earlier:\n\n**Token expiry: approximately 24 hours** \u2014 marked as tentative, pending document"
+        }
+      ],
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 25060
+    },
+    {
+      "condition": "naive_window",
+      "needle_logs": [
+        {
+          "turn": 5,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "Exponential backoff is a retry strategy where the delay between successive retri"
+        },
+        {
+          "turn": 6,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**429 Too Many Requests** is the standard HTTP status code for rate limiting.\n\n*"
+        },
+        {
+          "turn": 7,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**Access tokens** and **refresh tokens** serve different roles in OAuth 2.0 and "
+        },
+        {
+          "turn": 8,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "The **circuit breaker pattern** is a resilience technique that stops an applicat"
+        },
+        {
+          "turn": 9,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**Idempotency** means an operation produces the same result whether executed onc"
+        },
+        {
+          "turn": 10,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**Connection pooling** is the practice of maintaining a cache of reusable networ"
+        },
+        {
+          "turn": 11,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "The **`Retry-After`** header tells a client how long to wait before making anoth"
+        },
+        {
+          "turn": 12,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "A **webhook** is an HTTP callback \u2014 a mechanism where a server pushes event noti"
+        },
+        {
+          "turn": 13,
+          "is_callback": true,
+          "correct_recall": false,
+          "hallucinated": true,
+          "answer": "I don't have a verified rate limit value for your integration to base retry logic on. Earlier in our conversation, I ref"
+        },
+        {
+          "turn": 14,
+          "is_callback": true,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "I have to correct myself here. I referenced an \"unverified ~24-hour token expiry\" in my previous response, but that was "
+        }
+      ],
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.5,
+      "tokens_used": 21746
+    },
+    {
+      "condition": "cams",
+      "needle_logs": [
+        {
+          "turn": 5,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**Exponential backoff** is a retry strategy where the wait time between retries "
+        },
+        {
+          "turn": 6,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**HTTP 429 Too Many Requests** is the standard status code for rate limiting (de"
+        },
+        {
+          "turn": 7,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "### Access tokens\n\n- **Purpose:** Sent with each API request to prove you're aut"
+        },
+        {
+          "turn": 8,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "The **circuit breaker pattern** prevents your system from repeatedly calling a f"
+        },
+        {
+          "turn": 9,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**Idempotency** means an operation produces the same result whether performed on"
+        },
+        {
+          "turn": 10,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
           "answer": "**Connection pooling** is the practice of maintaining a reusable set of open net"
         },
         {
@@ -852,33 +852,33 @@
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "The **`Retry-After`** HTTP header tells a client how long to wait before making "
+          "answer": "The **`Retry-After`** HTTP response header tells the client how long to wait bef"
         },
         {
           "turn": 12,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "A **webhook** is an HTTP callback: instead of your client polling a server to ch"
+          "answer": "A **webhook** is an HTTP callback: instead of your client repeatedly polling an "
         },
         {
           "turn": 13,
           "is_callback": true,
           "correct_recall": true,
           "hallucinated": false,
-          "answer": "Based on what you've told me earlier in this conversation:\n\n- **Rate limit: ~50 requests/minute (UNVERIFIED \u2014 to be conf"
+          "answer": "Based on what you told me earlier:\n\n- **Rate limit: ~50 requests/minute (UNVERIFIED \u2014 pending vendor confirmation)**\n\nSo"
         },
         {
           "turn": 14,
           "is_callback": true,
           "correct_recall": true,
-          "hallucinated": true,
-          "answer": "Based on what you told me earlier:\n\n- **Auth token lifetime: ~24 hours, possibly less (TENTATIVE \u2014 docs unclear)**\n\nGive"
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Token expiry: ~24 hours (TENTATIVE \u2014 docs unclear, may be shorter)**\n\nGiven that"
         }
       ],
       "correction_recall": 1.0,
-      "hallucination_rate": 0.5,
-      "tokens_used": 43465
+      "hallucination_rate": 0.0,
+      "tokens_used": 46065
     }
   ],
   "E7": [
@@ -900,7 +900,7 @@
       ],
       "chain_complete": true,
       "hops_recalled": 3,
-      "tokens_used": 14725
+      "tokens_used": 14726
     },
     {
       "condition": "naive_window",
@@ -920,7 +920,7 @@
       ],
       "chain_complete": false,
       "hops_recalled": 0,
-      "tokens_used": 13781
+      "tokens_used": 13777
     },
     {
       "condition": "cams",
@@ -940,36 +940,12 @@
       ],
       "chain_complete": true,
       "hops_recalled": 3,
-      "tokens_used": 33829
+      "tokens_used": 34258
     }
   ],
   "E1": [
     {
       "condition": "baseline",
-      "callback_scores": [
-        0.3333333333333333,
-        0.5,
-        0.8,
-        1.0
-      ],
-      "mean_recall": 0.6583333333333333,
-      "turns": 12,
-      "tokens_used": 19428
-    },
-    {
-      "condition": "naive_window",
-      "callback_scores": [
-        0.6666666666666666,
-        0.6666666666666666,
-        1.0,
-        1.0
-      ],
-      "mean_recall": 0.8333333333333333,
-      "turns": 12,
-      "tokens_used": 16765
-    },
-    {
-      "condition": "cams",
       "callback_scores": [
         0.6666666666666666,
         0.8333333333333334,
@@ -978,7 +954,31 @@
       ],
       "mean_recall": 0.875,
       "turns": 12,
-      "tokens_used": 15893
+      "tokens_used": 16184
+    },
+    {
+      "condition": "naive_window",
+      "callback_scores": [
+        0.3333333333333333,
+        0.3333333333333333,
+        1.0,
+        1.0
+      ],
+      "mean_recall": 0.6666666666666666,
+      "turns": 12,
+      "tokens_used": 14277
+    },
+    {
+      "condition": "cams",
+      "callback_scores": [
+        0.5,
+        0.5,
+        0.8,
+        1.0
+      ],
+      "mean_recall": 0.7,
+      "turns": 12,
+      "tokens_used": 21861
     }
   ],
   "E2": [
@@ -1006,43 +1006,43 @@
         {
           "question": "What was the exact original error and which file and line number did it occur on?",
           "recall_score": 1.0,
-          "answer": "From the facts you provided:\n\n- **Exact error:** `RuntimeError: dictionary changed size during iteration`\n- **File:** `payment_processor.py`\n- **Line:"
+          "answer": "From the facts I've logged:\n\n- **Exact error:** `RuntimeError: dictionary changed size during iteration`\n- **File:** `payment_processor.py`\n- **Line:*"
         },
         {
           "question": "What two uncertain hypotheses did we have about the root cause?",
           "recall_score": 1.0,
-          "answer": "The two hypotheses you flagged as uncertain:\n\n1. **[UNCERTAIN \u2014 user flagged \"genuinely not sure\"]** Threading issue related to the GIL, OR Redis conn"
+          "answer": "The two hypotheses you raised, both flagged as uncertain (\"genuinely not sure which \u2014 could be either one, or both\"):\n\n- **H1:** Threading issue with "
         },
         {
           "question": "What fix did we try and what happened after we deployed it?",
           "recall_score": 1.0,
-          "answer": "**Attempted fix:**\n- Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot of the dict before iterating.\n- Deployed "
+          "answer": "**Attempted fix (deployed yesterday):**\n- Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot before iterating at "
         }
       ],
       "mean_recall": 1.0,
-      "tokens_used": 43070
+      "tokens_used": 43913
     },
     {
       "condition": "naive_window",
       "callback_logs": [
         {
           "question": "What was the exact original error and which file and line number did it occur on?",
-          "recall_score": 0.8,
-          "answer": "From the state I've been tracking:\n\n**Original error:**\n- `RuntimeError: dictionary changed size during iteration`\n- File/line: `payment_processor.py:"
+          "recall_score": 0.4,
+          "answer": "I don't have that information. You shared:\n\n- The **fix** you deployed (wrapping iteration with `list(self.pending_transactions.items())`)\n- That it w"
         },
         {
           "question": "What two uncertain hypotheses did we have about the root cause?",
-          "recall_score": 0.0,
-          "answer": "I have to be straight with you: **we never established two hypotheses about the root cause.** I don't have them in state because they weren't discusse"
+          "recall_score": 0.16666666666666666,
+          "answer": "Looking back at the conversation, I want to be careful here\u2014I don't want to fabricate a clean \"two hypotheses\" framing that wasn't actually establishe"
         },
         {
           "question": "What fix did we try and what happened after we deployed it?",
           "recall_score": 1.0,
-          "answer": "From tracked state:\n\n**Fix deployed (yesterday):**\n- Wrapped the iteration at `payment_processor.py:147` with `list(self.pending_transactions.items())"
+          "answer": "**Fix deployed (yesterday):**\nWrapped the iteration with a snapshot:\n```python\nlist(self.pending_transactions.items())\n```\n...to iterate over a materi"
         }
       ],
-      "mean_recall": 0.6,
-      "tokens_used": 33223
+      "mean_recall": 0.5222222222222223,
+      "tokens_used": 32628
     },
     {
       "condition": "cams",
@@ -1050,21 +1050,21 @@
         {
           "question": "What was the exact original error and which file and line number did it occur on?",
           "recall_score": 1.0,
-          "answer": "From the running state:\n\n- **Exact original error:** `RuntimeError: dictionary changed size during iteration`\n- **File:** `payment_processor.py`\n- **L"
+          "answer": "From the state I've been tracking:\n\n- **Exact error:** `RuntimeError: dictionary changed size during iteration`\n- **File:** `payment_processor.py`\n- *"
         },
         {
           "question": "What two uncertain hypotheses did we have about the root cause?",
           "recall_score": 1.0,
-          "answer": "The two uncertain hypotheses, both flagged by you as \"genuinely not sure, could be either or both\":\n\n1. **Threading issue related to GIL behavior** \u2014 "
+          "answer": "Both hypotheses were flagged by you as uncertain \u2014 your exact words were \"genuinely not sure which, could be either one, or both\":\n\n- **H1:** Threadin"
         },
         {
           "question": "What fix did we try and what happened after we deployed it?",
           "recall_score": 1.0,
-          "answer": "From the running state:\n\n**Attempted fix:**\n- Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot before iterating"
+          "answer": "**Fix 1 (deployed yesterday):** Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot before iterating.\n\n**Result:**"
         }
       ],
       "mean_recall": 1.0,
-      "tokens_used": 43944
+      "tokens_used": 42561
     }
   ]
 }

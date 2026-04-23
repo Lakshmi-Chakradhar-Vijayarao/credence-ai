@@ -1,10 +1,14 @@
 # CAMS — Confidence-Adaptive Memory System
 
-> **A Cognitive Governor for Claude. Not a token-saver — a reliability controller.**
+> **Epistemic Integrity Layer for AI Systems. Not a token-saver — a reliability controller.**
 
-CAMS was built from a research question: *if a model's internal state signals instability early in generation, can you use that same signal to control what the model remembers?*
+**CAMS is not a general-purpose memory optimizer. It is a safety-critical system designed to preserve epistemic integrity in long-running AI tasks.** Its core invariant: uncertain information must never be compressed before resolved information.
 
-The answer is yes. The result is a system where Claude Opus 4.7 actively manages its own context — preserving history when uncertain, compressing when resolved, and protecting irreplaceable content regardless of confidence score.
+**Scope boundary**: CAMS is designed for multi-turn conversational tasks where early uncertain information plants must survive to later turns. For independent QA, short-context tasks, or applications where each turn is topically unrelated to prior turns, naive sliding window is cheaper and equivalent. CAMS activates automatically only when session patterns indicate cross-turn dependencies.
+
+CAMS was built from a research question: *if a model's internal state signals epistemic instability, can you use that same signal to prevent silent information corruption through compression?*
+
+The answer is yes. The result is a system where Claude Opus 4.7 actively governs its own epistemic state — refusing to compress what it hasn't resolved, preserving uncertainty markers through Haiku summarization, and propagating confidence provenance to downstream agents via the J-envelope protocol.
 
 ---
 
@@ -270,6 +274,26 @@ Naive window drops the uncertain hypothesis (recall=0.00). CAMS matches baseline
 ### The Honest Benchmark Interpretation
 
 On a diverse 30-question benchmark, naive sliding window outperforms CAMS on ROUGE-L (0.238 vs 0.213) and AUARC (0.356 vs 0.323). This is the *expected* result: the benchmark tests 30 independent QA pairs. Aggressive compression helps there — the model doesn't need old context when each question is self-contained. CAMS is designed for the opposite problem: multi-turn conversations where early information plants must survive to turn 20+. The experiments above test this and demonstrate decisive wins.
+
+---
+
+## Known Failure Modes
+
+CAMS is a safety system, and safety systems must document their failure modes honestly.
+
+| Failure Mode | Cause | Mitigation in CAMS | Residual Risk |
+|---|---|---|---|
+| **Confident-wrong compression** | Model states false facts without hedging → J scores HIGH → turn is compressed | None — J measures epistemic signaling, not factual accuracy | High if model is systematically overconfident in a domain |
+| **Faithfulness probe miss** | Uncertainty expressed without standard markers ("Use 128MB" without "might") | Expanded probe: code comments, numerical hedging, conditional uncertainty | Moderate — implicit uncertainty is not detectable from surface text |
+| **Novelty guard false positive** | Diverse QA session has high content-word novelty → every turn is PRESERVE | Regime detection disables CAMS on low-dependency sessions | Low for multi-turn sessions; higher for intentionally diverse sessions |
+| **Haiku summary distortion** | Haiku loses nuance when summarizing technical or domain-specific content | Compression shadow + post-compression validation; faithfulness instruction in prompt | Low for prose; moderate for dense technical content |
+| **Regime non-detection** | Session has real dependencies but low J-variance → CAMS stays passive | Dependency marker detection alongside J-variance | Low — PRESERVE is always the safe fallback |
+| **TRIM drops important LOW-J turn** | A low-J uncertain turn falls outside TRIM_WINDOW at a later turn | Selective compression preserves LOW/MEDIUM-J turns; TRIM does not check J | Moderate — TRIM is the weakest mechanism, position-based not J-based |
+| **Chain-depth trust underestimation** | A 3-hop-old uncertain result has degraded trust_score but the 0.05/hop penalty is uncalibrated | Empirical chain_depth calibration in multi-agent experiment | Low-moderate until calibrated |
+
+**When to use CAMS**: Multi-turn AI assistants, debugging sessions, design discussions, code review workflows, research pipelines — any setting where information planted early must survive to later turns.
+
+**When not to use CAMS**: Single-turn QA, independent question answering, short sessions under 8 turns, contexts where all turns are topically unrelated.
 
 ---
 

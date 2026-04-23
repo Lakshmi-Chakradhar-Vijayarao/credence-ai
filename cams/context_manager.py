@@ -80,6 +80,41 @@ _NOVELTY_THRESHOLD = 0.75   # >75% new entities → treat as new topic
 _NOVELTY_MIN_ENTITIES = 5   # require at least 5 new entities (single new names aren't pivots)
 _NOVELTY_MIN_VOCAB    = 10  # don't fire until the entity vocab is established
 _MIN_COMPRESS_TOKENS  = 150 # don't call Haiku if old segment is smaller than this
+_MIN_COMPRESS_ROI     = 50  # minimum net tokens saved (after Haiku overhead) to justify compression
+
+# ---------------------------------------------------------------------------
+# Regime detection — only activate CAMS compression/trim when session shows
+# evidence of needing it (cross-turn dependencies or mixed J variance).
+#
+# Rationale: on independent QA sessions, J-variance is low (all turns cluster
+# HIGH) and there are no cross-turn references. Applying CAMS compression to
+# such sessions wastes Haiku calls and sometimes hurts ROUGE-L vs naive window.
+# The regime gate makes CAMS universally safe: when dependencies aren't present,
+# PRESERVE is the correct decision anyway.
+# ---------------------------------------------------------------------------
+_REGIME_MIN_TURNS        = 4     # warmup turns before regime detection activates
+_REGIME_J_VARIANCE_FLOOR = 0.05  # min variance to signal mixed-confidence session
+
+# ---------------------------------------------------------------------------
+# Post-compression degradation detection — explicit, tunable constants.
+# These detect whether a compression was harmful AFTER the fact (shadow check).
+# ---------------------------------------------------------------------------
+_DEGRADATION_CORRECTION_FLOOR = 0.50   # correction factor below this → spike
+_DEGRADATION_J_CLIFF_PREV     = 0.70   # prev J must have been HIGH
+_DEGRADATION_J_CLIFF_CURR     = 0.40   # current J must drop below this
+_DEGRADATION_J_DELTA          = 0.35   # any sudden swing this large is suspicious
+
+# ---------------------------------------------------------------------------
+# Compression shadow — keep pre-compression state for N turns after compression.
+# If post-compression turns show degradation signals, restore from shadow.
+# ---------------------------------------------------------------------------
+_SHADOW_TTL = 3  # turns to monitor before committing compression
+
+# ---------------------------------------------------------------------------
+# Session persistence versioning — increment when state schema changes.
+# Migration functions keyed by old version handle upgrades transparently.
+# ---------------------------------------------------------------------------
+_SESSION_VERSION = "1.1"
 
 # ---------------------------------------------------------------------------
 # Adaptive threshold configuration
@@ -173,6 +208,23 @@ class TurnResult:
     adaptive_theta_high:   float = 0.65  # effective HIGH threshold used this turn
     adaptive_theta_low:    float = 0.35  # effective LOW threshold used this turn
 
+    @property
+    def envelope(self) -> dict:
+        """
+        Return a CAMSEnvelope dict for this turn — MCP-serializable epistemic
+        provenance record. Downstream agents check envelope['should_verify']
+        and envelope['safe_to_compress'] before acting on this information.
+        """
+        from .envelope import CAMSEnvelope
+        return CAMSEnvelope.from_turn(
+            response     = self.response,
+            j_score      = self.j_score,
+            zone         = self.zone,
+            decision     = self.decision,
+            content_type = "text",
+            source       = "cams",
+        ).to_dict()
+
 
 @dataclass
 class SessionStats:
@@ -264,6 +316,13 @@ class CAMSContextManager:
         # Used by selective compression to identify HIGH-J turns for compression
         # while keeping LOW/MEDIUM-J turns verbatim.
         self._history_j_scores: list[Optional[float]] = []
+
+        # Compression shadow — pre-compression state kept for _SHADOW_TTL turns.
+        # If post-compression turns show degradation, _restore_from_shadow() reverts.
+        self._compression_shadow:         Optional[list[dict]]          = None
+        self._compression_shadow_j:       Optional[list[Optional[float]]] = None
+        self._compression_shadow_summary: Optional[str]                  = None
+        self._shadow_turns_remaining:     int                            = 0
 
     # ------------------------------------------------------------------
     # Public API
@@ -375,6 +434,18 @@ class CAMSContextManager:
         eff_high = self._effective_theta_high
         eff_low  = self._effective_theta_low
 
+        # Shadow monitoring: check post-compression turns for degradation signals.
+        # If degradation detected within _SHADOW_TTL turns, restore pre-compression state.
+        if self._shadow_turns_remaining > 0:
+            if self._is_post_compression_degraded(cr):
+                self._restore_from_shadow()
+                decision      = "PRESERVE"
+                tokens_saved  = 0
+            else:
+                self._shadow_turns_remaining -= 1
+                if self._shadow_turns_remaining == 0:
+                    self._clear_shadow()
+
         # Update entity vocabulary and zone memory for next-turn thinking budget
         self._update_content_vocab(text)
         self._prev_zone = cr.zone
@@ -456,9 +527,13 @@ class CAMSContextManager:
         self._j_history          = []
         self._drift_state        = False
         self._content_vocab      = set()
-        self._j_buffer           = []
-        self._history_j_scores   = []
-        self.stats               = SessionStats()
+        self._j_buffer                   = []
+        self._history_j_scores           = []
+        self._compression_shadow         = None
+        self._compression_shadow_j       = None
+        self._compression_shadow_summary = None
+        self._shadow_turns_remaining     = 0
+        self.stats                       = SessionStats()
 
     @property
     def decision_log(self) -> list[dict]:
@@ -499,6 +574,13 @@ class CAMSContextManager:
 
         # Novelty guard: new topic detected → preserve regardless of J
         if novelty_override:
+            return "PRESERVE", 0
+
+        # Regime detection: only activate compression/trim when session shows
+        # evidence of cross-turn dependencies or mixed J-variance.
+        # Independent QA sessions (all HIGH J, no cross-references) should not
+        # incur Haiku costs — PRESERVE is correct there anyway.
+        if not self._should_enable_cams():
             return "PRESERVE", 0
 
         # Compute effective zone using adaptive thresholds.
@@ -544,6 +626,9 @@ class CAMSContextManager:
 
         The Haiku summary of HIGH-J turns is injected via _build_messages as
         <context_summary> XML prefix, not as a fake turn in _history.
+
+        Shadow: pre-compression state is saved for _SHADOW_TTL turns.
+        If post-compression degradation detected, _restore_from_shadow() reverts.
         """
         sink_msgs = self.ATTENTION_SINK * 2
         keep_n    = self.COMPRESS_AFTER * 2
@@ -592,6 +677,14 @@ class CAMSContextManager:
         if self._has_uncertainty(conv_text):
             return 0
 
+        # Save compression shadow BEFORE making any changes.
+        # If Haiku produces a low-quality summary, or post-compression turns
+        # show degradation, _restore_from_shadow() will revert all state changes.
+        self._compression_shadow         = self._history[:]
+        self._compression_shadow_j       = self._history_j_scores[:]
+        self._compression_shadow_summary = self._summary
+        self._shadow_turns_remaining     = _SHADOW_TTL
+
         goal_line = (
             f"The user's original goal: {self._turn1_goal}\n\n"
             if self._turn1_goal else ""
@@ -635,18 +728,71 @@ class CAMSContextManager:
 
         tokens_after = len(summary) // 4
         gross_saved  = max(0, tokens_before - tokens_after)
-        return max(0, gross_saved - comp_out)
+        net_saved    = max(0, gross_saved - comp_out)
+
+        # ROI gate: if net savings don't justify Haiku call overhead, revert.
+        if net_saved < _MIN_COMPRESS_ROI:
+            self._restore_from_shadow()
+            return 0
+
+        # Summary quality gate: if Haiku produced a hedged/uncertain summary,
+        # it likely lost information — restore and refuse compression.
+        summary_cr = self.proxy.compute(summary)
+        if summary_cr.j_score < 0.40:
+            self._restore_from_shadow()
+            return 0
+
+        return net_saved
 
     def _trim(self) -> int:
-        """Keep last TRIM_WINDOW turn pairs, drop the rest."""
-        keep_n = self.TRIM_WINDOW * 2
+        """
+        J-selective trim: keep attention sink + LOW/MEDIUM-J turns + recent window.
+
+        Naive trim (slice to last N messages) silently drops LOW-J uncertain constraints
+        that happen to be older than the window. This defeats the whole point of CAMS —
+        the model forgets the uncertain fact that was explicitly flagged for preservation.
+
+        This version mirrors selective compression: only HIGH-J turns (already resolved,
+        safe to lose) are dropped. LOW/MEDIUM-J turns are always kept verbatim regardless
+        of age. This makes TRIM safe to apply even when the old segment contains uncertain
+        context.
+        """
+        keep_n    = self.TRIM_WINDOW * 2
+        sink_msgs = self.ATTENTION_SINK * 2
+
         if len(self._history) <= keep_n:
             return 0
-        dropped       = self._history[:-keep_n]
-        tokens_saved  = sum(len(m["content"]) // 4 for m in dropped)
-        self._history        = self._history[-keep_n:]
-        self._history_j_scores = self._history_j_scores[-keep_n:]
-        return tokens_saved
+
+        sink      = self._history[:sink_msgs]
+        sink_j    = self._history_j_scores[:sink_msgs]
+        old       = self._history[sink_msgs:-keep_n]
+        old_j     = self._history_j_scores[sink_msgs:-keep_n]
+        recent    = self._history[-keep_n:]
+        recent_j  = self._history_j_scores[-keep_n:]
+
+        if not old:
+            return 0
+
+        preserved_msgs: list[dict]             = []
+        preserved_j:    list[Optional[float]]  = []
+        dropped_tokens  = 0
+
+        for i in range(0, len(old) - 1, 2):
+            user_msg = old[i]
+            asst_msg = old[i + 1]
+            j = old_j[i + 1]
+            if j is not None and j >= self._effective_theta_high:
+                dropped_tokens += (len(user_msg["content"]) + len(asst_msg["content"])) // 4
+            else:
+                preserved_msgs.extend([user_msg, asst_msg])
+                preserved_j.extend([old_j[i], old_j[i + 1]])
+
+        if dropped_tokens == 0:
+            return 0
+
+        self._history        = sink + preserved_msgs + recent
+        self._history_j_scores = sink_j + preserved_j + recent_j
+        return dropped_tokens
 
     def _build_messages(self) -> list[dict]:
         """
@@ -735,8 +881,200 @@ class CAMSContextManager:
 
     def _has_uncertainty(self, text: str) -> bool:
         """Returns True if text contains markers that signal user-flagged uncertainty."""
+        import re as _re
         lower = text.lower()
-        return any(m in lower for m in _UNCERTAINTY_MARKERS)
+        # Standard uncertainty markers
+        if any(m in lower for m in _UNCERTAINTY_MARKERS):
+            return True
+        # Expanded: code comment uncertainty (# todo, # verify, # untested, etc.)
+        if _re.search(r'#\s*(todo|fixme|hack|verify|check|untested|approximate|not sure|might)',
+                      lower):
+            return True
+        # Expanded: numerical hedging — qualifier word followed by a number
+        if _re.search(r'\b(around|roughly|approximately|about|~)\s+\d', lower):
+            return True
+        # Expanded: conditional uncertainty — premise implies uncertain conclusion
+        if any(m in lower for m in (
+            "if this is correct", "assuming this is right", "if i'm reading",
+            "if that's the case", "assuming that's accurate", "provided that's true",
+        )):
+            return True
+        # Expanded: domain hedging — informal "worth checking" patterns
+        if any(m in lower for m in (
+            "worth checking", "worth verifying", "double-check", "double check",
+            "you might want to confirm", "lgtm but", "seems right but",
+            "this should work but", "i'd recommend verifying",
+        )):
+            return True
+        return False
+
+    # ------------------------------------------------------------------
+    # Regime detection
+    # ------------------------------------------------------------------
+
+    def _j_variance(self) -> float:
+        """Variance of J-scores in the current rolling buffer."""
+        if len(self._j_buffer) < 3:
+            return 0.0
+        mean = sum(self._j_buffer) / len(self._j_buffer)
+        return sum((j - mean) ** 2 for j in self._j_buffer) / len(self._j_buffer)
+
+    def _has_dependency(self) -> bool:
+        """True if recent assistant turns reference earlier turns explicitly."""
+        if len(self._history) < 4:
+            return False
+        _dep_markers = {
+            "as we discussed", "as mentioned", "as i said", "earlier",
+            "you mentioned", "we established", "going back to",
+            "as noted", "referring back", "from before",
+            "the constraint", "the requirement", "the error", "the issue",
+            "that value", "that limit", "those constraints", "the budget",
+        }
+        recent_assistant = [
+            m["content"].lower()
+            for m in self._history[-6:]
+            if m["role"] == "assistant"
+        ]
+        return any(
+            marker in text
+            for text in recent_assistant
+            for marker in _dep_markers
+        )
+
+    def _should_enable_cams(self) -> bool:
+        """
+        Regime detection gate: only allow COMPRESS/TRIM when the session shows
+        evidence that context management matters.
+
+        Returns False (PRESERVE) when:
+        - Still in warmup (< _REGIME_MIN_TURNS)
+        - Session J-variance is low AND no cross-turn references detected
+          (uniform-confidence session — independent QA pattern)
+
+        Returns True when:
+        - J-variance > _REGIME_J_VARIANCE_FLOOR (mixed-confidence session), OR
+        - Cross-turn dependency markers detected in recent turns
+        """
+        if self._turn_idx <= _REGIME_MIN_TURNS:
+            return False
+        return self._j_variance() > _REGIME_J_VARIANCE_FLOOR or self._has_dependency()
+
+    # ------------------------------------------------------------------
+    # Post-compression degradation + shadow recovery
+    # ------------------------------------------------------------------
+
+    def _is_post_compression_degraded(self, cr: ConfidenceResult) -> bool:
+        """
+        Detect compression-induced degradation from post-compression behavioral signals.
+
+        Triggers restoration from shadow if:
+        1. Model correction rate spikes (model noticed missing context and corrects)
+        2. J-score cliff: was HIGH before compression, now suddenly LOW
+        3. Sudden large J swing in either direction (instability signal)
+        """
+        correction = cr.factors.get("correction", 1.0)
+        correction_spike = correction < _DEGRADATION_CORRECTION_FLOOR
+        j_cliff = (
+            self._prev_j > _DEGRADATION_J_CLIFF_PREV
+            and cr.j_score < _DEGRADATION_J_CLIFF_CURR
+        )
+        j_swing = abs(cr.j_score - self._prev_j) > _DEGRADATION_J_DELTA
+        return correction_spike or j_cliff or j_swing
+
+    def _restore_from_shadow(self) -> None:
+        """Revert to pre-compression state. Called when degradation detected."""
+        if self._compression_shadow is not None:
+            self._history          = self._compression_shadow
+            self._history_j_scores = self._compression_shadow_j
+            self._summary          = self._compression_shadow_summary
+            self._compression_count = max(0, self._compression_count - 1)
+        self._clear_shadow()
+
+    def _clear_shadow(self) -> None:
+        """Commit compression — discard shadow, no anomaly detected."""
+        self._compression_shadow         = None
+        self._compression_shadow_j       = None
+        self._compression_shadow_summary = None
+        self._shadow_turns_remaining     = 0
+
+    # ------------------------------------------------------------------
+    # Session persistence
+    # ------------------------------------------------------------------
+
+    def save(self, path: str) -> None:
+        """Persist full epistemic state to JSON. Includes version for migration."""
+        import json
+        state = {
+            "version":           _SESSION_VERSION,
+            "history":           self._history,
+            "history_j_scores":  self._history_j_scores,
+            "summary":           self._summary,
+            "j_buffer":          self._j_buffer,
+            "content_vocab":     list(self._content_vocab),
+            "turn_idx":          self._turn_idx,
+            "compression_count": self._compression_count,
+            "prev_zone":         self._prev_zone,
+            "prev_j":            self._prev_j,
+            "drift_state":       self._drift_state,
+            "j_history":         self._j_history,
+            "turn1_goal":        self._turn1_goal,
+            "stats": {
+                "total_tokens_in":    self.stats.total_tokens_in,
+                "total_tokens_out":   self.stats.total_tokens_out,
+                "total_tokens_saved": self.stats.total_tokens_saved,
+                "total_cost_usd":     self.stats.total_cost_usd,
+                "turns_compressed":   self.stats.turns_compressed,
+                "turns_trimmed":      self.stats.turns_trimmed,
+                "turns_preserved":    self.stats.turns_preserved,
+            },
+        }
+        with open(path, "w") as f:
+            json.dump(state, f, indent=2)
+
+    def load(self, path: str) -> None:
+        """Load persisted session state. Migrates older versions transparently."""
+        import json
+        with open(path) as f:
+            state = json.load(f)
+
+        version = state.get("version", "1.0")
+        if version != _SESSION_VERSION:
+            state = _migrate_session(state, version)
+
+        self._history           = state["history"]
+        self._history_j_scores  = state["history_j_scores"]
+        self._summary           = state.get("summary")
+        self._j_buffer          = state.get("j_buffer", [])
+        self._content_vocab     = set(state.get("content_vocab", []))
+        self._turn_idx          = state.get("turn_idx", len(self._history) // 2)
+        self._compression_count = state.get("compression_count", 0)
+        self._prev_zone         = state.get("prev_zone", "MEDIUM")
+        self._prev_j            = state.get("prev_j", 0.50)
+        self._drift_state       = state.get("drift_state", False)
+        self._j_history         = state.get("j_history", [])
+        self._turn1_goal        = state.get("turn1_goal", "")
+
+        s = state.get("stats", {})
+        self.stats.total_tokens_in    = s.get("total_tokens_in", 0)
+        self.stats.total_tokens_out   = s.get("total_tokens_out", 0)
+        self.stats.total_tokens_saved = s.get("total_tokens_saved", 0)
+        self.stats.total_cost_usd     = s.get("total_cost_usd", 0.0)
+        self.stats.turns_compressed   = s.get("turns_compressed", 0)
+        self.stats.turns_trimmed      = s.get("turns_trimmed", 0)
+        self.stats.turns_preserved    = s.get("turns_preserved", 0)
+
+
+def _migrate_session(state: dict, from_version: str) -> dict:
+    """Migrate session state from older versions to current _SESSION_VERSION."""
+    if from_version == "1.0":
+        # v1.0 → v1.1: added j_history, turns_compressed/trimmed/preserved in stats
+        state.setdefault("j_history", [])
+        stats = state.setdefault("stats", {})
+        stats.setdefault("turns_compressed", 0)
+        stats.setdefault("turns_trimmed", 0)
+        stats.setdefault("turns_preserved", 0)
+        state["version"] = "1.1"
+    return state
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,104 @@
+{
+  "summary": {
+    "mean_constraint_recall": {
+      "baseline": 0.9167,
+      "naive_window": 0.75,
+      "cams": 0.9167
+    },
+    "mean_chain_complete": {
+      "baseline": 1.0,
+      "naive_window": 0.0,
+      "cams": 1.0
+    },
+    "mean_hallucination": {
+      "baseline": 0.0,
+      "naive_window": 0.0,
+      "cams": 0.0
+    },
+    "mean_tokens": {
+      "baseline": 37569.0,
+      "naive_window": 28317.0,
+      "cams": 37708.0
+    }
+  },
+  "sessions": [
+    {
+      "session_id": "debugging_01",
+      "condition": "baseline",
+      "constraint_recall": 0.9167,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 37569,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was our initial hypothesis about the root cause?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "What did the logs show and how confident were we about inter",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Summarise both uncertain findings before we write the incide",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "debugging_01",
+      "condition": "naive_window",
+      "constraint_recall": 0.75,
+      "chain_complete": 0.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 28317,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was our initial hypothesis about the root cause?",
+          "recall": 0.5,
+          "hallucinated": false
+        },
+        {
+          "question": "What did the logs show and how confident were we about inter",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Summarise both uncertain findings before we write the incide",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "debugging_01",
+      "condition": "cams",
+      "constraint_recall": 0.9167,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 37708,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was our initial hypothesis about the root cause?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "What did the logs show and how confident were we about inter",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Summarise both uncertain findings before we write the incide",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    }
+  ]
+}
