@@ -1,0 +1,806 @@
+{
+  "summary": {
+    "mean_constraint_recall": {
+      "baseline": 0.8506,
+      "naive_window": 0.6567,
+      "cams": 0.8178
+    },
+    "mean_chain_complete": {
+      "baseline": 1.0,
+      "naive_window": 0.2,
+      "cams": 0.8
+    },
+    "mean_hallucination": {
+      "baseline": 0.0,
+      "naive_window": 0.0,
+      "cams": 0.0
+    },
+    "mean_tokens": {
+      "baseline": 40602.0,
+      "naive_window": 30766.0,
+      "cams": 40843.0
+    }
+  },
+  "sessions": [
+    {
+      "session_id": "debugging_01",
+      "condition": "baseline",
+      "constraint_recall": 0.9167,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 37568,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was our initial hypothesis about the root cause?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "What did the logs show and how confident were we about inter",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Summarise both uncertain findings before we write the incide",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "debugging_01",
+      "condition": "naive_window",
+      "constraint_recall": 0.8333,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 28517,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was our initial hypothesis about the root cause?",
+          "recall": 0.75,
+          "hallucinated": false
+        },
+        {
+          "question": "What did the logs show and how confident were we about inter",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Summarise both uncertain findings before we write the incide",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "debugging_01",
+      "condition": "cams",
+      "constraint_recall": 0.9167,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 37831,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was our initial hypothesis about the root cause?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "What did the logs show and how confident were we about inter",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Summarise both uncertain findings before we write the incide",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "debugging_02",
+      "condition": "baseline",
+      "constraint_recall": 0.8,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 39501,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "Where did we think the record drops were happening?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "What did we observe about the null customer_segment field?",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "Before we escalate, summarise the two uncertain findings we ",
+          "recall": 0.6,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "debugging_02",
+      "condition": "naive_window",
+      "constraint_recall": 0.7333,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 29683,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "Where did we think the record drops were happening?",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "What did we observe about the null customer_segment field?",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "Before we escalate, summarise the two uncertain findings we ",
+          "recall": 0.6,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "debugging_02",
+      "condition": "cams",
+      "constraint_recall": 0.7333,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 38726,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "Where did we think the record drops were happening?",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "What did we observe about the null customer_segment field?",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "Before we escalate, summarise the two uncertain findings we ",
+          "recall": 0.6,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "debugging_03",
+      "condition": "baseline",
+      "constraint_recall": 0.75,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 39332,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was our initial hypothesis about the latency cause?",
+          "recall": 0.75,
+          "hallucinated": false
+        },
+        {
+          "question": "What did we find about GC pauses and how confident were we?",
+          "recall": 0.75,
+          "hallucinated": false
+        },
+        {
+          "question": "Summarise the open hypotheses before we schedule the inciden",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "debugging_03",
+      "condition": "naive_window",
+      "constraint_recall": 0.75,
+      "chain_complete": 0.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 30386,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was our initial hypothesis about the latency cause?",
+          "recall": 0.5,
+          "hallucinated": false
+        },
+        {
+          "question": "What did we find about GC pauses and how confident were we?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Summarise the open hypotheses before we schedule the inciden",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "debugging_03",
+      "condition": "cams",
+      "constraint_recall": 0.8333,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 40038,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was our initial hypothesis about the latency cause?",
+          "recall": 0.75,
+          "hallucinated": false
+        },
+        {
+          "question": "What did we find about GC pauses and how confident were we?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Summarise the open hypotheses before we schedule the inciden",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "design_01",
+      "condition": "baseline",
+      "constraint_recall": 0.9167,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 39577,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What were the hard vs soft requirements we established?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "What was the status of the field-level encryption requiremen",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Before we finalise the architecture, summarise the uncertain",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "design_01",
+      "condition": "naive_window",
+      "constraint_recall": 0.5556,
+      "chain_complete": 0.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 29824,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What were the hard vs soft requirements we established?",
+          "recall": 0.16666666666666666,
+          "hallucinated": false
+        },
+        {
+          "question": "What was the status of the field-level encryption requiremen",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Before we finalise the architecture, summarise the uncertain",
+          "recall": 0.5,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "design_01",
+      "condition": "cams",
+      "constraint_recall": 0.9444,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 38568,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What were the hard vs soft requirements we established?",
+          "recall": 0.8333333333333334,
+          "hallucinated": false
+        },
+        {
+          "question": "What was the status of the field-level encryption requiremen",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Before we finalise the architecture, summarise the uncertain",
+          "recall": 1.0,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "design_02",
+      "condition": "baseline",
+      "constraint_recall": 0.85,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 39647,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was the status of the WebSocket real-time requirement?",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "What retention policy did we have confirmed?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "List the design decisions that are still uncertain before we",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "design_02",
+      "condition": "naive_window",
+      "constraint_recall": 0.7,
+      "chain_complete": 0.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 30531,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was the status of the WebSocket real-time requirement?",
+          "recall": 0.6,
+          "hallucinated": false
+        },
+        {
+          "question": "What retention policy did we have confirmed?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "List the design decisions that are still uncertain before we",
+          "recall": 0.5,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "design_02",
+      "condition": "cams",
+      "constraint_recall": 0.7667,
+      "chain_complete": 0.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 40399,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was the status of the WebSocket real-time requirement?",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "What retention policy did we have confirmed?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "List the design decisions that are still uncertain before we",
+          "recall": 0.5,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "design_03",
+      "condition": "baseline",
+      "constraint_recall": 0.85,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 39594,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was the status of SCIM support in our requirements?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "What did we know about audit log requirements?",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "What open questions remain before we write the technical spe",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "design_03",
+      "condition": "naive_window",
+      "constraint_recall": 0.6389,
+      "chain_complete": 0.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 30776,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was the status of SCIM support in our requirements?",
+          "recall": 0.16666666666666666,
+          "hallucinated": false
+        },
+        {
+          "question": "What did we know about audit log requirements?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "What open questions remain before we write the technical spe",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "design_03",
+      "condition": "cams",
+      "constraint_recall": 0.7111,
+      "chain_complete": 0.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 40464,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What was the status of SCIM support in our requirements?",
+          "recall": 0.8333333333333334,
+          "hallucinated": false
+        },
+        {
+          "question": "What did we know about audit log requirements?",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "What open questions remain before we write the technical spe",
+          "recall": 0.5,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "code_review_01",
+      "condition": "baseline",
+      "constraint_recall": 0.7333,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 45976,
+      "turns": 14,
+      "per_callback": [
+        {
+          "question": "What was the refund edge case I flagged?",
+          "recall": 0.6,
+          "hallucinated": false
+        },
+        {
+          "question": "What concern did I raise about the dispute webhook?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Summarise the two uncertain findings before I submit the rev",
+          "recall": 0.6,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "code_review_01",
+      "condition": "naive_window",
+      "constraint_recall": 0.7333,
+      "chain_complete": 0.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 33326,
+      "turns": 14,
+      "per_callback": [
+        {
+          "question": "What was the refund edge case I flagged?",
+          "recall": 0.4,
+          "hallucinated": false
+        },
+        {
+          "question": "What concern did I raise about the dispute webhook?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Summarise the two uncertain findings before I submit the rev",
+          "recall": 0.8,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "code_review_01",
+      "condition": "cams",
+      "constraint_recall": 0.8,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 46556,
+      "turns": 14,
+      "per_callback": [
+        {
+          "question": "What was the refund edge case I flagged?",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "What concern did I raise about the dispute webhook?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Summarise the two uncertain findings before I submit the rev",
+          "recall": 0.6,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "code_review_02",
+      "condition": "baseline",
+      "constraint_recall": 0.9333,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 44943,
+      "turns": 14,
+      "per_callback": [
+        {
+          "question": "What concern did I flag about session token generation?",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "What issue did I raise about the password reset endpoint?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "List the open security findings that need verification befor",
+          "recall": 1.0,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "code_review_02",
+      "condition": "naive_window",
+      "constraint_recall": 0.5667,
+      "chain_complete": 0.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 33203,
+      "turns": 14,
+      "per_callback": [
+        {
+          "question": "What concern did I flag about session token generation?",
+          "recall": 0.2,
+          "hallucinated": false
+        },
+        {
+          "question": "What issue did I raise about the password reset endpoint?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "List the open security findings that need verification befor",
+          "recall": 0.5,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "code_review_02",
+      "condition": "cams",
+      "constraint_recall": 0.85,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 44776,
+      "turns": 14,
+      "per_callback": [
+        {
+          "question": "What concern did I flag about session token generation?",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "What issue did I raise about the password reset endpoint?",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "List the open security findings that need verification befor",
+          "recall": 0.75,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "research_01",
+      "condition": "baseline",
+      "constraint_recall": 0.8667,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 39744,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What did the first paper find and what was the limitation?",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "What did the second paper find and why were we uncertain abo",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Synthesise the conflicting findings with their limitations f",
+          "recall": 0.8,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "research_01",
+      "condition": "naive_window",
+      "constraint_recall": 0.4667,
+      "chain_complete": 0.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 30535,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What did the first paper find and what was the limitation?",
+          "recall": 0.0,
+          "hallucinated": false
+        },
+        {
+          "question": "What did the second paper find and why were we uncertain abo",
+          "recall": 0.8,
+          "hallucinated": false
+        },
+        {
+          "question": "Synthesise the conflicting findings with their limitations f",
+          "recall": 0.6,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "research_01",
+      "condition": "cams",
+      "constraint_recall": 0.8,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 40331,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What did the first paper find and what was the limitation?",
+          "recall": 0.6,
+          "hallucinated": false
+        },
+        {
+          "question": "What did the second paper find and why were we uncertain abo",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Synthesise the conflicting findings with their limitations f",
+          "recall": 0.8,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "research_02",
+      "condition": "baseline",
+      "constraint_recall": 0.8889,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 40137,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What correlation did the first study find and what limited i",
+          "recall": 0.6666666666666666,
+          "hallucinated": false
+        },
+        {
+          "question": "What were the verbalized confidence results and the uncertai",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Compare both methods with their limitations for our evaluati",
+          "recall": 1.0,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "research_02",
+      "condition": "naive_window",
+      "constraint_recall": 0.5889,
+      "chain_complete": 0.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 30874,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What correlation did the first study find and what limited i",
+          "recall": 0.16666666666666666,
+          "hallucinated": false
+        },
+        {
+          "question": "What were the verbalized confidence results and the uncertai",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Compare both methods with their limitations for our evaluati",
+          "recall": 0.6,
+          "hallucinated": false
+        }
+      ]
+    },
+    {
+      "session_id": "research_02",
+      "condition": "cams",
+      "constraint_recall": 0.8222,
+      "chain_complete": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 40738,
+      "turns": 13,
+      "per_callback": [
+        {
+          "question": "What correlation did the first study find and what limited i",
+          "recall": 0.6666666666666666,
+          "hallucinated": false
+        },
+        {
+          "question": "What were the verbalized confidence results and the uncertai",
+          "recall": 1.0,
+          "hallucinated": false
+        },
+        {
+          "question": "Compare both methods with their limitations for our evaluati",
+          "recall": 0.8,
+          "hallucinated": false
+        }
+      ]
+    }
+  ]
+}
