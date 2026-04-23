@@ -157,7 +157,7 @@ def run_epistemic_memory(
     callback_results = []
     for cb in scenario.callbacks:
         result = mgr.chat(cb.question)
-        tokens_used += result.tokens_used
+        tokens_used += result.tokens_in + result.tokens_out
         tokens_saved_total += result.tokens_saved
 
         cr = evaluate_callback(cb.question, result.response, cb.required_fragments, cb.forbidden_fragments)

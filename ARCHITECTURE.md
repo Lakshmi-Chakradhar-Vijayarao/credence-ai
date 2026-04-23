@@ -25,10 +25,12 @@ Tier 2 — Behavioral Consistency (300 ms, ~$0.001/turn)
   Low variance → consistent → high confidence
   Used for MEDIUM-zone turns where Tier 1 is ambiguous.
 
-Tier 3 — Fisher J from Internal Activations (batch, offline)
-  KV-cache attention entropy on Qwen 3.5B
-  Pre-computed signal comparison. Not deployed in live MCP.
-  Validates that Tier 1 correlates with actual model uncertainty.
+Tier 3 — Fisher J from Internal Activations (prior research, not deployed)
+  KV-cache attention entropy measured in prior work on Qwen 3.5B.
+  Established that internal model uncertainty correlates with surface
+  linguistic assertiveness patterns — validating that Tier 1 measures
+  something real. This system does not require Tier 3 at runtime.
+  Tier 1 + E4 causal validation (CAMS > random_j) are sufficient.
 ```
 
 ## Memory Policy

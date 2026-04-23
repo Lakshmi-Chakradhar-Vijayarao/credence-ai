@@ -510,34 +510,38 @@ def render_evidence_tab():
 
         st.markdown("### Conversation Benchmark — Full Results")
 
+        # sessions is a flat list: each entry = {session_id, condition, constraint_recall, chain_complete, ...}
         sessions = conv_data.get("sessions", [])
         if sessions:
             rows_data = []
             for sess in sessions:
-                for cond in ["baseline", "naive_window", "cams"]:
-                    r = sess.get(cond, {})
-                    rows_data.append({
-                        "Session": sess.get("session_id", ""),
-                        "Type": sess.get("session_type", ""),
-                        "Condition": cond,
-                        "Recall": round(r.get("recall", 0), 3),
-                        "Chain": "YES" if r.get("chain_complete") else "NO",
-                    })
+                rows_data.append({
+                    "Session": sess.get("session_id", ""),
+                    "Condition": sess.get("condition", ""),
+                    "Recall": round(sess.get("constraint_recall", 0), 3),
+                    "Chain": "YES" if sess.get("chain_complete") else "NO",
+                    "Halluc": f"{sess.get('hallucination_rate', 0):.0%}",
+                })
             if rows_data:
-                import pandas as pd
-                df = pd.DataFrame(rows_data)
-                st.dataframe(df, use_container_width=True)
+                try:
+                    import pandas as pd
+                    df = pd.DataFrame(rows_data)
+                    st.dataframe(df, use_container_width=True)
+                except ImportError:
+                    for r in rows_data:
+                        st.write(r)
 
         summary = conv_data.get("summary", {})
         if summary:
             st.markdown("**Summary:**")
             c1, c2, c3 = st.columns(3)
+            recalls  = summary.get("mean_constraint_recall", {})
+            chains   = summary.get("mean_chain_complete", {})
             for cond, col in [("baseline", c1), ("cams", c2), ("naive_window", c3)]:
-                s = summary.get(cond, {})
                 col.metric(
                     cond,
-                    f"recall={s.get('mean_recall', 0):.3f}",
-                    f"chain={s.get('chain_pct', 0):.0%}",
+                    f"recall={recalls.get(cond, 0):.3f}",
+                    f"chain={chains.get(cond, 0):.0%}",
                 )
 
     # ── Flagship results (if run) ─────────────────────────────────────────

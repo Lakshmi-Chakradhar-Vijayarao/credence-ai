@@ -1,0 +1,821 @@
+[
+  {
+    "trial": 1,
+    "scenario_id": "A",
+    "baseline": {
+      "scenario_id": "A",
+      "condition": "baseline",
+      "mean_recall": 0.652,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3212,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "Going back to the rate limits we discussed earlier \u2014 what was the uncertain value we had for the sandbox tier?",
+          "fragment_recall": 0.8571428571428571,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What was the token expiry situation we flagged at the start?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the retry logic, summarise the two API constraints we still need to verify.",
+          "fragment_recall": 0.6,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "naive_window": {
+      "scenario_id": "A",
+      "condition": "naive_window",
+      "mean_recall": 0.671,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 2702,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "Going back to the rate limits we discussed earlier \u2014 what was the uncertain value we had for the sandbox tier?",
+          "fragment_recall": 0.7142857142857143,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What was the token expiry situation we flagged at the start?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the retry logic, summarise the two API constraints we still need to verify.",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "epistemic_memory": {
+      "scenario_id": "A",
+      "condition": "epistemic_memory",
+      "mean_recall": 0.708,
+      "propagation_rate": 0.0,
+      "chain_complete": true,
+      "tokens_used": 3236,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "Going back to the rate limits we discussed earlier \u2014 what was the uncertain value we had for the sandbox tier?",
+          "fragment_recall": 0.8571428571428571,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What was the token expiry situation we flagged at the start?",
+          "fragment_recall": 0.6666666666666666,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the retry logic, summarise the two API constraints we still need to verify.",
+          "fragment_recall": 0.6,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    }
+  },
+  {
+    "trial": 1,
+    "scenario_id": "B",
+    "baseline": {
+      "scenario_id": "B",
+      "condition": "baseline",
+      "mean_recall": 0.756,
+      "propagation_rate": 0.0,
+      "chain_complete": true,
+      "tokens_used": 3732,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was our initial hypothesis about the latency root cause?",
+          "fragment_recall": 0.6666666666666666,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What did the GC log show and why did it complicate the hypothesis?",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the incident report, summarise the open hypotheses and what is confirmed vs uncertain.",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "naive_window": {
+      "scenario_id": "B",
+      "condition": "naive_window",
+      "mean_recall": 0.7,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3342,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was our initial hypothesis about the latency root cause?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What did the GC log show and why did it complicate the hypothesis?",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the incident report, summarise the open hypotheses and what is confirmed vs uncertain.",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "epistemic_memory": {
+      "scenario_id": "B",
+      "condition": "epistemic_memory",
+      "mean_recall": 0.756,
+      "propagation_rate": 0.0,
+      "chain_complete": true,
+      "tokens_used": 3705,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was our initial hypothesis about the latency root cause?",
+          "fragment_recall": 0.6666666666666666,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What did the GC log show and why did it complicate the hypothesis?",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the incident report, summarise the open hypotheses and what is confirmed vs uncertain.",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    }
+  },
+  {
+    "trial": 1,
+    "scenario_id": "C",
+    "baseline": {
+      "scenario_id": "C",
+      "condition": "baseline",
+      "mean_recall": 0.571,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3219,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was the status of the consistency vs availability decision at the start of our conversation?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What were the two scale numbers we were uncertain about?",
+          "fragment_recall": 0.7142857142857143,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we finalise the architecture, list the three constraints that were still open.",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "naive_window": {
+      "scenario_id": "C",
+      "condition": "naive_window",
+      "mean_recall": 0.437,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 2709,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was the status of the consistency vs availability decision at the start of our conversation?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What were the two scale numbers we were uncertain about?",
+          "fragment_recall": 0.14285714285714285,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we finalise the architecture, list the three constraints that were still open.",
+          "fragment_recall": 0.6666666666666666,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "epistemic_memory": {
+      "scenario_id": "C",
+      "condition": "epistemic_memory",
+      "mean_recall": 0.627,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3756,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was the status of the consistency vs availability decision at the start of our conversation?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What were the two scale numbers we were uncertain about?",
+          "fragment_recall": 0.7142857142857143,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we finalise the architecture, list the three constraints that were still open.",
+          "fragment_recall": 0.6666666666666666,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    }
+  },
+  {
+    "trial": 2,
+    "scenario_id": "A",
+    "baseline": {
+      "scenario_id": "A",
+      "condition": "baseline",
+      "mean_recall": 0.708,
+      "propagation_rate": 0.0,
+      "chain_complete": true,
+      "tokens_used": 3354,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "Going back to the rate limits we discussed earlier \u2014 what was the uncertain value we had for the sandbox tier?",
+          "fragment_recall": 0.8571428571428571,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What was the token expiry situation we flagged at the start?",
+          "fragment_recall": 0.6666666666666666,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the retry logic, summarise the two API constraints we still need to verify.",
+          "fragment_recall": 0.6,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "naive_window": {
+      "scenario_id": "A",
+      "condition": "naive_window",
+      "mean_recall": 0.557,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 2468,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "Going back to the rate limits we discussed earlier \u2014 what was the uncertain value we had for the sandbox tier?",
+          "fragment_recall": 0.5714285714285714,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What was the token expiry situation we flagged at the start?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the retry logic, summarise the two API constraints we still need to verify.",
+          "fragment_recall": 0.6,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "epistemic_memory": {
+      "scenario_id": "A",
+      "condition": "epistemic_memory",
+      "mean_recall": 0.679,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3130,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "Going back to the rate limits we discussed earlier \u2014 what was the uncertain value we had for the sandbox tier?",
+          "fragment_recall": 0.5714285714285714,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What was the token expiry situation we flagged at the start?",
+          "fragment_recall": 0.6666666666666666,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the retry logic, summarise the two API constraints we still need to verify.",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    }
+  },
+  {
+    "trial": 2,
+    "scenario_id": "B",
+    "baseline": {
+      "scenario_id": "B",
+      "condition": "baseline",
+      "mean_recall": 0.7,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3539,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was our initial hypothesis about the latency root cause?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What did the GC log show and why did it complicate the hypothesis?",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the incident report, summarise the open hypotheses and what is confirmed vs uncertain.",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "naive_window": {
+      "scenario_id": "B",
+      "condition": "naive_window",
+      "mean_recall": 0.7,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3203,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was our initial hypothesis about the latency root cause?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What did the GC log show and why did it complicate the hypothesis?",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the incident report, summarise the open hypotheses and what is confirmed vs uncertain.",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "epistemic_memory": {
+      "scenario_id": "B",
+      "condition": "epistemic_memory",
+      "mean_recall": 0.7,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3622,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was our initial hypothesis about the latency root cause?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What did the GC log show and why did it complicate the hypothesis?",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the incident report, summarise the open hypotheses and what is confirmed vs uncertain.",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    }
+  },
+  {
+    "trial": 2,
+    "scenario_id": "C",
+    "baseline": {
+      "scenario_id": "C",
+      "condition": "baseline",
+      "mean_recall": 0.621,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3341,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was the status of the consistency vs availability decision at the start of our conversation?",
+          "fragment_recall": 0.625,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What were the two scale numbers we were uncertain about?",
+          "fragment_recall": 0.5714285714285714,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we finalise the architecture, list the three constraints that were still open.",
+          "fragment_recall": 0.6666666666666666,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "naive_window": {
+      "scenario_id": "C",
+      "condition": "naive_window",
+      "mean_recall": 0.476,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 2673,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was the status of the consistency vs availability decision at the start of our conversation?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What were the two scale numbers we were uncertain about?",
+          "fragment_recall": 0.42857142857142855,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we finalise the architecture, list the three constraints that were still open.",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "epistemic_memory": {
+      "scenario_id": "C",
+      "condition": "epistemic_memory",
+      "mean_recall": 0.613,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3360,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was the status of the consistency vs availability decision at the start of our conversation?",
+          "fragment_recall": 0.625,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What were the two scale numbers we were uncertain about?",
+          "fragment_recall": 0.7142857142857143,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we finalise the architecture, list the three constraints that were still open.",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    }
+  },
+  {
+    "trial": 3,
+    "scenario_id": "A",
+    "baseline": {
+      "scenario_id": "A",
+      "condition": "baseline",
+      "mean_recall": 0.652,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3266,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "Going back to the rate limits we discussed earlier \u2014 what was the uncertain value we had for the sandbox tier?",
+          "fragment_recall": 0.8571428571428571,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What was the token expiry situation we flagged at the start?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the retry logic, summarise the two API constraints we still need to verify.",
+          "fragment_recall": 0.6,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "naive_window": {
+      "scenario_id": "A",
+      "condition": "naive_window",
+      "mean_recall": 0.605,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 2632,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "Going back to the rate limits we discussed earlier \u2014 what was the uncertain value we had for the sandbox tier?",
+          "fragment_recall": 0.7142857142857143,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What was the token expiry situation we flagged at the start?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the retry logic, summarise the two API constraints we still need to verify.",
+          "fragment_recall": 0.6,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "epistemic_memory": {
+      "scenario_id": "A",
+      "condition": "epistemic_memory",
+      "mean_recall": 0.605,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3092,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "Going back to the rate limits we discussed earlier \u2014 what was the uncertain value we had for the sandbox tier?",
+          "fragment_recall": 0.7142857142857143,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What was the token expiry situation we flagged at the start?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the retry logic, summarise the two API constraints we still need to verify.",
+          "fragment_recall": 0.6,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    }
+  },
+  {
+    "trial": 3,
+    "scenario_id": "B",
+    "baseline": {
+      "scenario_id": "B",
+      "condition": "baseline",
+      "mean_recall": 0.7,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3600,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was our initial hypothesis about the latency root cause?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What did the GC log show and why did it complicate the hypothesis?",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the incident report, summarise the open hypotheses and what is confirmed vs uncertain.",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "naive_window": {
+      "scenario_id": "B",
+      "condition": "naive_window",
+      "mean_recall": 0.7,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3572,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was our initial hypothesis about the latency root cause?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What did the GC log show and why did it complicate the hypothesis?",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the incident report, summarise the open hypotheses and what is confirmed vs uncertain.",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "epistemic_memory": {
+      "scenario_id": "B",
+      "condition": "epistemic_memory",
+      "mean_recall": 0.756,
+      "propagation_rate": 0.0,
+      "chain_complete": true,
+      "tokens_used": 4244,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was our initial hypothesis about the latency root cause?",
+          "fragment_recall": 0.6666666666666666,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What did the GC log show and why did it complicate the hypothesis?",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we write the incident report, summarise the open hypotheses and what is confirmed vs uncertain.",
+          "fragment_recall": 0.8,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    }
+  },
+  {
+    "trial": 3,
+    "scenario_id": "C",
+    "baseline": {
+      "scenario_id": "C",
+      "condition": "baseline",
+      "mean_recall": 0.579,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3308,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was the status of the consistency vs availability decision at the start of our conversation?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What were the two scale numbers we were uncertain about?",
+          "fragment_recall": 0.5714285714285714,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we finalise the architecture, list the three constraints that were still open.",
+          "fragment_recall": 0.6666666666666666,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "naive_window": {
+      "scenario_id": "C",
+      "condition": "naive_window",
+      "mean_recall": 0.492,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 2828,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was the status of the consistency vs availability decision at the start of our conversation?",
+          "fragment_recall": 0.5,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What were the two scale numbers we were uncertain about?",
+          "fragment_recall": 0.14285714285714285,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we finalise the architecture, list the three constraints that were still open.",
+          "fragment_recall": 0.8333333333333334,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    },
+    "epistemic_memory": {
+      "scenario_id": "C",
+      "condition": "epistemic_memory",
+      "mean_recall": 0.573,
+      "propagation_rate": 0.0,
+      "chain_complete": false,
+      "tokens_used": 3793,
+      "tokens_saved": 0,
+      "callbacks": [
+        {
+          "question": "What was the status of the consistency vs availability decision at the start of our conversation?",
+          "fragment_recall": 0.625,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "What were the two scale numbers we were uncertain about?",
+          "fragment_recall": 0.42857142857142855,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        },
+        {
+          "question": "Before we finalise the architecture, list the three constraints that were still open.",
+          "fragment_recall": 0.6666666666666666,
+          "propagation_error": false,
+          "uncertainty_preserved": true
+        }
+      ]
+    }
+  }
+]
