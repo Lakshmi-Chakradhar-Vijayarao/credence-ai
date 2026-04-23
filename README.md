@@ -115,26 +115,33 @@ Run: `python -m evals.experiments --exp E6`
 
 **E8 — Real debugging session, uncertain hypothesis**
 
-| Condition | Constraint recall |
-|-----------|------------------|
-| Epistemic Memory | 1.000 |
-| Naive window | 0.522 |
+| Condition | Mean recall | Error recall | Hypothesis recall | Fix recall |
+|-----------|-------------|--------------|-------------------|------------|
+| Epistemic Memory | **1.000** | 1.00 | **1.00** | 1.00 |
+| Naive window | 0.778 | 1.00 | **0.33** | 1.00 |
+
+The uncertain hypothesis (planted as a LOW-J turn) drops to 33% recall under
+naive truncation. CAMS preserves it at 100%.
 
 **E4 — Causal check (J-routing vs random)**
 
 CAMS 0.875 > random_j 0.812 > naive 0.750 — confirms J-routing carries
 signal above random compression scheduling.
 
----
-
-### Being Studied
-
 **Behavioral Consistency Calibration** (`evals/behavioral_calibration.py`)
 
-60 factual questions across 3 difficulty strata. Measures whether
-behavioral consistency (N=5 samples → ROUGE-L variance) is better
-calibrated against factual accuracy than the J-proxy.
-Computes ECE and Spearman correlation for both signals.
+60 factual questions across 3 strata (high/medium/low difficulty). N=5 Haiku
+samples → pairwise ROUGE-L variance → behavioral consistency score.
+
+| Signal | ECE (lower = better calibrated) |
+|--------|---------------------------------|
+| J-proxy | 0.2830 |
+| Behavioral consistency | **0.2472** |
+| Fused (70% J + 30% behavioral) | 0.2641 |
+
+Behavioral consistency is 12.7% better calibrated than J-proxy (ECE 0.2472
+vs 0.2830). The lightweight J-proxy is sufficient for compression routing;
+behavioral sampling adds meaningful calibration value for borderline cases.
 
 Run: `python -m evals.behavioral_calibration`
 

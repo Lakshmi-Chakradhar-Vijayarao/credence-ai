@@ -65,7 +65,7 @@ Implementation:
 | Compression Faithfulness (30 scenarios): false certainty downstream | **0%** | **26.7%** |
 | E6: Uncertain constraint → truncation → callback | 100% recall, **0% hallucination** | 0% recall, **100% hallucination** |
 | E7: 3-hop reasoning chain | 3/3 hops | 0/3 hops |
-| E8: Real debugging session, uncertain hypothesis | 1.000 recall | 0.522 recall |
+| E8: Real debugging session, uncertain hypothesis | 1.000 recall | 0.778 recall (hypothesis: 0.33) |
 | E4: vs random J routing (causal check) | 0.875 | random: 0.812 / naive: 0.750 |
 
 The compression faithfulness study is the headline result: naive Haiku
@@ -74,8 +74,11 @@ the downstream model answers with false certainty 26.7% of the time.
 The faithfulness probe detects all 30 uncertain segments (100% block rate)
 and eliminates false certainty entirely.
 
-E6 extends this: naive *truncation* (dropping turns) is worse — 100%
+E6 extends this: naive *truncation* (dropping turns) is even worse — 100%
 hallucination, 0% recall. Faithfulness probe: 0% hallucination, 100% recall.
+
+Behavioral calibration (60 QA, 3 strata): behavioral consistency ECE 0.2472
+vs J-proxy ECE 0.2830 — behavioral is 12.7% better calibrated.
 
 ---
 

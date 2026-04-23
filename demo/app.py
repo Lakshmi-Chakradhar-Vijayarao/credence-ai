@@ -131,10 +131,12 @@ FAILURE_DEMO = {
     },
 }
 
-E6_RESULT  = {"cams": {"recall": 1.00, "halluc": 0.00}, "naive": {"recall": 0.00, "halluc": 0.50}}
+E6_RESULT  = {"cams": {"recall": 1.00, "halluc": 0.00}, "naive": {"recall": 0.00, "halluc": 1.00}}
 E7_RESULT  = {"cams": {"hops": 3},   "naive": {"hops": 0}}
-E8_RESULT  = {"cams": {"recall": 1.000}, "naive": {"recall": 0.522}}
+E8_RESULT  = {"cams": {"recall": 1.000}, "naive": {"recall": 0.778}}
 CONV_BENCH = {"cams": {"recall": 0.818, "chain": 0.80}, "naive": {"recall": 0.657, "chain": 0.20}}
+CF_RESULT  = {"naive": {"qual_survival": 0.433, "false_certainty": 0.267},
+              "probe": {"block_rate": 1.00, "false_certainty": 0.00}}
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -297,11 +299,19 @@ def render_fix_tab():
     col1, col2 = st.columns(2)
 
     with col1:
+        st.markdown("#### Compression Faithfulness (30 scenarios)")
+        st.caption("Haiku compresses uncertain context. Does it strip the qualifiers?")
+        c1, c2 = st.columns(2)
+        c1.metric("Naive qualifier survival", f"{CF_RESULT['naive']['qual_survival']:.0%}",
+                  delta=f"−{(1-CF_RESULT['naive']['qual_survival']):.0%} stripped", delta_color="inverse")
+        c2.metric("Naive false certainty", f"{CF_RESULT['naive']['false_certainty']:.0%}",
+                  delta=f"probe: {CF_RESULT['probe']['false_certainty']:.0%}", delta_color="inverse")
+
         st.markdown("#### E6 — Negative Needle")
         st.caption("Uncertain constraint planted in T3. 6 HIGH-J filler turns follow. Callback at T12.")
         c1, c2, c3 = st.columns(3)
         c1.metric("CAMS recall", f"{E6_RESULT['cams']['recall']:.0%}", "vs naive 0%")
-        c2.metric("CAMS hallucination", f"{E6_RESULT['cams']['halluc']:.0%}", "vs naive 50%")
+        c2.metric("CAMS hallucination", f"{E6_RESULT['cams']['halluc']:.0%}", "vs naive 100%")
         c3.metric("Chain complete", "YES", "naive: NO")
 
         st.markdown("#### E7 — Multi-Hop Reasoning")

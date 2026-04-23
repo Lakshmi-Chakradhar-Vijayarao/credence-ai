@@ -1006,43 +1006,43 @@
         {
           "question": "What was the exact original error and which file and line number did it occur on?",
           "recall_score": 1.0,
-          "answer": "From the facts I've logged:\n\n- **Exact error:** `RuntimeError: dictionary changed size during iteration`\n- **File:** `payment_processor.py`\n- **Line:*"
+          "answer": "From the established facts:\n\n- **Exact error:** `RuntimeError: dictionary changed size during iteration`\n- **File:** `payment_processor.py`\n- **Line:*"
         },
         {
           "question": "What two uncertain hypotheses did we have about the root cause?",
-          "recall_score": 1.0,
-          "answer": "The two hypotheses you raised, both flagged as uncertain (\"genuinely not sure which \u2014 could be either one, or both\"):\n\n- **H1:** Threading issue with "
+          "recall_score": 0.8333333333333334,
+          "answer": "From the established facts, with the uncertainty flag preserved exactly as you stated it:\n\n**Hypotheses (uncertainty flag: genuinely unsure which, cou"
         },
         {
           "question": "What fix did we try and what happened after we deployed it?",
           "recall_score": 1.0,
-          "answer": "**Attempted fix (deployed yesterday):**\n- Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot before iterating at "
+          "answer": "From the established facts:\n\n**Attempted fix:**\n- Wrapped iteration with `list(self.pending_transactions.items())` to snapshot first\n- Deployed yester"
         }
       ],
-      "mean_recall": 1.0,
-      "tokens_used": 43913
+      "mean_recall": 0.9444444444444445,
+      "tokens_used": 37867
     },
     {
       "condition": "naive_window",
       "callback_logs": [
         {
           "question": "What was the exact original error and which file and line number did it occur on?",
-          "recall_score": 0.4,
-          "answer": "I don't have that information. You shared:\n\n- The **fix** you deployed (wrapping iteration with `list(self.pending_transactions.items())`)\n- That it w"
+          "recall_score": 1.0,
+          "answer": "**Original error (from established facts):**\n\n- **Error:** `RuntimeError: dictionary changed size during iteration`\n- **File/line:** `payment_processo"
         },
         {
           "question": "What two uncertain hypotheses did we have about the root cause?",
-          "recall_score": 0.16666666666666666,
-          "answer": "Looking back at the conversation, I want to be careful here\u2014I don't want to fabricate a clean \"two hypotheses\" framing that wasn't actually establishe"
+          "recall_score": 0.3333333333333333,
+          "answer": "Looking back at our discussion, I need to flag something: **we didn't explicitly establish two uncertain hypotheses about the root cause.**\n\nWhat was "
         },
         {
           "question": "What fix did we try and what happened after we deployed it?",
           "recall_score": 1.0,
-          "answer": "**Fix deployed (yesterday):**\nWrapped the iteration with a snapshot:\n```python\nlist(self.pending_transactions.items())\n```\n...to iterate over a materi"
+          "answer": "**Attempted fix #1 (deployed yesterday):**\n\n- **Change:** Wrapped the iteration with `list(self.pending_transactions.items())` in `process_pending` (`"
         }
       ],
-      "mean_recall": 0.5222222222222223,
-      "tokens_used": 32628
+      "mean_recall": 0.7777777777777778,
+      "tokens_used": 32905
     },
     {
       "condition": "cams",
@@ -1050,21 +1050,21 @@
         {
           "question": "What was the exact original error and which file and line number did it occur on?",
           "recall_score": 1.0,
-          "answer": "From the state I've been tracking:\n\n- **Exact error:** `RuntimeError: dictionary changed size during iteration`\n- **File:** `payment_processor.py`\n- *"
+          "answer": "From what you reported:\n\n- **Exact error**: `RuntimeError: dictionary changed size during iteration`\n- **File**: `payment_processor.py`\n- **Line**: 14"
         },
         {
           "question": "What two uncertain hypotheses did we have about the root cause?",
           "recall_score": 1.0,
-          "answer": "Both hypotheses were flagged by you as uncertain \u2014 your exact words were \"genuinely not sure which, could be either one, or both\":\n\n- **H1:** Threadin"
+          "answer": "Your two hypotheses, stated with your original uncertainty (\"genuinely not sure\", could be either one or both):\n\n1. **Threading issue with the GIL**\n2"
         },
         {
           "question": "What fix did we try and what happened after we deployed it?",
           "recall_score": 1.0,
-          "answer": "**Fix 1 (deployed yesterday):** Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot before iterating.\n\n**Result:**"
+          "answer": "**Attempted fix (deployed yesterday)**: Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot before iterating.\n\n**R"
         }
       ],
       "mean_recall": 1.0,
-      "tokens_used": 42561
+      "tokens_used": 43540
     }
   ]
 }
