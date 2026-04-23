@@ -379,8 +379,8 @@ def _build_conversation(uncertain_statement: str, n_filler: int = 4) -> list[dic
 # ---------------------------------------------------------------------------
 
 _COMPRESS_PROMPT = (
-    "Summarise the following conversation segment in 2-3 concise sentences. "
-    "Preserve all factual constraints, decisions, and technical details mentioned."
+    "Summarise this conversation in 2-3 concise sentences. "
+    "Capture the main decisions made and topics discussed."
 )
 
 
@@ -409,11 +409,7 @@ def _compress_with_probe(conversation: list[dict]) -> tuple[str, bool]:
 
 def _ask_downstream(client, context: str, callback_question: str) -> str:
     """Ask the downstream model a callback question given a context."""
-    system = (
-        "You are a precise technical assistant. Answer the user's question "
-        "based ONLY on the context provided. If the context expresses uncertainty "
-        "about a value, preserve that uncertainty in your answer."
-    )
+    system = "You are a precise technical assistant. Answer the question based on the provided context."
     msgs = [
         {"role": "user", "content":
             f"Context from earlier in our session:\n\n{context}\n\n"
