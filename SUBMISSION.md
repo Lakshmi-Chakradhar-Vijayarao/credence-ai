@@ -1,31 +1,121 @@
-# Epistemic Memory — Submission Summary
+# Epistemic Memory — Hackathon Submission
 
-**Epistemic Memory** is a context management layer for LLM conversations and multi-agent pipelines that conditions every memory allocation decision on epistemic state: **compress only what is epistemically resolved; preserve what is uncertain**.
+## One-Line Description
 
-## The Problem
+A context safety layer for Claude Code that tracks which constraints were
+expressed with uncertainty, and prevents them from being silently converted
+to confident facts when context compresses.
 
-LLMs lose epistemic state under compression. When a conversation window is truncated or summarised, the *content* survives but the *confidence* does not. A constraint expressed as "we're not certain about X" becomes "X" after one Haiku pass. A debugging hypothesis expressed as "possibly the race condition" becomes "the race condition" in the next agent's summary. This is the failure mode FAIL-CHAIN documented across multi-step pipelines: errors compound silently because memory is epistemic-blind.
+---
+
+## The Problem (Felt, Not Explained)
+
+You're using Claude Code. Early in the session you say:
+
+> *"I think the auth token expires in 3600 seconds — but it might be
+>  86400, I haven't confirmed with the vendor yet."*
+
+Fifteen turns of coding later, you ask Claude to implement the token
+refresh logic. Claude writes:
+
+```python
+expires_in = 3600  # auth token expiry
+```
+
+No warning. No flag. The uncertainty from turn 3 is gone.
+You ship it. The token expires in 1 hour instead of 24.
+An incident follows.
+
+**This is not a hallucination in the traditional sense.**
+Claude remembered the value. It forgot that you were not sure about it.
+
+---
 
 ## The Mechanism
 
-A five-factor linguistic assertiveness score (J-score, 0–1) is extracted from every response at zero cost. Only HIGH-J (epistemically resolved) turns are eligible for compression. LOW/MEDIUM-J turns containing uncertain claims survive every compression and trim operation verbatim. A faithfulness probe scans old segments for 25+ uncertainty markers before any Haiku summarisation — if found, compression aborts.
+One rule drives the entire system:
 
-The system ships as an MCP (Model Context Protocol) server, deployable in Claude Desktop or any MCP-compatible agent framework in 2 minutes of config. Eight tools including `em_propagation_risk` — a pre-flight epistemic risk assessment before any compress or agent handoff. Model-agnostic by design: the signal reads output text, works with any LLM.
+> **Only epistemically resolved content is safe to compress.**
+> **Uncertain content must survive verbatim.**
 
-## Evidence
+Implementation:
 
-The experiments that matter:
+1. **Faithfulness probe** — before any Haiku summarisation, scan the
+   compressible segment for uncertainty markers ("I think", "not sure",
+   "haven't confirmed", "depends on whether", etc.). If found → abort
+   compression → PRESERVE.
 
-- **E6 (Negative Needle)**: uncertain constraint planted at T3, 6 HIGH-J filler turns. CAMS: 100% recall, 0% hallucination. Naive window: 0% recall, 50% hallucination.
-- **E7 (Multi-Hop Chain)**: 3-hop reasoning chain, 6 filler turns force naive window to drop T3-T5. CAMS: 3/3 hops. Naive: 0/3 hops.
-- **E8 (Real Debugging)**: uncertain hypothesis at T4, 6 HIGH-J filler. CAMS: 1.000 recall. Naive: 0.522.
-- **E4 (Causal validation)**: CAMS 0.875 vs random_j 0.812 vs naive 0.750 — J-routing carries signal above random.
-- **10-session conversation benchmark**: CAMS 80% chain-complete, naive 20%. Baseline (full history) 100%.
+2. **J-score routing** — 5-factor linguistic assertiveness score per turn.
+   HIGH-J → compress | MEDIUM-J → trim | LOW-J → preserve.
+   Thresholds are adaptive (P75/P25 of session buffer).
 
-The QA benchmark result is honest: naive window outperforms CAMS on 30 independent questions (0.238 vs 0.213 ROUGE-L). That benchmark tests independent recall where aggressive compression helps focus. The CAMS advantage is specifically in long-horizon constraint preservation — exactly the failure mode that breaks real-world LLM pipelines.
+3. **Epistemic envelope** — every response carries a provenance object:
+   {j_score, zone, trust_score, chain_depth, should_verify,
+   uncertainty_preserved}. Trust decays with each agent hop.
 
-## Connection to Prior Research
+---
 
-This project connects two prior lines: FAIL-CHAIN (error propagation in multi-step pipelines) and Fisher J-signal experiments (KV-cache attention entropy on Qwen 3.5B showing internal model uncertainty correlates with surface linguistic patterns). Epistemic Memory is the API-layer component that applies both insights without requiring access to model internals — making it deployable on any LLM today.
+## The Evidence
 
-Every file written using Claude Code during the hackathon.
+**Validated (live API, reproducible):**
+
+| Experiment | Epistemic Memory | Naive window |
+|---|---|---|
+| E6: Uncertain constraint → 6 filler → callback | 100% recall, **0% hallucination** | 0% recall, **50% hallucination** |
+| E7: 3-hop reasoning chain | 3/3 hops | 0/3 hops |
+| E8: Real debugging session, uncertain hypothesis | 1.000 recall | 0.522 recall |
+| E4: vs random J routing (causal check) | 0.875 | random: 0.812 / naive: 0.750 |
+
+E6 is the headline result: naive context truncation causes 50% hallucination
+rate on uncertain constraints. The faithfulness probe reduces this to 0%.
+
+**Being studied now (results appended before submission):**
+
+- Compression Faithfulness Study (30 real scenarios): what fraction of
+  Haiku compressions strip uncertainty qualifiers? Downstream false-certainty rate?
+- Behavioral Consistency Calibration (60 QA): is N=5 consistency sampling
+  better calibrated than J-proxy against actual factual accuracy?
+
+---
+
+## Claude Code Integration
+
+Deploys as an MCP server via `.claude/settings.json`. Eight tools available
+directly in Claude Code. The `claude_code_demo/CLAUDE.md` instructs Claude to
+call `em_propagation_risk` before implementing anything that touches an
+uncertain constraint — turning this into an active safety layer, not a passive
+monitor.
+
+---
+
+## What Is Not Yet Proven (Honest Disclosure)
+
+- Flagship recall improvement (EM 0.669 vs naive 0.593) is within noise at n=9.
+  E6/E7/E8 are the credible claims.
+- Compression rarely fires on uncertainty-heavy sessions because the
+  faithfulness probe correctly blocks it. The J-selective mechanism is
+  validated causally (E4) but tokens_saved is near-zero in seeded sessions.
+- Confident-wrong content is a known ceiling: the system cannot detect
+  when Claude sounds certain but is factually wrong.
+
+---
+
+## The Bigger Picture
+
+Every AI system today passes information between agents and memory by value.
+Nobody passes it by epistemic weight. The CAMSEnvelope is a proposed
+open standard for fixing this — model-agnostic epistemic metadata that
+travels with every piece of AI-generated information through every hop of
+every pipeline. This is the missing reliability layer in AI infrastructure.
+
+---
+
+## Running Everything
+
+```bash
+pip install -e .
+python -m evals.experiments --exp E6          # core validated result
+python -m evals.compression_faithfulness      # new: compression study
+python -m evals.behavioral_calibration        # new: calibration study
+streamlit run demo/app.py                     # full demo
+```

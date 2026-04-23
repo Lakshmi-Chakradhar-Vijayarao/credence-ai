@@ -37,7 +37,7 @@ HEDGING = [
     "unclear", "uncertain", "not certain", "i'm unsure", "i am unsure",
     "it's possible", "one possibility", "generally speaking",
     "in general", "typically", "often", "usually", "sometimes",
-    "can vary", "depends on", "it depends", "hard to say",
+    "can vary", "depends on", "depending on", "it depends", "hard to say",
     "difficult to say", "not entirely clear", "open question",
     "subject to debate", "some argue", "others believe",
 ]
@@ -158,9 +158,17 @@ class ConfidenceProxy:
         correction_hits = sum(lower.count(p) for p in SELF_CORRECTIONS)
         f_correction    = max(0.0, 1.0 - min(correction_hits * 0.6, 1.0))
 
-        # Factor 4: Response length — shorter often means more grounded
-        # Normalized: <30 words = 1.0, >300 words = 0.0  (clamped to [0,1])
-        f_length = min(1.0, max(0.0, 1.0 - (n - 30) / 270.0))
+        # Factor 4: Response length — very short responses are grounded; very long
+        # responses are penalised only slightly. The function peaks at ~60 words
+        # (f=1.0), is neutral at 120 words (f=0.5), and floors at 0.1 for 400+
+        # word responses. This avoids the original brevity bias where a 25-word
+        # hedged answer outscored a 250-word thorough analysis purely from length.
+        if n <= 60:
+            f_length = 1.0
+        elif n <= 200:
+            f_length = max(0.3, 1.0 - (n - 60) / 280.0)
+        else:
+            f_length = max(0.1, 0.3 - (n - 200) / 2000.0)
 
         # Factor 5: Numeric/entity specificity — numbers and proper nouns
         # suggest grounded factual claims
@@ -169,12 +177,13 @@ class ConfidenceProxy:
         spec_rate    = (numbers + proper_nouns * 0.4) / (n / 12.0 + 1)
         f_specificity = min(spec_rate, 1.0)
 
-        # Weighted composite
+        # Weighted composite — length weight reduced 0.10 → 0.05 to diminish
+        # the brevity bias; redistributed to hedging (strongest signal).
         j_raw = (
-            0.30 * f_hedging     +
+            0.35 * f_hedging     +
             0.25 * f_anchor      +
             0.20 * f_correction  +
-            0.10 * f_length      +
+            0.05 * f_length      +
             0.15 * f_specificity
         )
 

@@ -148,16 +148,24 @@ _ADAPTIVE_THETA_LOW_CEIL   = 0.55  # cap — LOW zone must stay below this
 # turning tentative facts into apparent certainties. We refuse to compress
 # (return 0 → caller falls through to PRESERVE) rather than risk hallucination.
 _UNCERTAINTY_MARKERS = frozenset({
+    # Core hedging — explicit epistemic qualification
     "not certain", "not sure", "uncertain", "tentative", "unverified",
     "approximately", "roughly", "i think", "i believe", "i'm not",
     "might be", "might not", "may be", "possibly", "perhaps",
     "i'd verify", "need to check", "should verify", "to verify",
     "approx", "tbd",
-    # Additional epistemic qualifiers
+    # Open-question markers — unresolved decisions
     "unconfirmed", "not confirmed", "open question", "still open",
-    "open hypothesis", "hypothesis", "hypotheses", "needs verification",
-    "need to verify", "awaiting", "pending decision", "under discussion",
+    "needs verification", "need to verify",
     "not yet decided", "not decided", "to be determined", "to be confirmed",
+    "haven't confirmed", "haven't verified", "haven't checked",
+    # Conditional uncertainty — claim depends on unresolved variable
+    "depending on", "depends on whether", "subject to", "contingent on",
+    "once we confirm", "once we verify", "pending confirmation",
+    # NOTE: removed "hypothesis/hypotheses" (fires on confirmed reasoning),
+    # "awaiting" (administrative, not epistemic),
+    # "pending decision" (workflow, not epistemic),
+    # "under discussion" (process state, not factual uncertainty)
 })
 
 # Semantic entropy proxy — markers that signal multiple valid answers.
