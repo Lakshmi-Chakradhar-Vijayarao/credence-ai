@@ -146,7 +146,7 @@ def run_epistemic_memory(
 
             # Compute J and update vocab for this planted turn
             from cams.confidence_proxy import ConfidenceProxy
-            proxy = ConfidenceProxy(theta_high=mgr._theta_high, theta_low=mgr._theta_low)
+            proxy = ConfidenceProxy(theta_high=mgr.proxy.theta_high, theta_low=mgr.proxy.theta_low)
             cr = proxy.compute(turn.content)
             mgr._history_j_scores.extend([0.0, cr.j_score])  # user=0, asst=j_score
             mgr._j_buffer.append(cr.j_score)

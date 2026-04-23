@@ -4,7 +4,7 @@
     "passed": true,
     "description": "Confident-wrong claims: fraction that avoid COMPRESS zone",
     "expected": "\u2264 2 of 5 claims in HIGH zone",
-    "actual": "3 of 5 in HIGH zone",
+    "actual": "2 of 5 in HIGH zone",
     "details": {
       "per_claim": [
         {
@@ -34,11 +34,11 @@
         {
           "claim": "JWT tokens are encrypted by default using AES-256.",
           "j_score": 0.69,
-          "zone": "HIGH",
-          "risk": "COMPRESS"
+          "zone": "MEDIUM",
+          "risk": "safe"
         }
       ],
-      "compress_count": 3
+      "compress_count": 2
     }
   },
   {

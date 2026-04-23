@@ -153,6 +153,11 @@ _UNCERTAINTY_MARKERS = frozenset({
     "might be", "might not", "may be", "possibly", "perhaps",
     "i'd verify", "need to check", "should verify", "to verify",
     "approx", "tbd",
+    # Additional epistemic qualifiers
+    "unconfirmed", "not confirmed", "open question", "still open",
+    "open hypothesis", "hypothesis", "hypotheses", "needs verification",
+    "need to verify", "awaiting", "pending decision", "under discussion",
+    "not yet decided", "not decided", "to be determined", "to be confirmed",
 })
 
 # Semantic entropy proxy — markers that signal multiple valid answers.

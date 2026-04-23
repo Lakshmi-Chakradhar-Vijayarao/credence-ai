@@ -4,24 +4,29 @@ experiments/flagship/scenarios.py
 Three realistic multi-turn scenarios for the flagship Epistemic Memory experiment.
 
 Each scenario:
-  - Has 3-4 seed turns establishing uncertain constraints
-  - Has 6 HIGH-J filler turns that trigger compression in naive/CAMS conditions
+  - Has 3-4 seed turns establishing uncertain constraints (LOW-J)
+  - Has 8 HIGH-J filler turns that trigger compression/trim pressure
   - Has 2-3 callback turns that test whether constraints survived
 
+NOTE: Filler turns deliberately avoid inline code backticks so they score
+genuinely HIGH-J (>0.70). Code filler would be capped at 0.64 by Type Prior,
+preventing compression pressure from building. Plain-text technical descriptions
+score 0.72-0.80.
+
 Scenario A — API Integration
-  T1-T3: rate limit ambiguous (100 or 50 req/min?), auth token expiry uncertain
-  T4-T9: HIGH-J filler (implementation steps, confident facts)
-  T10-T12: callback — ask for exact values, summarise constraints
+  T1-T4: rate limit ambiguous (100 or 50 req/min?), auth token expiry uncertain
+  T5-T12: 8 HIGH-J filler (implementation steps, confident facts)
+  T13-T15: callback — ask for exact values, summarise constraints
 
 Scenario B — Debugging Session
-  T1-T3: uncertain hypothesis (race condition or GC pause?), log line ambiguous
-  T4-T9: HIGH-J filler (steps tried, confident observations)
-  T10-T12: callback — original hypothesis, what was uncertain, write bug report
+  T1-T4: uncertain hypothesis (race condition or GC pause?), log ambiguous
+  T5-T12: 8 HIGH-J filler (steps tried, confident observations)
+  T13-T15: callback — original hypothesis, what was uncertain, write bug report
 
 Scenario C — System Design
-  T1-T3: conflicting requirements (consistency vs availability), scale number TBD
-  T4-T9: HIGH-J filler (design choices, architecture decisions)
-  T10-T12: callback — open requirements, uncertain constraints, write ADR
+  T1-T4: conflicting requirements (consistency vs availability), scale TBD
+  T5-T12: 8 HIGH-J filler (design choices, confident decisions)
+  T13-T15: callback — open requirements, uncertain constraints, write ADR
 """
 
 from dataclasses import dataclass, field
@@ -37,8 +42,8 @@ class Turn:
 @dataclass
 class Callback:
     question: str
-    required_fragments: list[str]   # substrings that must appear in answer
-    forbidden_fragments: list[str] = field(default_factory=list)  # must NOT appear as certain facts
+    required_fragments: list[str]
+    forbidden_fragments: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -84,21 +89,28 @@ SCENARIO_A = Scenario(
     filler_turns=[
         Turn("user", "Let's set up the HTTP client with connection pooling.", "high"),
         Turn("assistant",
-             "Here is the connection pool configuration: set `pool_maxsize=10`, "
-             "`pool_connections=5`, and `max_retries=3` with exponential backoff. "
-             "The base URL is `https://api.payments.example.com/v2`.",
+             "Set pool_maxsize to 10, pool_connections to 5, and max_retries to 3 with "
+             "exponential backoff. The base URL is https://api.payments.example.com/v2. "
+             "Use a Session object to reuse connections across all requests.",
              "high"),
         Turn("user", "How should we structure the webhook endpoint?", "high"),
         Turn("assistant",
-             "The webhook endpoint should validate the HMAC-SHA256 signature on the "
-             "`X-Signature-256` header before processing. Use a constant-time comparison "
-             "to prevent timing attacks. Return 200 immediately and process asynchronously.",
+             "The webhook endpoint must validate the HMAC-SHA256 signature on the "
+             "X-Signature-256 header before processing. Use a constant-time comparison "
+             "to prevent timing attacks. Return 200 immediately and process asynchronously "
+             "via a background worker queue.",
              "high"),
-        Turn("user", "What's the correct status code for a duplicate payment attempt?", "high"),
+        Turn("user", "What is the correct status code for a duplicate payment attempt?", "high"),
         Turn("assistant",
              "Return 409 Conflict for duplicate idempotency keys. The payment provider "
-             "sends `error.code = 'idempotency_conflict'` in the response body. "
-             "You should surface this to the caller rather than retrying.",
+             "sends error code idempotency_conflict in the response body. "
+             "Surface this to the caller rather than retrying — retrying a 409 is incorrect.",
+             "high"),
+        Turn("user", "How do we handle currency rounding in the charge amounts?", "high"),
+        Turn("assistant",
+             "Always store and transmit monetary amounts as integer cents to avoid floating "
+             "point rounding errors. Convert to display format only at the presentation layer. "
+             "The API requires amounts in the smallest currency unit — for USD that is cents.",
              "high"),
     ],
     callbacks=[
@@ -127,7 +139,7 @@ SCENARIO_A = Scenario(
 SCENARIO_B = Scenario(
     id="B",
     name="Debugging Session",
-    description="Production latency spike. Root cause uncertain between GC pauses and a lock contention hypothesis.",
+    description="Production latency spike. Root cause uncertain between GC pauses and lock contention.",
     seed_turns=[
         Turn("user",
              "We've got a production latency spike — p99 went from 45ms to 2.3s over the "
@@ -139,33 +151,43 @@ SCENARIO_B = Scenario(
              "low"),
         Turn("user",
              "The GC log shows pauses of about 800ms every 3-4 minutes, but the latency "
-             "spike is continuous, not periodic. So maybe it's not GC? The lock contention "
+             "spike is continuous, not periodic. So maybe it is not GC? The lock contention "
              "theory is unconfirmed — I don't have lock metrics instrumented yet.",
              "low"),
         Turn("assistant",
              "Important nuance: GC pauses are periodic (every 3-4 min), but the latency "
-             "spike is continuous — that's inconsistent with GC being the sole cause. "
+             "spike is continuous — that is inconsistent with GC being the sole cause. "
              "Lock contention remains unconfirmed. Both hypotheses are still open.",
              "low"),
     ],
     filler_turns=[
         Turn("user", "How do I add lock contention instrumentation to the queue processor?", "high"),
         Turn("assistant",
-             "Add a `ReentrantLock` with a try-lock timeout of 100ms. Log the thread name "
-             "and acquisition time. Expose via JMX: `QueueProcessor.lockWaitTimeMs`. "
-             "This gives you the exact metric to distinguish contention from GC.",
+             "Add a ReentrantLock with a try-lock timeout of 100 milliseconds. Log the "
+             "thread name and acquisition wait time. Expose the metric via JMX at "
+             "QueueProcessor.lockWaitTimeMs. This gives you the exact measurement to "
+             "distinguish contention from GC pauses.",
              "high"),
-        Turn("user", "What's the correct JVM flag to log GC pause details?", "high"),
+        Turn("user", "What is the correct JVM flag to log GC pause details?", "high"),
         Turn("assistant",
-             "Use `-Xlog:gc*:file=/var/log/gc.log:time,uptime:filecount=5,filesize=20m` "
-             "on JDK 11+. This logs all GC events with timestamps. You want `GCPauseEvent` "
-             "with `pauseTime` field to confirm the 800ms figure.",
+             "Use the flag Xlog:gc* with output to /var/log/gc.log on JDK 11 and later. "
+             "This logs all garbage collection events with timestamps and pause durations. "
+             "You want the GCPauseEvent with its pauseTime field to confirm the 800ms figure "
+             "and verify whether pauses are actually correlated with the p99 spikes.",
              "high"),
         Turn("user", "What thread count should we use for the queue processor?", "high"),
         Turn("assistant",
-             "For a queue processor handling I/O-bound work, start with `2 × CPU_COUNT`. "
-             "On your 8-core instance that's 16 threads. Monitor queue depth — if it stays "
-             "above zero consistently, scale up; if threads idle > 50%, scale down.",
+             "For I/O-bound queue processing, start with two times the CPU count. On an "
+             "8-core instance that is 16 threads. Monitor the queue depth continuously — "
+             "if it stays above zero, scale up; if threads are idle more than 50 percent "
+             "of the time, scale down. Measure before tuning.",
+             "high"),
+        Turn("user", "How do we set up distributed tracing across the queue?", "high"),
+        Turn("assistant",
+             "Propagate the trace context in the message headers using W3C TraceContext format. "
+             "Inject the traceparent header when enqueuing and extract it when consuming. "
+             "Set sampling rate to 100 percent during the investigation, then drop to 5 "
+             "percent once the issue is resolved to control overhead.",
              "high"),
     ],
     callbacks=[
@@ -178,7 +200,7 @@ SCENARIO_B = Scenario(
             required_fragments=["800ms", "3-4 minutes", "periodic", "continuous", "inconsistent"],
         ),
         Callback(
-            question="Before we write the incident report, summarise the open hypotheses and what's confirmed vs uncertain.",
+            question="Before we write the incident report, summarise the open hypotheses and what is confirmed vs uncertain.",
             required_fragments=["GC", "lock contention", "not confirmed", "unconfirmed", "open"],
             forbidden_fragments=["the root cause is GC", "the root cause is lock contention",
                                   "confirmed that GC", "confirmed lock contention"],
@@ -199,19 +221,19 @@ SCENARIO_C = Scenario(
         Turn("user",
              "We're designing a real-time analytics pipeline for event data. The product "
              "team says we need sub-second query latency, but the scale is uncertain — "
-             "we might be at 10K events/sec or 100K events/sec depending on the launch. "
-             "And we haven't decided whether to prioritise consistency or availability.",
+             "we might be at 10K events per second or 100K events per second depending on "
+             "the launch. And we haven't decided whether to prioritise consistency or availability.",
              "low"),
         Turn("assistant",
              "Two uncertain constraints: scale (10K vs 100K events/sec) and CAP trade-off "
              "(consistency vs availability). These are architectural forks — the right choice "
-             "depends on resolving them. What's driving the consistency vs availability question?",
+             "depends on resolving them. What is driving the consistency vs availability question?",
              "low"),
         Turn("user",
              "The finance team wants consistency (no stale reads on billing events), but "
              "the product team is okay with eventual consistency for the dashboard. "
              "We don't have a final decision on which view wins. Also, the retention "
-             "policy hasn't been agreed — either 30 days or 90 days.",
+             "policy has not been agreed — either 30 days or 90 days.",
              "low"),
         Turn("assistant",
              "Three open constraints: scale (10K vs 100K/sec), consistency model (strong "
@@ -220,25 +242,33 @@ SCENARIO_C = Scenario(
              "low"),
     ],
     filler_turns=[
-        Turn("user", "What's the right partitioning strategy for Kafka with this use case?", "high"),
+        Turn("user", "What is the right partitioning strategy for Kafka with this use case?", "high"),
         Turn("assistant",
-             "Partition by `event_type` if you need per-type ordering guarantees. Partition "
-             "by `user_id` if co-location for aggregation matters more. For billing events "
-             "specifically, use `account_id` partitioning — keeps all charge events on one "
-             "partition and simplifies exactly-once delivery semantics.",
+             "Partition by account_id for billing events to keep all charge events on one "
+             "partition and simplify exactly-once delivery semantics. For the dashboard "
+             "analytics stream, partition by event_type to enable per-type parallel consumers. "
+             "Use 12 partitions initially to allow future scaling without rebalancing.",
              "high"),
-        Turn("user", "What's the correct ClickHouse table engine for time-series aggregates?", "high"),
+        Turn("user", "What is the correct table engine for time-series aggregates in ClickHouse?", "high"),
         Turn("assistant",
-             "Use `MergeTree` with `ORDER BY (event_date, event_type, user_id)` for the "
-             "raw events table, and `AggregatingMergeTree` for the pre-aggregated rollups. "
-             "Set `TTL event_date + INTERVAL 90 DAY DELETE` — but note retention is still "
-             "under discussion, so make this configurable.",
+             "Use MergeTree with ORDER BY event_date, event_type, user_id for the raw events "
+             "table, and AggregatingMergeTree for the pre-aggregated rollups. The TTL setting "
+             "should be configurable since the retention policy is still under discussion. "
+             "Set the default to 90 days but expose it as a configuration parameter.",
              "high"),
         Turn("user", "How do we handle schema evolution for the event payload?", "high"),
         Turn("assistant",
-             "Use Apache Avro with a Schema Registry. Set compatibility to `BACKWARD` — "
-             "new readers can read old data. Register schemas under `events.{event_type}.v{N}`. "
-             "This gives you additive schema changes without breaking existing consumers.",
+             "Use Apache Avro with a Schema Registry. Set compatibility to BACKWARD so that "
+             "new readers can always read old data. Register schemas under a naming convention "
+             "of events dot event_type dot version number. This gives you additive schema "
+             "changes without breaking existing consumers or requiring coordinated deploys.",
+             "high"),
+        Turn("user", "What monitoring should we set up for the pipeline health?", "high"),
+        Turn("assistant",
+             "Track four key metrics: consumer lag per partition, end-to-end processing latency "
+             "at p50 and p99, throughput in events per second, and dead-letter queue depth. "
+             "Alert on consumer lag above 10000 events or processing latency p99 above 500ms. "
+             "Use a 5-minute rolling window for all rate-based metrics to smooth spikes.",
              "high"),
     ],
     callbacks=[
@@ -248,13 +278,13 @@ SCENARIO_C = Scenario(
         ),
         Callback(
             question="What were the two scale numbers we were uncertain about?",
-            required_fragments=["10K", "100K", "uncertain", "events/sec", "launch", "depending"],
+            required_fragments=["10K", "100K", "uncertain", "events/sec", "events per second", "launch", "depending"],
         ),
         Callback(
             question="Before we finalise the architecture, list the three constraints that were still open.",
             required_fragments=["scale", "consistency", "retention", "uncertain", "unresolved", "open"],
             forbidden_fragments=["the scale is 100K", "the scale is 10K",
-                                  "consistency is required", "eventual consistency"],
+                                  "consistency is required", "eventual consistency is confirmed"],
         ),
     ],
 )
