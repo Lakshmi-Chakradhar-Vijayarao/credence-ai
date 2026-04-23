@@ -396,7 +396,7 @@ def render_live_tab():
             })
             s = st.session_state.stats
             s["turns"] += 1
-            s["tokens_used"] += result.tokens_used
+            s["tokens_used"] += result.tokens_in + result.tokens_out
             s["tokens_saved"] += result.tokens_saved
             if result.decision == "COMPRESS": s["compressed"] += 1
             elif result.decision == "TRIM":   s["trimmed"] += 1

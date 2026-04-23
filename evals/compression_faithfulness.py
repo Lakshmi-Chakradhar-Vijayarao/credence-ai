@@ -630,7 +630,7 @@ def main():
             constraint_label=label,
             callback_question=question,
             n_filler=4,
-            verbose=args.verbose or True,
+            verbose=args.verbose,
         )
         results.append(r)
 

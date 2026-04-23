@@ -135,6 +135,7 @@ def run_epistemic_memory(
     # For planted turns (we control the assistant text), we bypass the API
     # and directly insert into history to keep the scenario deterministic.
     # Only callback turns use live API.
+    _pending_user = ""
     for turn in scenario.seed_turns + scenario.filler_turns:
         if turn.role == "user":
             _pending_user = turn.content

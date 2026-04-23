@@ -414,7 +414,7 @@ def aggregate_calibration(results: list[QAResult]) -> dict:
         "spearman_behavioral":  _spearman(b_scores, acc),
         "spearman_fused":       _spearman(f_scores, acc),
         # Mean scores per stratum
-        "mean_j_high":          round(sum(r.j_score for r in results if r.stratum=="high")/max(1,stratum_acc["high"]*n),3) if stratum_acc["high"] else 0,
+        "mean_j_high":          round(sum(r.j_score for r in results if r.stratum=="high")/max(1,len([r for r in results if r.stratum=="high"])),3),
         "mean_behavioral_high": round(sum(r.behavioral_score for r in results if r.stratum=="high")/max(1,len([r for r in results if r.stratum=="high"])),3),
         "mean_behavioral_low":  round(sum(r.behavioral_score for r in results if r.stratum=="low")/max(1,len([r for r in results if r.stratum=="low"])),3),
     }
