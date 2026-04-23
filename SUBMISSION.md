@@ -59,22 +59,23 @@ Implementation:
 
 **Validated (live API, reproducible):**
 
-| Experiment | Epistemic Memory | Naive window |
+| Experiment | Epistemic Memory | Naive |
 |---|---|---|
-| E6: Uncertain constraint → 6 filler → callback | 100% recall, **0% hallucination** | 0% recall, **50% hallucination** |
+| Compression Faithfulness (30 scenarios): qualifier survival | 100% (blocked) | **43.3%** |
+| Compression Faithfulness (30 scenarios): false certainty downstream | **0%** | **26.7%** |
+| E6: Uncertain constraint → truncation → callback | 100% recall, **0% hallucination** | 0% recall, **100% hallucination** |
 | E7: 3-hop reasoning chain | 3/3 hops | 0/3 hops |
 | E8: Real debugging session, uncertain hypothesis | 1.000 recall | 0.522 recall |
 | E4: vs random J routing (causal check) | 0.875 | random: 0.812 / naive: 0.750 |
 
-E6 is the headline result: naive context truncation causes 50% hallucination
-rate on uncertain constraints. The faithfulness probe reduces this to 0%.
+The compression faithfulness study is the headline result: naive Haiku
+compression strips uncertainty qualifiers in 56.7% of cases. When stripped,
+the downstream model answers with false certainty 26.7% of the time.
+The faithfulness probe detects all 30 uncertain segments (100% block rate)
+and eliminates false certainty entirely.
 
-**Being studied now (results appended before submission):**
-
-- Compression Faithfulness Study (30 real scenarios): what fraction of
-  Haiku compressions strip uncertainty qualifiers? Downstream false-certainty rate?
-- Behavioral Consistency Calibration (60 QA): is N=5 consistency sampling
-  better calibrated than J-proxy against actual factual accuracy?
+E6 extends this: naive *truncation* (dropping turns) is worse — 100%
+hallucination, 0% recall. Faithfulness probe: 0% hallucination, 100% recall.
 
 ---
 

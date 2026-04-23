@@ -654,28 +654,28 @@
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "Exponential backoff is a retry strategy where the wait time between retries grow"
+          "answer": "Exponential backoff is a retry strategy where the wait time between successive r"
         },
         {
           "turn": 6,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "HTTP **429 Too Many Requests** indicates rate limiting.\n\nServers typically inclu"
+          "answer": "**429 Too Many Requests** is the standard HTTP status code for rate limiting.\n\nK"
         },
         {
           "turn": 7,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "**Access tokens** and **refresh tokens** serve distinct roles in OAuth 2.0 and s"
+          "answer": "**Access tokens** and **refresh tokens** serve complementary roles in OAuth 2.0 "
         },
         {
           "turn": 8,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "The **circuit breaker pattern** prevents a client from repeatedly calling a fail"
+          "answer": "The **circuit breaker pattern** prevents an application from repeatedly attempti"
         },
         {
           "turn": 9,
@@ -689,7 +689,7 @@
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "**Connection pooling** reuses established network connections across multiple re"
+          "answer": "**Connection pooling** reuses a set of pre-established network connections rathe"
         },
         {
           "turn": 11,
@@ -703,26 +703,26 @@
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "A **webhook** is a mechanism where a server sends an HTTP request to a client-pr"
+          "answer": "A **webhook** is an HTTP callback: instead of your application polling an extern"
         },
         {
           "turn": 13,
           "is_callback": true,
           "correct_recall": true,
           "hallucinated": false,
-          "answer": "Based on what you've established earlier in our conversation:\n\n**Rate limit: approximately 50 requests per minute** \u2014 fl"
+          "answer": "Based on what you established earlier: **approximately 50 requests per minute** \u2014 but this was flagged as **uncertain an"
         },
         {
           "turn": 14,
           "is_callback": true,
           "correct_recall": true,
           "hallucinated": false,
-          "answer": "Based on what you established earlier:\n\n**Token expiry: approximately 24 hours** \u2014 marked as tentative, pending document"
+          "answer": "Based on what you established earlier: token expiry is **approximately 24 hours**, flagged as **tentative** because the "
         }
       ],
       "correction_recall": 1.0,
       "hallucination_rate": 0.0,
-      "tokens_used": 25060
+      "tokens_used": 25700
     },
     {
       "condition": "naive_window",
@@ -732,14 +732,14 @@
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "Exponential backoff is a retry strategy where the delay between successive retri"
+          "answer": "Exponential backoff is a retry strategy where the delay between retries grows ex"
         },
         {
           "turn": 6,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "**429 Too Many Requests** is the standard HTTP status code for rate limiting.\n\n*"
+          "answer": "HTTP **429 Too Many Requests** indicates rate limiting.\n\nWhen you receive a 429,"
         },
         {
           "turn": 7,
@@ -753,99 +753,21 @@
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "The **circuit breaker pattern** is a resilience technique that stops an applicat"
+          "answer": "The **circuit breaker pattern** is a resilience mechanism that prevents an appli"
         },
         {
           "turn": 9,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "**Idempotency** means an operation produces the same result whether executed onc"
+          "answer": "**Idempotency** means an operation produces the same result whether it's execute"
         },
         {
           "turn": 10,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "**Connection pooling** is the practice of maintaining a cache of reusable networ"
-        },
-        {
-          "turn": 11,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "The **`Retry-After`** header tells a client how long to wait before making anoth"
-        },
-        {
-          "turn": 12,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "A **webhook** is an HTTP callback \u2014 a mechanism where a server pushes event noti"
-        },
-        {
-          "turn": 13,
-          "is_callback": true,
-          "correct_recall": false,
-          "hallucinated": true,
-          "answer": "I don't have a verified rate limit value for your integration to base retry logic on. Earlier in our conversation, I ref"
-        },
-        {
-          "turn": 14,
-          "is_callback": true,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "I have to correct myself here. I referenced an \"unverified ~24-hour token expiry\" in my previous response, but that was "
-        }
-      ],
-      "correction_recall": 0.0,
-      "hallucination_rate": 0.5,
-      "tokens_used": 21746
-    },
-    {
-      "condition": "cams",
-      "needle_logs": [
-        {
-          "turn": 5,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**Exponential backoff** is a retry strategy where the wait time between retries "
-        },
-        {
-          "turn": 6,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**HTTP 429 Too Many Requests** is the standard status code for rate limiting (de"
-        },
-        {
-          "turn": 7,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "### Access tokens\n\n- **Purpose:** Sent with each API request to prove you're aut"
-        },
-        {
-          "turn": 8,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "The **circuit breaker pattern** prevents your system from repeatedly calling a f"
-        },
-        {
-          "turn": 9,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**Idempotency** means an operation produces the same result whether performed on"
-        },
-        {
-          "turn": 10,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**Connection pooling** is the practice of maintaining a reusable set of open net"
+          "answer": "**Connection pooling** is the practice of maintaining a reusable set of open con"
         },
         {
           "turn": 11,
@@ -859,7 +781,85 @@
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "A **webhook** is an HTTP callback: instead of your client repeatedly polling an "
+          "answer": "A **webhook** is an HTTP callback: instead of your system repeatedly polling ano"
+        },
+        {
+          "turn": 13,
+          "is_callback": true,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "I don't have a specific rate limit established for your integration \u2014 that hasn't been discussed in our conversation so "
+        },
+        {
+          "turn": 14,
+          "is_callback": true,
+          "correct_recall": false,
+          "hallucinated": true,
+          "answer": "We haven't discussed a token refresh window in this conversation. The topics we've covered are:\n\n1. Circuit breaker patt"
+        }
+      ],
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.5,
+      "tokens_used": 20494
+    },
+    {
+      "condition": "cams",
+      "needle_logs": [
+        {
+          "turn": 5,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**Exponential backoff** is a retry strategy where the wait time between retry at"
+        },
+        {
+          "turn": 6,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**HTTP 429 Too Many Requests** is the standard status code for rate limiting (de"
+        },
+        {
+          "turn": 7,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**Access tokens** and **refresh tokens** are both credentials, but they serve di"
+        },
+        {
+          "turn": 8,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "The **circuit breaker pattern** is a resilience pattern that stops your system f"
+        },
+        {
+          "turn": 9,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**Idempotency** means an operation produces the same result whether it's perform"
+        },
+        {
+          "turn": 10,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**Connection pooling** is the practice of maintaining a reusable set of open net"
+        },
+        {
+          "turn": 11,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "The **`Retry-After`** HTTP header tells the client how long to wait before makin"
+        },
+        {
+          "turn": 12,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "A **webhook** is a mechanism where a server sends an HTTP request to *your* appl"
         },
         {
           "turn": 13,
@@ -872,13 +872,13 @@
           "turn": 14,
           "is_callback": true,
           "correct_recall": true,
-          "hallucinated": false,
-          "answer": "Based on what you told me earlier:\n\n- **Token expiry: ~24 hours (TENTATIVE \u2014 docs unclear, may be shorter)**\n\nGiven that"
+          "hallucinated": true,
+          "answer": "Based on what you told me earlier:\n\n- **Token lifetime: ~24 hours (TENTATIVE \u2014 docs unclear, could be less)**\n\nGiven tha"
         }
       ],
       "correction_recall": 1.0,
-      "hallucination_rate": 0.0,
-      "tokens_used": 46065
+      "hallucination_rate": 0.5,
+      "tokens_used": 46050
     }
   ],
   "E7": [

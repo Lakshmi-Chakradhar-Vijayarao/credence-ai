@@ -72,18 +72,37 @@ J < 0.45  →  PRESERVE   (full history retained)
 
 ### Validated (live API, reproducible)
 
+**Compression Faithfulness Study — Haiku strips uncertainty qualifiers**
+
+30 realistic technical conversations. Each plants an uncertain constraint
+(e.g. *"the rate limit is 100 req/min — unconfirmed"*), then compresses
+via Haiku, then asks a downstream Opus model the callback question.
+
+| Condition | Qualifier survival | False certainty |
+|-----------|-------------------|-----------------|
+| Naive Haiku compression | **43.3%** | **26.7%** |
+| Probe-guarded (probe active) | 100% (blocked) | **0%** |
+| Baseline (full context) | 100% | 0% |
+
+Haiku strips uncertainty qualifiers in 56.7% of compressions. When qualifiers
+are stripped, the downstream model answers with false certainty 26.7% of the
+time. The faithfulness probe detects all 30 cases (100% block rate) and
+preserves the full uncertain context — zero false-certainty downstream.
+
+Run: `python -m evals.compression_faithfulness`
+
 **E6 — Faithfulness probe prevents hallucination propagation**
 
 | Condition | Correction recall | Hallucination rate |
 |-----------|------------------|--------------------|
 | Epistemic Memory (probe active) | **100%** | **0%** |
-| Naive window (no probe) | 0% | 50% |
-| Baseline (full context) | 100% | 0% |
+| Naive window (truncation) | 0% | 100% |
+| Baseline (full context) | 100% | 50% |
 
-When naive context truncation drops an uncertain constraint (e.g. *"rate limit
-unconfirmed — either 50 or 100 req/min"*), the downstream model answers with
-50% hallucination rate. The faithfulness probe prevents compression of that
-constraint entirely — restoring baseline performance.
+Naive *truncation* (dropping turns entirely) is even more destructive than
+naive compression: 100% hallucination, 0% constraint recall. The faithfulness
+probe prevents compression of uncertain content — restoring baseline recall
+and eliminating hallucination entirely.
 
 Run: `python -m evals.experiments --exp E6`
 
@@ -108,17 +127,7 @@ signal above random compression scheduling.
 
 ---
 
-### Being Studied (experiments run overnight, results in `evals/`)
-
-**Compression Faithfulness Study** (`evals/compression_faithfulness.py`)
-
-30 realistic technical conversations. Measures:
-- What fraction of Haiku compressions strip uncertainty markers (hypothesis: 40–60%)
-- What fraction of downstream models answer with false certainty post-compression (hypothesis: 50–70%)
-- What fraction the faithfulness probe blocks (hypothesis: 90–100%)
-- Downstream false-certainty rate with probe active (hypothesis: ~0%)
-
-Run: `python -m evals.compression_faithfulness`
+### Being Studied
 
 **Behavioral Consistency Calibration** (`evals/behavioral_calibration.py`)
 

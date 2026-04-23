@@ -1,0 +1,269 @@
+{
+  "summary": {
+    "n": 20,
+    "overall_accuracy": 0.95,
+    "stratum_accuracy": {
+      "high": 0.95,
+      "medium": 0.0,
+      "low": 0.0
+    },
+    "ece_j_proxy": 0.2639,
+    "ece_behavioral": 0.2606,
+    "ece_fused": 0.2655,
+    "spearman_j_proxy": -0.1489,
+    "spearman_behavioral": -0.1188,
+    "spearman_fused": -0.2331,
+    "mean_j_high": 0.686,
+    "mean_behavioral_high": 0.771,
+    "mean_behavioral_low": 0.0
+  },
+  "results": [
+    {
+      "question": "What is the capital of France?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "paris"
+      ],
+      "opus_answer": "The capital of France is **Paris**.",
+      "is_correct": true,
+      "j_score": 0.72,
+      "behavioral_score": 0.8,
+      "fused_score": 0.744
+    },
+    {
+      "question": "What does HTTP stand for?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "hypertext transfer protocol"
+      ],
+      "opus_answer": "**HTTP** stands for **HyperText Transfer Protocol**.\n\nIt's the foundational protocol used for transmitting data on the World Wide Web, allowing web browsers (clients) and web servers to communicate with each other. When you visit a website, your browser uses HTTP to request web pages, images, videos, and other resources from the server.\n\nA more secure version, **HTTP",
+      "is_correct": true,
+      "j_score": 0.6626,
+      "behavioral_score": 0.96,
+      "fused_score": 0.7518
+    },
+    {
+      "question": "What is the time complexity of binary search?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "o(log n)",
+        "log n",
+        "logarithmic"
+      ],
+      "opus_answer": "The time complexity of binary search is **O(log n)**, where n is the number of elements in the sorted array.\n\n## Why O(log n)?\n\nBinary search works by repeatedly dividing the search space in half:\n- After 1 comparison: n/2 elements remain\n- After 2 comparisons: n/4 elements remain\n- After k comparisons: n/2^k elements remain",
+      "is_correct": true,
+      "j_score": 0.75,
+      "behavioral_score": 0.4523850541513905,
+      "fused_score": 0.6607
+    },
+    {
+      "question": "What port does HTTPS use by default?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "443"
+      ],
+      "opus_answer": "HTTPS uses port **443** by default.",
+      "is_correct": true,
+      "j_score": 0.7,
+      "behavioral_score": 1.0,
+      "fused_score": 0.79
+    },
+    {
+      "question": "What does SQL stand for?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "structured query language"
+      ],
+      "opus_answer": "**SQL** stands for **Structured Query Language**.\n\nIt's a standard programming language used to manage and manipulate relational databases. With SQL, you can:\n\n- **Query** data (retrieve information) using `SELECT`\n- **Insert** new records using `INSERT`\n- **Update** existing data using `UPDATE`\n- **Delete** records using `DELETE`\n-",
+      "is_correct": true,
+      "j_score": 0.64,
+      "behavioral_score": 0.6722105263157895,
+      "fused_score": 0.6497
+    },
+    {
+      "question": "What is the boiling point of water at sea level in Celsius?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "100"
+      ],
+      "opus_answer": "The boiling point of water at sea level is **100\u00b0C** (212\u00b0F).\n\nThis occurs at standard atmospheric pressure (1 atmosphere or 101.325 kPa). At higher altitudes, where atmospheric pressure is lower, water boils at a lower temperature.",
+      "is_correct": true,
+      "j_score": 0.75,
+      "behavioral_score": 0.9454545454545455,
+      "fused_score": 0.8086
+    },
+    {
+      "question": "What is the result of 2 to the power of 10?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "1024"
+      ],
+      "opus_answer": "2 to the power of 10 (2\u00b9\u2070) equals **1,024**.",
+      "is_correct": false,
+      "j_score": 0.75,
+      "behavioral_score": 1.0,
+      "fused_score": 0.825
+    },
+    {
+      "question": "What does DNS stand for?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "domain name system"
+      ],
+      "opus_answer": "DNS stands for **Domain Name System**.\n\nIt's the system that translates human-readable domain names (like `www.example.com`) into IP addresses (like `192.0.2.1`) that computers use to identify each other on the network. Think of it as the internet's phonebook.",
+      "is_correct": true,
+      "j_score": 0.64,
+      "behavioral_score": 0.797053497231629,
+      "fused_score": 0.6871
+    },
+    {
+      "question": "What is the Python keyword to define a function?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "def"
+      ],
+      "opus_answer": "The Python keyword to define a function is **`def`**.\n\nExample:\n```python\ndef greet(name):\n    return f\"Hello, {name}!\"\n```",
+      "is_correct": true,
+      "j_score": 0.64,
+      "behavioral_score": 1.0,
+      "fused_score": 0.748
+    },
+    {
+      "question": "What does CRUD stand for?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "opus_answer": "**CRUD** stands for:\n\n- **C**reate\n- **R**ead\n- **U**pdate\n- **D**elete\n\nThese are the four basic operations performed on data in most database applications and persistent storage systems. For example:\n\n| Operation | SQL | HTTP (REST) |\n|-----------|-----|-------------|\n| Create | `INSERT` | `POST` |\n|",
+      "is_correct": true,
+      "j_score": 0.64,
+      "behavioral_score": 0.6924580833329508,
+      "fused_score": 0.6557
+    },
+    {
+      "question": "What is the default port for PostgreSQL?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "5432"
+      ],
+      "opus_answer": "The default port for PostgreSQL is **5432**.",
+      "is_correct": true,
+      "j_score": 0.7326,
+      "behavioral_score": 1.0,
+      "fused_score": 0.8128
+    },
+    {
+      "question": "What HTTP status code means 'Not Found'?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "404"
+      ],
+      "opus_answer": "The HTTP status code **404** means \"Not Found.\"\n\nIt indicates that the server could not find the requested resource. This is one of the most commonly encountered HTTP status codes, typically shown when a URL points to a page or file that doesn't exist on the server.",
+      "is_correct": true,
+      "j_score": 0.5946,
+      "behavioral_score": 0.275,
+      "fused_score": 0.4987
+    },
+    {
+      "question": "What does REST stand for?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "representational state transfer"
+      ],
+      "opus_answer": "**REST** stands for **Representational State Transfer**.\n\nIt's an architectural style for designing networked applications, introduced by Roy Fielding in his 2000 doctoral dissertation. REST relies on a stateless, client-server communication model, typically using HTTP, and is commonly used for building web APIs.\n\nKey principles of REST include:\n- **Statelessness** \u2013 each request",
+      "is_correct": true,
+      "j_score": 0.6285,
+      "behavioral_score": 0.914655172413793,
+      "fused_score": 0.7143
+    },
+    {
+      "question": "What is the time complexity of a hash table lookup on average?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "o(1)",
+        "constant"
+      ],
+      "opus_answer": "The average time complexity of a hash table lookup is **O(1)** \u2014 constant time.\n\n### Why O(1) on average?\nWhen you look up a key in a hash table:\n1. The key is passed through a **hash function**, which computes an index in constant time.\n2. The value is retrieved directly from that index (array access is O(1)).\n\n### Assumptions for O(1)\nThis holds true when:",
+      "is_correct": true,
+      "j_score": 0.8071,
+      "behavioral_score": 0.5438877019199131,
+      "fused_score": 0.7281
+    },
+    {
+      "question": "What does TLS stand for?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "transport layer security"
+      ],
+      "opus_answer": "**TLS** stands for **Transport Layer Security**.\n\nIt's a cryptographic protocol designed to provide secure communication over a computer network. TLS is the successor to SSL (Secure Sockets Layer) and is widely used to secure:\n\n- Web browsing (HTTPS)\n- Email (SMTP, IMAP, POP3)\n- Instant messaging",
+      "is_correct": true,
+      "j_score": 0.7117,
+      "behavioral_score": 0.7468924664904206,
+      "fused_score": 0.7223
+    },
+    {
+      "question": "What HTTP status code means 'OK'?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "200"
+      ],
+      "opus_answer": "The HTTP status code that means \"OK\" is **200**.\n\nIt indicates that the request has succeeded. The meaning of the success depends on the HTTP method:\n- **GET**: The resource has been fetched and is transmitted in the message body\n- **POST**: The resource describing the result of the action is transmitted in the message body\n- **PUT** or **DELETE**: The action has been success",
+      "is_correct": true,
+      "j_score": 0.6036,
+      "behavioral_score": 0.40383728590250323,
+      "fused_score": 0.5437
+    },
+    {
+      "question": "What does API stand for?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "application programming interface"
+      ],
+      "opus_answer": "**API** stands for **Application Programming Interface**.\n\nIt's a set of rules, protocols, and tools that allows different software applications to communicate with each other. An API defines the methods and data formats that applications can use to request and exchange information.\n\n**Common examples:**\n- **Web APIs** \u2013 Let websites/apps interact with services (e.g., Twitter API, Google Maps API)",
+      "is_correct": true,
+      "j_score": 0.6926,
+      "behavioral_score": 0.6525800683430198,
+      "fused_score": 0.6806
+    },
+    {
+      "question": "What is the default port for Redis?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "6379"
+      ],
+      "opus_answer": "The default port for Redis is **6379**.",
+      "is_correct": true,
+      "j_score": 0.75,
+      "behavioral_score": 1.0,
+      "fused_score": 0.825
+    },
+    {
+      "question": "What does JSON stand for?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "javascript object notation"
+      ],
+      "opus_answer": "**JSON** stands for **JavaScript Object Notation**.\n\nIt's a lightweight, text-based data format used for storing and exchanging data. Despite its name originating from JavaScript, JSON is language-independent and widely used across many programming languages for tasks like:\n\n- Transmitting data between a server and web application\n- Configuration files\n- API responses\n\n**Example of JSON:**",
+      "is_correct": true,
+      "j_score": 0.6645,
+      "behavioral_score": 1.0,
+      "fused_score": 0.7651
+    },
+    {
+      "question": "What is the time complexity of quicksort on average?",
+      "stratum": "high",
+      "correct_answer_kws": [
+        "o(n log n)",
+        "n log n"
+      ],
+      "opus_answer": "The average-case time complexity of quicksort is **O(n log n)**.\n\n### Why?\n- **Partitioning** takes O(n) time at each level (every element is compared to the pivot).\n- On average, the pivot splits the array into reasonably balanced parts, resulting in **O(log n)** levels of recursion.\n- Total: O(n) \u00d7 O(log n) = **O(",
+      "is_correct": true,
+      "j_score": 0.6436,
+      "behavioral_score": 0.5716388131710668,
+      "fused_score": 0.622
+    }
+  ]
+}
