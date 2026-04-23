@@ -8,147 +8,147 @@
           "question": "I'm researching the Apollo program. The Saturn V rocket had ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 780
+          "tokens_in_context": 818
         },
         {
           "turn": 2,
           "question": "I think the first spacewalk lasted roughly 12 minutes \u2014 I'm ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 1558
+          "tokens_in_context": 1586
         },
         {
           "turn": 3,
           "question": "Neil Armstrong's first words on the Moon were: 'That's one s",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 2490
+          "tokens_in_context": 2465
         },
         {
           "turn": 4,
           "question": "I believe the Apollo 1 fire occurred in January 1967, though",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3285
+          "tokens_in_context": 3210
         },
         {
           "turn": 5,
           "question": "The Lunar Module was named Eagle for the Apollo 11 mission.",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4028
+          "tokens_in_context": 3990
         },
         {
           "turn": 6,
           "question": "What was the thrust of the Saturn V rocket at liftoff?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 4270
+          "tokens_in_context": 4514
         },
         {
           "turn": 7,
           "question": "What is the speed of light in a vacuum?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4976
+          "tokens_in_context": 5312
         },
         {
           "turn": 8,
           "question": "Who wrote the Federalist Papers?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5740
+          "tokens_in_context": 6057
         },
         {
           "turn": 9,
           "question": "What is the capital of Australia?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 6589
+          "tokens_in_context": 6873
         },
         {
           "turn": 10,
           "question": "What is the boiling point of nitrogen?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 7270
+          "tokens_in_context": 7517
         },
         {
           "turn": 11,
           "question": "What uncertain fact did we note about the first spacewalk?",
           "recall_score": 0.75,
           "is_callback": true,
-          "tokens_in_context": 7745
+          "tokens_in_context": 7931
         },
         {
           "turn": 12,
           "question": "What is the difference between RAM and ROM?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 8508
+          "tokens_in_context": 8649
         },
         {
           "turn": 13,
           "question": "Who invented the telephone?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 9250
+          "tokens_in_context": 9376
         },
         {
           "turn": 14,
           "question": "What is the Pythagorean theorem?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 9948
+          "tokens_in_context": 10054
         },
         {
           "turn": 15,
           "question": "What is the tallest mountain on Earth?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 10555
+          "tokens_in_context": 10656
         },
         {
           "turn": 16,
           "question": "What were Neil Armstrong's exact first words on the Moon?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 11379
+          "tokens_in_context": 11476
         },
         {
           "turn": 17,
           "question": "What is photosynthesis?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 12060
+          "tokens_in_context": 12101
         },
         {
           "turn": 18,
           "question": "What is the chemical formula for table salt?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 12735
+          "tokens_in_context": 12732
         },
         {
           "turn": 19,
           "question": "Who painted the Mona Lisa?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 13376
+          "tokens_in_context": 13366
         },
         {
           "turn": 20,
           "question": "What is a black hole?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 14194
+          "tokens_in_context": 14165
         },
         {
           "turn": 21,
           "question": "What uncertain fact did we establish about the Apollo 1 fire",
           "recall_score": 0.75,
           "is_callback": true,
-          "tokens_in_context": 14711
+          "tokens_in_context": 14662
         }
       ],
       "callback_recall_by_turn": {
@@ -158,7 +158,7 @@
         "21": 0.75
       },
       "mean_callback_recall": 0.875,
-      "total_tokens": 62711,
+      "total_tokens": 64411,
       "drift_activations": 0
     },
     {
@@ -169,147 +169,147 @@
           "question": "I'm researching the Apollo program. The Saturn V rocket had ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 653
+          "tokens_in_context": 803
         },
         {
           "turn": 2,
           "question": "I think the first spacewalk lasted roughly 12 minutes \u2014 I'm ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 1413
+          "tokens_in_context": 1555
         },
         {
           "turn": 3,
           "question": "Neil Armstrong's first words on the Moon were: 'That's one s",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 2345
+          "tokens_in_context": 2442
         },
         {
           "turn": 4,
           "question": "I believe the Apollo 1 fire occurred in January 1967, though",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3096
+          "tokens_in_context": 3216
         },
         {
           "turn": 5,
           "question": "The Lunar Module was named Eagle for the Apollo 11 mission.",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3813
+          "tokens_in_context": 3979
         },
         {
           "turn": 6,
           "question": "What was the thrust of the Saturn V rocket at liftoff?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 4057
+          "tokens_in_context": 4280
         },
         {
           "turn": 7,
           "question": "What is the speed of light in a vacuum?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4749
+          "tokens_in_context": 5038
         },
         {
           "turn": 8,
           "question": "Who wrote the Federalist Papers?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4881
+          "tokens_in_context": 4962
         },
         {
           "turn": 9,
           "question": "What is the capital of Australia?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4975
+          "tokens_in_context": 5018
         },
         {
           "turn": 10,
           "question": "What is the boiling point of nitrogen?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4731
+          "tokens_in_context": 4849
         },
         {
           "turn": 11,
           "question": "What uncertain fact did we note about the first spacewalk?",
           "recall_score": 0.5,
           "is_callback": true,
-          "tokens_in_context": 4666
+          "tokens_in_context": 4806
         },
         {
           "turn": 12,
           "question": "What is the difference between RAM and ROM?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4647
+          "tokens_in_context": 4764
         },
         {
           "turn": 13,
           "question": "Who invented the telephone?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5190
+          "tokens_in_context": 5185
         },
         {
           "turn": 14,
           "question": "What is the Pythagorean theorem?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5225
+          "tokens_in_context": 5117
         },
         {
           "turn": 15,
           "question": "What is the tallest mountain on Earth?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5070
+          "tokens_in_context": 5007
         },
         {
           "turn": 16,
           "question": "What were Neil Armstrong's exact first words on the Moon?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 4982
+          "tokens_in_context": 5019
         },
         {
           "turn": 17,
           "question": "What is photosynthesis?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4938
+          "tokens_in_context": 4975
         },
         {
           "turn": 18,
           "question": "What is the chemical formula for table salt?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4943
+          "tokens_in_context": 4876
         },
         {
           "turn": 19,
           "question": "Who painted the Mona Lisa?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4916
+          "tokens_in_context": 4800
         },
         {
           "turn": 20,
           "question": "What is a black hole?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4926
+          "tokens_in_context": 4895
         },
         {
           "turn": 21,
           "question": "What uncertain fact did we establish about the Apollo 1 fire",
           "recall_score": 0.5,
           "is_callback": true,
-          "tokens_in_context": 4829
+          "tokens_in_context": 4860
         }
       ],
       "callback_recall_by_turn": {
@@ -319,7 +319,7 @@
         "21": 0.5
       },
       "mean_callback_recall": 0.75,
-      "total_tokens": 34373,
+      "total_tokens": 35465,
       "drift_activations": 0
     },
     {
@@ -330,147 +330,147 @@
           "question": "I'm researching the Apollo program. The Saturn V rocket had ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 784
+          "tokens_in_context": 825
         },
         {
           "turn": 2,
           "question": "I think the first spacewalk lasted roughly 12 minutes \u2014 I'm ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 1547
+          "tokens_in_context": 1645
         },
         {
           "turn": 3,
           "question": "Neil Armstrong's first words on the Moon were: 'That's one s",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 2408
+          "tokens_in_context": 2544
         },
         {
           "turn": 4,
           "question": "I believe the Apollo 1 fire occurred in January 1967, though",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3127
+          "tokens_in_context": 3269
         },
         {
           "turn": 5,
           "question": "The Lunar Module was named Eagle for the Apollo 11 mission.",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3886
+          "tokens_in_context": 4044
         },
         {
           "turn": 6,
           "question": "What was the thrust of the Saturn V rocket at liftoff?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 4217
+          "tokens_in_context": 4222
         },
         {
           "turn": 7,
           "question": "What is the speed of light in a vacuum?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4897
+          "tokens_in_context": 4885
         },
         {
           "turn": 8,
           "question": "Who wrote the Federalist Papers?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5623
+          "tokens_in_context": 5629
         },
         {
           "turn": 9,
           "question": "What is the capital of Australia?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 6409
+          "tokens_in_context": 6332
         },
         {
           "turn": 10,
           "question": "What is the boiling point of nitrogen?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 7062
+          "tokens_in_context": 7017
         },
         {
           "turn": 11,
           "question": "What uncertain fact did we note about the first spacewalk?",
           "recall_score": 0.75,
           "is_callback": true,
-          "tokens_in_context": 7491
+          "tokens_in_context": 7386
         },
         {
           "turn": 12,
           "question": "What is the difference between RAM and ROM?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 8210
+          "tokens_in_context": 8108
         },
         {
           "turn": 13,
           "question": "Who invented the telephone?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 8960
+          "tokens_in_context": 8875
         },
         {
           "turn": 14,
           "question": "What is the Pythagorean theorem?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 9643
+          "tokens_in_context": 9566
         },
         {
           "turn": 15,
           "question": "What is the tallest mountain on Earth?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 10293
+          "tokens_in_context": 10227
         },
         {
           "turn": 16,
           "question": "What were Neil Armstrong's exact first words on the Moon?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 6893
+          "tokens_in_context": 10180
         },
         {
           "turn": 17,
           "question": "What is photosynthesis?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 7522
+          "tokens_in_context": 10171
         },
         {
           "turn": 18,
           "question": "What is the chemical formula for table salt?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 8163
+          "tokens_in_context": 10121
         },
         {
           "turn": 19,
           "question": "Who painted the Mona Lisa?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 8820
+          "tokens_in_context": 10765
         },
         {
           "turn": 20,
           "question": "What is a black hole?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 9612
+          "tokens_in_context": 11594
         },
         {
           "turn": 21,
           "question": "What uncertain fact did we establish about the Apollo 1 fire",
           "recall_score": 0.75,
           "is_callback": true,
-          "tokens_in_context": 10255
+          "tokens_in_context": 12365
         }
       ],
       "callback_recall_by_turn": {
@@ -480,7 +480,7 @@
         "21": 0.75
       },
       "mean_callback_recall": 0.875,
-      "total_tokens": 54917,
+      "total_tokens": 57542,
       "drift_activations": 0
     },
     {
@@ -491,157 +491,157 @@
           "question": "I'm researching the Apollo program. The Saturn V rocket had ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 836
+          "tokens_in_context": 847
         },
         {
           "turn": 2,
           "question": "I think the first spacewalk lasted roughly 12 minutes \u2014 I'm ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 1617
+          "tokens_in_context": 1678
         },
         {
           "turn": 3,
           "question": "Neil Armstrong's first words on the Moon were: 'That's one s",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 2502
+          "tokens_in_context": 2587
         },
         {
           "turn": 4,
           "question": "I believe the Apollo 1 fire occurred in January 1967, though",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3289
+          "tokens_in_context": 3333
         },
         {
           "turn": 5,
           "question": "The Lunar Module was named Eagle for the Apollo 11 mission.",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4026
+          "tokens_in_context": 4100
         },
         {
           "turn": 6,
           "question": "What was the thrust of the Saturn V rocket at liftoff?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 3324
+          "tokens_in_context": 3605
         },
         {
           "turn": 7,
           "question": "What is the speed of light in a vacuum?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3145
+          "tokens_in_context": 3664
         },
         {
           "turn": 8,
           "question": "Who wrote the Federalist Papers?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3922
+          "tokens_in_context": 4396
         },
         {
           "turn": 9,
           "question": "What is the capital of Australia?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4493
+          "tokens_in_context": 5210
         },
         {
           "turn": 10,
           "question": "What is the boiling point of nitrogen?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5205
+          "tokens_in_context": 5902
         },
         {
           "turn": 11,
           "question": "What uncertain fact did we note about the first spacewalk?",
-          "recall_score": 0.75,
+          "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 5615
+          "tokens_in_context": 6443
         },
         {
           "turn": 12,
           "question": "What is the difference between RAM and ROM?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 6337
+          "tokens_in_context": 7185
         },
         {
           "turn": 13,
           "question": "Who invented the telephone?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 7116
+          "tokens_in_context": 7929
         },
         {
           "turn": 14,
           "question": "What is the Pythagorean theorem?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 7796
+          "tokens_in_context": 8608
         },
         {
           "turn": 15,
           "question": "What is the tallest mountain on Earth?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 6114
+          "tokens_in_context": 6783
         },
         {
           "turn": 16,
           "question": "What were Neil Armstrong's exact first words on the Moon?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 6727
+          "tokens_in_context": 7161
         },
         {
           "turn": 17,
           "question": "What is photosynthesis?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 7401
+          "tokens_in_context": 7787
         },
         {
           "turn": 18,
           "question": "What is the chemical formula for table salt?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 6692
+          "tokens_in_context": 6923
         },
         {
           "turn": 19,
           "question": "Who painted the Mona Lisa?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3292
+          "tokens_in_context": 3468
         },
         {
           "turn": 20,
           "question": "What is a black hole?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4118
+          "tokens_in_context": 4286
         },
         {
           "turn": 21,
           "question": "What uncertain fact did we establish about the Apollo 1 fire",
-          "recall_score": 0.5,
+          "recall_score": 0.25,
           "is_callback": true,
-          "tokens_in_context": 3609
+          "tokens_in_context": 3755
         }
       ],
       "callback_recall_by_turn": {
         "6": 1.0,
-        "11": 0.75,
+        "11": 1.0,
         "16": 1.0,
-        "21": 0.5
+        "21": 0.25
       },
       "mean_callback_recall": 0.8125,
-      "total_tokens": 41252,
+      "total_tokens": 44487,
       "drift_activations": 0
     }
   ],

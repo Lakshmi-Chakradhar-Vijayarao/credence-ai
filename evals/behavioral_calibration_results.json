@@ -1,21 +1,21 @@
 {
   "summary": {
     "n": 60,
-    "overall_accuracy": 0.967,
+    "overall_accuracy": 0.95,
     "stratum_accuracy": {
       "high": 0.95,
       "medium": 0.95,
-      "low": 1.0
+      "low": 0.95
     },
-    "ece_j_proxy": 0.283,
-    "ece_behavioral": 0.2472,
-    "ece_fused": 0.2641,
-    "spearman_j_proxy": -0.0041,
-    "spearman_behavioral": -0.3699,
-    "spearman_fused": -0.3595,
-    "mean_j_high": 0.678,
-    "mean_behavioral_high": 0.815,
-    "mean_behavioral_low": 0.676
+    "ece_j_proxy": 0.2692,
+    "ece_behavioral": 0.2392,
+    "ece_fused": 0.2537,
+    "spearman_j_proxy": -0.034,
+    "spearman_behavioral": -0.3628,
+    "spearman_fused": -0.378,
+    "mean_j_high": 0.682,
+    "mean_behavioral_high": 0.805,
+    "mean_behavioral_low": 0.683
   },
   "results": [
     {
@@ -27,8 +27,8 @@
       "opus_answer": "The capital of France is **Paris**.",
       "is_correct": true,
       "j_score": 0.72,
-      "behavioral_score": 0.7,
-      "fused_score": 0.714
+      "behavioral_score": 0.8,
+      "fused_score": 0.744
     },
     {
       "question": "What does HTTP stand for?",
@@ -39,8 +39,8 @@
       "opus_answer": "**HTTP** stands for **HyperText Transfer Protocol**.\n\nIt's the foundational protocol used for transmitting data over the web, enabling communication between web browsers (clients) and web servers. When you visit a website, your browser uses HTTP (or its secure version, **HTTPS** \u2014 HyperText Transfer Protocol Secure) to request and receive web pages,",
       "is_correct": true,
       "j_score": 0.6686,
-      "behavioral_score": 0.9800000000000001,
-      "fused_score": 0.762
+      "behavioral_score": 0.9700000000000001,
+      "fused_score": 0.759
     },
     {
       "question": "What is the time complexity of binary search?",
@@ -50,11 +50,11 @@
         "log n",
         "logarithmic"
       ],
-      "opus_answer": "# Binary Search Time Complexity\n\nThe time complexity of binary search is **O(log n)**, where n is the number of elements in the sorted array.\n\n## Why O(log n)?\n\nBinary search works by repeatedly dividing the search space in half:\n\n- Start with n elements\n- After 1 comparison: n/2 elements\n- After 2 comparisons: n/4 elements\n-",
+      "opus_answer": "The time complexity of binary search is **O(log n)**, where *n* is the number of elements in the sorted array.\n\n## Why O(log n)?\n\nBinary search works by repeatedly dividing the search interval in half:\n- Start with *n* elements\n- After 1 comparison: *n/2* elements remain\n- After 2 comparisons: *n/4* elements remain\n- After *",
       "is_correct": true,
       "j_score": 0.75,
-      "behavioral_score": 0.5198937277970057,
-      "fused_score": 0.681
+      "behavioral_score": 0.570115893990712,
+      "fused_score": 0.696
     },
     {
       "question": "What port does HTTPS use by default?",
@@ -74,11 +74,11 @@
       "correct_answer_kws": [
         "structured query language"
       ],
-      "opus_answer": "**SQL** stands for **Structured Query Language**.\n\nIt's a standardized programming language used for managing and manipulating relational databases. With SQL, you can:\n\n- **Query** data (retrieve information) using `SELECT`\n- **Insert** new records with `INSERT`\n- **Update** existing data with `UPDATE`\n- **Delete** records with `DELETE`",
+      "opus_answer": "**SQL** stands for **Structured Query Language**.\n\nIt's a standardized programming language used for managing and manipulating relational databases. With SQL, you can:\n\n- **Query** data (retrieve information using `SELECT`)\n- **Insert** new records (`INSERT`)\n- **Update** existing data (`UPDATE`)\n- **Delete** records (`DELETE",
       "is_correct": true,
       "j_score": 0.64,
-      "behavioral_score": 0.723578947368421,
-      "fused_score": 0.6651
+      "behavioral_score": 0.7341052631578947,
+      "fused_score": 0.6682
     },
     {
       "question": "What is the boiling point of water at sea level in Celsius?",
@@ -86,7 +86,7 @@
       "correct_answer_kws": [
         "100"
       ],
-      "opus_answer": "The boiling point of water at sea level is **100\u00b0C** (212\u00b0F).\n\nThis occurs at standard atmospheric pressure (1 atmosphere or 101.325 kPa). At higher altitudes, where atmospheric pressure is lower, water boils at temperatures below 100\u00b0C.",
+      "opus_answer": "The boiling point of water at sea level is **100\u00b0C** (212\u00b0F).\n\nThis occurs at standard atmospheric pressure (1 atmosphere or 101.325 kPa). At higher altitudes, where atmospheric pressure is lower, water boils at lower temperatures.",
       "is_correct": true,
       "j_score": 0.75,
       "behavioral_score": 0.9454545454545455,
@@ -110,11 +110,11 @@
       "correct_answer_kws": [
         "domain name system"
       ],
-      "opus_answer": "**DNS** stands for **Domain Name System**.\n\nIt's essentially the \"phonebook of the internet\" \u2014 it translates human-friendly domain names (like `google.com`) into machine-readable IP addresses (like `142.250.190.14`) that computers use to identify each other on the network.",
+      "opus_answer": "DNS stands for **Domain Name System**.\n\nIt's the system that translates human-readable domain names (like `google.com`) into IP addresses (like `142.250.80.46`) that computers use to identify each other on a network. Think of it as the \"phone book\" of the internet.",
       "is_correct": true,
       "j_score": 0.64,
-      "behavioral_score": 0.8022100792020653,
-      "fused_score": 0.6887
+      "behavioral_score": 0.8456969474327238,
+      "fused_score": 0.7017
     },
     {
       "question": "What is the Python keyword to define a function?",
@@ -137,11 +137,11 @@
         "update",
         "delete"
       ],
-      "opus_answer": "**CRUD** stands for:\n\n- **C**reate\n- **R**ead\n- **U**pdate\n- **D**elete\n\nThese are the four basic operations performed on data in most databases and persistent storage applications. In web development, they often map to HTTP methods:\n\n| CRUD | HTTP Method | SQL |\n|------|-------------|-----|\n| Create | POST | INSER",
+      "opus_answer": "**CRUD** stands for:\n\n- **C**reate\n- **R**ead\n- **U**pdate\n- **D**elete\n\nThese are the four basic operations used for managing persistent data in databases and applications. For example:\n\n| Operation | SQL | HTTP Method |\n|-----------|-----|-------------|\n| Create | INSERT | POST |\n| Read | SELECT | G",
       "is_correct": true,
-      "j_score": 0.5547,
-      "behavioral_score": 1.0,
-      "fused_score": 0.6883
+      "j_score": 0.6697,
+      "behavioral_score": 0.7501182557280117,
+      "fused_score": 0.6938
     },
     {
       "question": "What is the default port for PostgreSQL?",
@@ -161,11 +161,11 @@
       "correct_answer_kws": [
         "404"
       ],
-      "opus_answer": "The HTTP status code for \"Not Found\" is **404**.\n\nThis status code indicates that the server could not find the requested resource. It's one of the most commonly encountered HTTP errors, typically seen when a URL is mistyped or a page has been moved or deleted.",
+      "opus_answer": "The HTTP status code for \"Not Found\" is **404**.\n\nThis status code indicates that the server could not find the requested resource. It's one of the most well-known HTTP status codes and typically appears when a user tries to access a webpage or resource that doesn't exist at the specified URL.",
       "is_correct": true,
-      "j_score": 0.5946,
-      "behavioral_score": 0.2785164978842771,
-      "fused_score": 0.4998
+      "j_score": 0.5947,
+      "behavioral_score": 0.32121212121212117,
+      "fused_score": 0.5127
     },
     {
       "question": "What does REST stand for?",
@@ -173,11 +173,11 @@
       "correct_answer_kws": [
         "representational state transfer"
       ],
-      "opus_answer": "**REST** stands for **Representational State Transfer**.\n\nIt's an architectural style for designing networked applications, introduced by Roy Fielding in his 2000 doctoral dissertation. REST is commonly used for building web APIs and is based on a set of principles, including:\n\n- **Statelessness** \u2013 each request contains all the information needed to process it\n- **Client-server architecture** \u2013 separ",
+      "opus_answer": "**REST** stands for **Representational State Transfer**.\n\nIt's an architectural style for designing networked applications, introduced by Roy Fielding in his 2000 doctoral dissertation. REST relies on a stateless, client-server communication model, typically using HTTP, and is commonly used to build web APIs.\n\nKey principles of REST include:\n\n- **Statelessness** \u2013 Each",
       "is_correct": true,
-      "j_score": 0.6977,
+      "j_score": 0.6405,
       "behavioral_score": 1.0,
-      "fused_score": 0.7884
+      "fused_score": 0.7483
     },
     {
       "question": "What is the time complexity of a hash table lookup on average?",
@@ -186,11 +186,11 @@
         "o(1)",
         "constant"
       ],
-      "opus_answer": "The average time complexity of a hash table lookup is **O(1)** \u2014 constant time.\n\n### Why O(1) on average?\nWhen you look up a value by its key, the hash table:\n1. Computes the hash of the key \u2014 O(1)\n2. Uses the hash to jump directly to a bucket/slot \u2014 O(1)\n3. Retrieves the value from that slot \u2014 O(1)\n\nBecause these",
+      "opus_answer": "The average time complexity of a hash table lookup is **O(1)** \u2014 constant time.\n\n### Why O(1) on average?\nWhen you look up a key in a hash table:\n1. The hash function computes an index from the key in constant time.\n2. You jump directly to that index in the underlying array.\n3. If the hash function distributes keys well and the load factor is kept reasonable, you find the value immedi",
       "is_correct": true,
-      "j_score": 0.7495,
-      "behavioral_score": 0.5451025231561004,
-      "fused_score": 0.6882
+      "j_score": 0.7459,
+      "behavioral_score": 0.559085674667429,
+      "fused_score": 0.6899
     },
     {
       "question": "What does TLS stand for?",
@@ -198,11 +198,11 @@
       "correct_answer_kws": [
         "transport layer security"
       ],
-      "opus_answer": "**TLS** stands for **Transport Layer Security**.\n\nIt's a cryptographic protocol designed to provide secure communication over a computer network. TLS is the successor to SSL (Secure Sockets Layer) and is widely used to secure:\n\n- **HTTPS** (web browsing)\n- **Email** (SMTP, IMAP, POP3)\n- **VPN",
+      "opus_answer": "**TLS** stands for **Transport Layer Security**.\n\nIt's a cryptographic protocol designed to provide secure communication over a computer network. TLS is widely used to secure:\n\n- Web browsing (HTTPS)\n- Email\n- Instant messaging\n- Voice over IP (VoIP)\n\nTLS is the successor to **SSL (Secure Sockets Lay",
       "is_correct": true,
-      "j_score": 0.6884,
-      "behavioral_score": 0.7767833657497454,
-      "fused_score": 0.7149
+      "j_score": 0.72,
+      "behavioral_score": 0.7845355191256831,
+      "fused_score": 0.7394
     },
     {
       "question": "What HTTP status code means 'OK'?",
@@ -210,11 +210,11 @@
       "correct_answer_kws": [
         "200"
       ],
-      "opus_answer": "The HTTP status code that means \"OK\" is **200**.\n\nIt indicates that the request has succeeded. The meaning of success depends on the HTTP method used:\n- **GET**: The resource has been fetched and is included in the response body\n- **POST**: The resource describing the result of the action is included in the response\n- **PUT/DELETE**: The action was successfully performed",
+      "opus_answer": "The HTTP status code that means \"OK\" is **200**.\n\nIt indicates that the request has succeeded. The meaning of the success depends on the HTTP method used:\n\n- **GET**: The resource has been fetched and is transmitted in the message body.\n- **POST**: The resource describing the result of the action is transmitted in the message body.\n- **PUT** or **DELETE**: Often",
       "is_correct": true,
-      "j_score": 0.6044,
-      "behavioral_score": 0.7157894736842104,
-      "fused_score": 0.6378
+      "j_score": 0.5363,
+      "behavioral_score": 0.17871650452295612,
+      "fused_score": 0.429
     },
     {
       "question": "What does API stand for?",
@@ -222,11 +222,11 @@
       "correct_answer_kws": [
         "application programming interface"
       ],
-      "opus_answer": "**API** stands for **Application Programming Interface**.\n\nIt's a set of rules, protocols, and tools that allows different software applications to communicate with each other. APIs define the methods and data formats that applications can use to request and exchange information.\n\n**Common examples:**\n- **Web APIs** \u2013 Let websites/apps fetch data from servers (e.g., weather apps pulling forecasts",
+      "opus_answer": "**API** stands for **Application Programming Interface**.\n\nIt's a set of rules, protocols, and tools that allows different software applications to communicate with each other. Think of it as a messenger that takes requests from one program, tells another program what to do, and then returns the response.\n\n**Common examples:**\n- **Weather apps** use APIs to fetch data from weather services\n- **Login with Google/",
       "is_correct": true,
-      "j_score": 0.6626,
-      "behavioral_score": 0.8787982583454281,
-      "fused_score": 0.7275
+      "j_score": 0.6751,
+      "behavioral_score": 0.907249299719888,
+      "fused_score": 0.7447
     },
     {
       "question": "What is the default port for Redis?",
@@ -246,11 +246,11 @@
       "correct_answer_kws": [
         "javascript object notation"
       ],
-      "opus_answer": "**JSON** stands for **JavaScript Object Notation**.\n\nIt's a lightweight, text-based data interchange format that's easy for humans to read and write, and easy for machines to parse and generate. Although it's derived from JavaScript syntax, JSON is language-independent and is widely used across many programming languages for transmitting data, especially between web servers and clients (e.g., in",
+      "opus_answer": "**JSON** stands for **JavaScript Object Notation**.\n\nIt's a lightweight, text-based data format used for storing and exchanging data. Despite its name, JSON is language-independent and is widely used across many programming languages, not just JavaScript.\n\nA simple JSON example:\n```json\n{\n  \"name\": \"Alice\",\n  \"age\": 30,\n  \"isStudent\":",
       "is_correct": true,
-      "j_score": 0.6313,
-      "behavioral_score": 0.7655172413793103,
-      "fused_score": 0.6716
+      "j_score": 0.6807,
+      "behavioral_score": 1.0,
+      "fused_score": 0.7765
     },
     {
       "question": "What is the time complexity of quicksort on average?",
@@ -259,11 +259,11 @@
         "o(n log n)",
         "n log n"
       ],
-      "opus_answer": "The average time complexity of quicksort is **O(n log n)**.\n\n### Why?\n- **Partitioning** a subarray of size *n* takes O(n) time.\n- On average, the pivot splits the array into reasonably balanced halves, leading to about **log n** levels of recursion.\n- Total work: O(n) per level \u00d7 O(log n) levels = **O(n log n)**",
+      "opus_answer": "The average time complexity of quicksort is **O(n log n)**.\n\n### Why?\n- **Partitioning** takes O(n) time at each level (every element is compared to the pivot).\n- On average, the pivot splits the array into reasonably balanced parts, leading to about **log n** levels of recursion.\n- Total: O(n) \u00d7 O(log n) = **O(n log n)**",
       "is_correct": true,
-      "j_score": 0.6424,
-      "behavioral_score": 0.6753536138420284,
-      "fused_score": 0.6523
+      "j_score": 0.6417,
+      "behavioral_score": 0.7375656990769193,
+      "fused_score": 0.6705
     },
     {
       "question": "What is the default isolation level in PostgreSQL?",
@@ -271,11 +271,11 @@
       "correct_answer_kws": [
         "read committed"
       ],
-      "opus_answer": "The default isolation level in PostgreSQL is **Read Committed**.\n\n### Key characteristics of Read Committed in PostgreSQL:\n\n- A query sees only data that was **committed before the query began** (not before the transaction began).\n- Each statement within a transaction gets its own snapshot, so successive `SELECT`s in the same transaction can see different data if other transactions commit",
+      "opus_answer": "The default isolation level in PostgreSQL is **Read Committed**.\n\nAt this level:\n- Each SQL statement sees only data that was committed before the statement began.\n- Two successive `SELECT` statements within the same transaction can see different data if other transactions commit changes in between.\n- It prevents **dirty reads**, but allows **non-repeatable reads** and **phantom re",
       "is_correct": true,
       "j_score": 0.64,
-      "behavioral_score": 0.6716869858155978,
-      "fused_score": 0.6495
+      "behavioral_score": 0.5395074203758663,
+      "fused_score": 0.6099
     },
     {
       "question": "What HTTP status code is returned when a rate limit is exceeded?",
@@ -283,11 +283,11 @@
       "correct_answer_kws": [
         "429"
       ],
-      "opus_answer": "When a rate limit is exceeded, the standard HTTP status code returned is:\n\n## **429 Too Many Requests**\n\nThis status code was defined in [RFC 6585](https://tools.ietf.org/html/rfc6585) and indicates that the user has sent too many requests in a given amount of time.\n\n### Common Response Headers\n\nA `429` response often includes helpful headers:",
+      "opus_answer": "When a rate limit is exceeded, the standard HTTP status code returned is:\n\n**429 Too Many Requests**\n\nThis status code was defined in [RFC 6585](https://tools.ietf.org/html/rfc6585) and indicates that the user has sent too many requests in a given amount of time.\n\n### Common Response Headers\n\nServers often include these headers with a 429 response:",
       "is_correct": true,
-      "j_score": 0.64,
-      "behavioral_score": 0.8720025871129437,
-      "fused_score": 0.7096
+      "j_score": 0.6739,
+      "behavioral_score": 0.8237233955442784,
+      "fused_score": 0.7188
     },
     {
       "question": "What is the CAP theorem?",
@@ -297,11 +297,11 @@
         "availability",
         "partition"
       ],
-      "opus_answer": "# The CAP Theorem\n\nThe **CAP theorem** (also known as **Brewer's theorem**, proposed by Eric Brewer in 2000) states that a distributed data system can only guarantee **two out of three** of the following properties at any given time:\n\n## The Three Properties\n\n1. **Consistency (C)** \u2014 Every read receives the most recent write or an error. All nodes see",
+      "opus_answer": "# The CAP Theorem\n\nThe CAP theorem, formulated by computer scientist Eric Brewer in 2000, states that a distributed data system can only guarantee **two out of three** of the following properties at any given time:\n\n## The Three Properties\n\n**1. Consistency (C)**\nEvery read receives the most recent write or an error. All nodes see the same data at the same time.\n\n**2",
       "is_correct": true,
-      "j_score": 0.75,
-      "behavioral_score": 0.8920213207369171,
-      "fused_score": 0.7926
+      "j_score": 0.7493,
+      "behavioral_score": 0.8342048986156783,
+      "fused_score": 0.7748
     },
     {
       "question": "What does ACID stand for in databases?",
@@ -312,11 +312,11 @@
         "isolation",
         "durability"
       ],
-      "opus_answer": "**ACID** is an acronym describing four key properties that guarantee reliable processing of database transactions:\n\n1. **A \u2014 Atomicity**\n   A transaction is treated as a single, indivisible unit. Either all of its operations succeed, or none of them do. If any part fails, the entire transaction is rolled back.\n\n2. **C \u2014 Consistency**\n   A transaction brings the database",
+      "opus_answer": "**ACID** is an acronym describing four key properties that guarantee reliable processing of database transactions:\n\n1. **A \u2014 Atomicity**\n   A transaction is treated as a single, indivisible unit. Either all its operations succeed, or none of them are applied. If any part fails, the entire transaction is rolled back.\n\n2. **C \u2014 Consistency**\n   A transaction brings the",
       "is_correct": true,
-      "j_score": 0.6823,
-      "behavioral_score": 0.8027167548769183,
-      "fused_score": 0.7184
+      "j_score": 0.6835,
+      "behavioral_score": 0.7180414218090543,
+      "fused_score": 0.6939
     },
     {
       "question": "What is the default port for MongoDB?",
@@ -324,7 +324,7 @@
       "correct_answer_kws": [
         "27017"
       ],
-      "opus_answer": "The default port for MongoDB is **27017**.\n\nOther related default ports used by MongoDB include:\n\n- **27017** \u2013 Default port for `mongod` (the MongoDB server) and `mongos` (the sharded cluster router)\n- **27018** \u2013 Default port for `mongod` when running as a shard member in a sharded cluster\n- **27019** \u2013 Default port for `mongod` when",
+      "opus_answer": "The default port for MongoDB is **27017**.\n\nAdditional MongoDB-related default ports include:\n- **27018** \u2013 Used for shard servers (when running `mongod` with the `--shardsvr` option)\n- **27019** \u2013 Used for config servers (when running `mongod` with the `--configsvr` option)\n- **28017** \u2013 Previously used for the web status page (deprecated/remov",
       "is_correct": true,
       "j_score": 0.64,
       "behavioral_score": 1.0,
@@ -336,11 +336,11 @@
       "correct_answer_kws": [
         "cross-origin resource sharing"
       ],
-      "opus_answer": "**CORS** stands for **Cross-Origin Resource Sharing**.\n\nIt's a browser security mechanism that allows (or restricts) web pages from making requests to a domain different from the one that served the page. Servers use specific HTTP headers (like `Access-Control-Allow-Origin`) to tell browsers which origins are permitted to access their resources.",
+      "opus_answer": "**CORS** stands for **Cross-Origin Resource Sharing**.\n\nIt's a security mechanism built into web browsers that controls how web pages in one domain can request and interact with resources from a different domain. By default, browsers enforce the **same-origin policy**, which blocks such cross-origin requests. CORS provides a way for servers to explicitly allow certain cross-orig",
       "is_correct": true,
-      "j_score": 0.64,
-      "behavioral_score": 0.7619904430417085,
-      "fused_score": 0.6766
+      "j_score": 0.643,
+      "behavioral_score": 0.6104717504717505,
+      "fused_score": 0.6332
     },
     {
       "question": "What is the difference between TCP and UDP?",
@@ -350,11 +350,11 @@
         "unreliable",
         "connection"
       ],
-      "opus_answer": "# TCP vs UDP\n\nBoth are transport layer protocols, but they serve different purposes:\n\n## TCP (Transmission Control Protocol)\n- **Connection-oriented**: Establishes a connection via 3-way handshake before data transfer\n- **Reliable**: Guarantees delivery, retransmits lost packets\n- **Ordered**: Packets arrive",
+      "opus_answer": "# TCP vs UDP\n\nBoth are transport layer protocols, but they serve different purposes:\n\n## TCP (Transmission Control Protocol)\n- **Connection-oriented**: Establishes a connection via 3-way handshake before data transfer\n- **Reliable**: Guarantees delivery; retransmits lost packets\n- **Ordered**: Packets arrive",
       "is_correct": true,
       "j_score": 0.75,
-      "behavioral_score": 0.8321711534701457,
-      "fused_score": 0.7747
+      "behavioral_score": 0.7397894372762586,
+      "fused_score": 0.7469
     },
     {
       "question": "What is the default TTL for DNS records in seconds (common value)?",
@@ -364,11 +364,11 @@
         "86400",
         "ttl"
       ],
-      "opus_answer": "A common default TTL for DNS records is **3600 seconds** (1 hour).\n\nOther frequently used default values include:\n- **300 seconds** (5 minutes) \u2014 often used for records that may change frequently\n- **86400 seconds** (24 hours) \u2014 traditional default for stable records like SOA or NS\n- **3600 seconds** (1 hour) \u2014 a balanced, widely",
+      "opus_answer": "A common default TTL for DNS records is **3600 seconds** (1 hour).\n\nOther frequently used default values include:\n- **300 seconds** (5 minutes) \u2014 common for records that may change often\n- **86400 seconds** (24 hours) \u2014 traditional default, still used for stable records like MX or NS records\n- **3600 seconds** (1 hour) \u2014 a popular middle-",
       "is_correct": true,
-      "j_score": 0.6761,
-      "behavioral_score": 0.5841369579479916,
-      "fused_score": 0.6485
+      "j_score": 0.6781,
+      "behavioral_score": 0.48894418975564785,
+      "fused_score": 0.6214
     },
     {
       "question": "What does HMAC stand for?",
@@ -376,11 +376,11 @@
       "correct_answer_kws": [
         "hash-based message authentication code"
       ],
-      "opus_answer": "**HMAC** stands for **Hash-based Message Authentication Code** (sometimes expanded as **Keyed-Hash Message Authentication Code**).\n\nIt's a mechanism that combines a cryptographic hash function (like SHA-256) with a secret key to:\n- **Verify data integrity** \u2014 ensure the message hasn't been tampered with\n- **Authentic",
+      "opus_answer": "**HMAC** stands for **Hash-based Message Authentication Code** (sometimes also expanded as **Keyed-Hash Message Authentication Code**).\n\nIt's a mechanism that combines a cryptographic hash function (like SHA-256) with a secret key to:\n- **Verify data integrity** \u2014 ensure the message hasn't been tampered with\n- **Authen",
       "is_correct": true,
-      "j_score": 0.661,
-      "behavioral_score": 0.9904761904761905,
-      "fused_score": 0.7598
+      "j_score": 0.6625,
+      "behavioral_score": 0.9228745918427304,
+      "fused_score": 0.7406
     },
     {
       "question": "What is the Fibonacci number at position 10 (1-indexed)?",
@@ -388,11 +388,11 @@
       "correct_answer_kws": [
         "55"
       ],
-      "opus_answer": "The Fibonacci number at position 10 (1-indexed) is **55**.\n\nThe sequence goes:\n1, 1, 2, 3, 5, 8, 13, 21, 34, **55**",
+      "opus_answer": "The Fibonacci sequence (1-indexed) typically starts as:\n\n1, 1, 2, 3, 5, 8, 13, 21, 34, 55...\n\nSo the **10th Fibonacci number is 55**.",
       "is_correct": true,
-      "j_score": 0.75,
-      "behavioral_score": 0.9051851851851852,
-      "fused_score": 0.7966
+      "j_score": 0.6154,
+      "behavioral_score": 0.9044444444444444,
+      "fused_score": 0.7021
     },
     {
       "question": "What does GRPC stand for?",
@@ -401,11 +401,11 @@
         "google remote procedure call",
         "remote procedure call"
       ],
-      "opus_answer": "**gRPC** officially stands for **gRPC Remote Procedure Call** \u2014 it's a recursive acronym.\n\nOriginally, when it was created by Google, the \"g\" stood for \"Google\" (Google Remote Procedure Call). However, after it was open-sourced, the meaning of the \"g\" changes with each version release. Some examples include:\n\n- g1.0: \"gRPC\"",
+      "opus_answer": "gRPC is a recursive acronym that stands for **\"gRPC Remote Procedure Calls.\"**\n\nIt was originally developed by Google, and the \"g\" is often associated with Google, though officially it has had different meanings in different versions (the meaning of the \"g\" actually changes with each release\u2014you can find the list in the gRPC GitHub repository).\n\ngRPC is a high-performance,",
       "is_correct": true,
-      "j_score": 0.75,
-      "behavioral_score": 0.47685404169185147,
-      "fused_score": 0.6681
+      "j_score": 0.5798,
+      "behavioral_score": 0.4710661272963727,
+      "fused_score": 0.5472
     },
     {
       "question": "What is the default port for Kafka?",
@@ -413,11 +413,11 @@
       "correct_answer_kws": [
         "9092"
       ],
-      "opus_answer": "The default port for Apache Kafka is **9092**.\n\nThis is the port Kafka brokers listen on for client connections (producers, consumers, and other brokers) by default.\n\nSome other related default ports you might encounter in a Kafka ecosystem:\n\n- **2181** \u2013 ZooKeeper (used by older Kafka versions for cluster coordination)\n- **9093** \u2013 Common",
+      "opus_answer": "The default port for Apache Kafka is **9092**.\n\nThis is the port Kafka brokers listen on for client connections (producers and consumers).\n\nOther related default ports in a Kafka ecosystem:\n- **2181** \u2013 ZooKeeper (used by older Kafka versions for coordination)\n- **9093** \u2013 Commonly used for SSL/TLS-encrypted Kaf",
       "is_correct": true,
       "j_score": 0.75,
-      "behavioral_score": 0.6209837318461043,
-      "fused_score": 0.7113
+      "behavioral_score": 0.6026909255235394,
+      "fused_score": 0.7058
     },
     {
       "question": "What is the two-generals problem?",
@@ -428,11 +428,11 @@
         "acknowledgment",
         "reliable"
       ],
-      "opus_answer": "# The Two Generals' Problem\n\nThe **Two Generals' Problem** is a classic thought experiment in computer science that demonstrates the impossibility of achieving guaranteed agreement between two parties communicating over an unreliable channel.\n\n## The Scenario\n\nTwo generals, commanding separate armies, must coordinate an attack on a city situated in a valley between them. To succe",
+      "opus_answer": "# The Two Generals' Problem\n\nThe **Two Generals' Problem** is a classic thought experiment in computer science and distributed computing that demonstrates the impossibility of achieving guaranteed agreement between two parties over an unreliable communication channel.\n\n## The Scenario\n\nTwo generals, commanding separate armies, must coordinate an attack on a common enemy city:\n\n-",
       "is_correct": true,
-      "j_score": 0.7165,
-      "behavioral_score": 0.7804190476190476,
-      "fused_score": 0.7357
+      "j_score": 0.72,
+      "behavioral_score": 0.6891874614414346,
+      "fused_score": 0.7108
     },
     {
       "question": "What does MVCC stand for in databases?",
@@ -440,11 +440,11 @@
       "correct_answer_kws": [
         "multiversion concurrency control"
       ],
-      "opus_answer": "**MVCC** stands for **Multi-Version Concurrency Control**.\n\nIt's a concurrency control method used by many database management systems (like PostgreSQL, MySQL's InnoDB, Oracle, and SQL Server) to handle simultaneous access to data without locking.\n\n### How it works:\nInstead of locking rows when they're being read or modified, MVCC maint",
+      "opus_answer": "**MVCC** stands for **Multi-Version Concurrency Control**.\n\nIt's a concurrency control method used by many database systems (like PostgreSQL, MySQL's InnoDB, Oracle, and SQL Server with snapshot isolation) to handle simultaneous access to data without heavy locking.\n\n## How it works\n\nInstead of locking rows when they're read or written",
       "is_correct": false,
       "j_score": 0.6944,
-      "behavioral_score": 0.7595960907038019,
-      "fused_score": 0.714
+      "behavioral_score": 0.8349848193880754,
+      "fused_score": 0.7366
     },
     {
       "question": "What HTTP method is idempotent but NOT safe?",
@@ -453,11 +453,11 @@
         "put",
         "delete"
       ],
-      "opus_answer": "**PUT** and **DELETE** are idempotent but not safe.\n\n## Explanation\n\n**Safe methods** don't modify server state (read-only):\n- GET, HEAD, OPTIONS\n\n**Idempotent methods** produce the same result whether called once or multiple times:\n- GET, HEAD, OPTIONS, PUT, DELETE\n\n**The intersection you",
+      "opus_answer": "**PUT** and **DELETE** are the classic examples of HTTP methods that are idempotent but not safe.\n\n**Breaking it down:**\n\n- **Safe** = the method doesn't modify server state (read-only). Examples: GET, HEAD, OPTIONS.\n- **Idempotent** = making the same request multiple times produces the same result as making it once.\n\n**PU",
       "is_correct": true,
-      "j_score": 0.6533,
-      "behavioral_score": 0.8467296796680628,
-      "fused_score": 0.7113
+      "j_score": 0.6457,
+      "behavioral_score": 0.6645175189389056,
+      "fused_score": 0.6513
     },
     {
       "question": "What is the birthday paradox probability threshold (approx)?",
@@ -467,11 +467,11 @@
         "50%",
         "50 percent"
       ],
-      "opus_answer": "The **birthday paradox** refers to the surprising result that in a group of just **23 people**, there's about a **50% probability** that at least two share the same birthday.\n\n## Key Thresholds (approximate)\n\n| Group Size | Probability of Shared Birthday |\n|------------|-------------------------------|\n| 23         | ~50%                          |\n| 30         | ~70%",
+      "opus_answer": "The **birthday paradox** refers to the surprising result that in a group of just **23 people**, there's about a **50% probability** that at least two share the same birthday.\n\n## Key Thresholds (approximate)\n\n| Group Size | Probability of Shared Birthday |\n|------------|-------------------------------|\n| 10         | ~12%                          |\n| 20         | ~41%",
       "is_correct": true,
       "j_score": 0.75,
-      "behavioral_score": 0.6119620462461656,
-      "fused_score": 0.7086
+      "behavioral_score": 0.7054241499309097,
+      "fused_score": 0.7366
     },
     {
       "question": "What does SLA stand for?",
@@ -479,11 +479,11 @@
       "correct_answer_kws": [
         "service level agreement"
       ],
-      "opus_answer": "**SLA** most commonly stands for:\n\n1. **Service Level Agreement** \u2013 A contract between a service provider and a customer that defines the expected level of service, including metrics like uptime, response time, and performance standards. This is the most common usage in business and IT.\n\n2. **Stereolithography (Apparatus)** \u2013 A type of 3D printing technology that uses a laser to cure liqu",
+      "opus_answer": "**SLA** commonly stands for:\n\n1. **Service Level Agreement** \u2013 The most common meaning, especially in business and IT. It's a formal contract between a service provider and a customer that defines the expected level of service, including metrics like uptime, response time, and performance standards.\n\n2. **Stereolithography (Apparatus)** \u2013 In 3D printing, SLA refers to a technology",
       "is_correct": true,
-      "j_score": 0.7067,
-      "behavioral_score": 0.8582648459530098,
-      "fused_score": 0.7522
+      "j_score": 0.7148,
+      "behavioral_score": 0.8009778456837282,
+      "fused_score": 0.7407
     },
     {
       "question": "What is the default connection timeout in most HTTP clients (common value)?",
@@ -493,11 +493,11 @@
         "60",
         "timeout"
       ],
-      "opus_answer": "The default connection timeout varies by HTTP client, but there's no single universal value. Here are common defaults:\n\n**Common default values:**\n\n- **30 seconds** \u2014 Frequently cited as a \"common\" default and used by many clients\n- **No timeout (infinite)** \u2014 Surprisingly common in older/default configurations\n\n**Specific clients:**\n\n| Client | Default Connection Timeout",
+      "opus_answer": "There isn't a single universal default, but **30 seconds** is one of the most commonly cited values across HTTP clients. However, defaults vary significantly:\n\n## Common Default Connection Timeouts\n\n| Client/Library | Default Connect Timeout |\n|---|---|\n| **Python `requests`** | None (infinite) \u26a0\ufe0f |\n| **Python `httpx`",
       "is_correct": true,
-      "j_score": 0.7364,
-      "behavioral_score": 0.756474546806402,
-      "fused_score": 0.7424
+      "j_score": 0.64,
+      "behavioral_score": 0.712147542844172,
+      "fused_score": 0.6616
     },
     {
       "question": "What does P99 latency mean?",
@@ -507,11 +507,11 @@
         "99 percent",
         "99%"
       ],
-      "opus_answer": "# P99 Latency Explained\n\n**P99 latency** (99th percentile latency) means that **99% of requests complete faster than this value**, while only 1% are slower.\n\n## Example\n\nIf your API has a P99 latency of **200ms**, then:\n- 99 out of 100 requests finish in \u2264200ms\n- 1 out of 100 requests takes longer than 200ms",
+      "opus_answer": "# P99 Latency Explained\n\n**P99 latency** (99th percentile latency) means that **99% of requests complete faster than this value**, while only 1% are slower.\n\n## Example\n\nIf your API has a P99 latency of **200ms**, it means:\n- 99 out of 100 requests finish in 200ms or less\n- 1 out of 100 requests takes longer than 200ms",
       "is_correct": true,
       "j_score": 0.75,
-      "behavioral_score": 0.5446417026252109,
-      "fused_score": 0.6884
+      "behavioral_score": 0.6311734960668435,
+      "fused_score": 0.7144
     },
     {
       "question": "What is consistent hashing used for?",
@@ -522,11 +522,11 @@
         "node",
         "ring"
       ],
-      "opus_answer": "# Consistent Hashing\n\nConsistent hashing is a distributed hashing technique used primarily to **distribute data across multiple nodes (servers) in a way that minimizes reorganization when nodes are added or removed**.\n\n## Key Use Cases\n\n**1. Distributed Caching**\n- Systems like Memcached, Redis clusters\n- Ensures cache keys st",
+      "opus_answer": "# Consistent Hashing\n\nConsistent hashing is a distributed hashing technique used primarily to **distribute data or requests across a cluster of nodes** in a way that minimizes disruption when nodes are added or removed.\n\n## Key Uses\n\n**1. Distributed Caching**\n- Systems like Memcached, Redis clusters, and CDNs use it to determine which c",
       "is_correct": true,
-      "j_score": 0.75,
-      "behavioral_score": 0.41597834515892174,
-      "fused_score": 0.6498
+      "j_score": 0.7364,
+      "behavioral_score": 0.49240150348228573,
+      "fused_score": 0.6632
     },
     {
       "question": "What is the exact default max_connections value in PostgreSQL 14?",
@@ -534,11 +534,11 @@
       "correct_answer_kws": [
         "100"
       ],
-      "opus_answer": "In PostgreSQL 14, the default value for `max_connections` is **100**.\n\nThis default has remained consistent across many PostgreSQL versions. However, it's worth noting that the effective default can be lower if the system doesn't support that many semaphores during `initdb` \u2014 in that case, `initdb` will automatically select a lower value that works with your system's resources.\n\nYou can verify this with:",
+      "opus_answer": "In PostgreSQL 14, the default value for `max_connections` is **100**.\n\nThis default has been consistent across many PostgreSQL versions. Note that the actual effective maximum may be lower depending on your operating system's limits (particularly `SEMMNI` and `SEMMNS` kernel parameters on some systems), and PostgreSQL reserves some connection slots via",
       "is_correct": true,
-      "j_score": 0.64,
-      "behavioral_score": 0.7566642944944038,
-      "fused_score": 0.675
+      "j_score": 0.5198,
+      "behavioral_score": 0.6101688555347092,
+      "fused_score": 0.5469
     },
     {
       "question": "What is the Kolmogorov complexity of a string?",
@@ -549,11 +549,11 @@
         "description",
         "length"
       ],
-      "opus_answer": "# Kolmogorov Complexity\n\nThe **Kolmogorov complexity** of a string is the length of the shortest computer program (in some fixed universal programming language) that produces that string as output and then halts.\n\n## Formal Definition\n\nFor a string *x*, the Kolmogorov complexity *K(x)* is:\n\n$$K(x) = \\min\\{|p| : U(p) =",
+      "opus_answer": "# Kolmogorov Complexity of a String\n\nThe **Kolmogorov complexity** of a string is the length of the shortest computer program (in some fixed universal programming language) that produces that string as output.\n\n## Formal Definition\n\nFor a string $s$, the Kolmogorov complexity $K(s)$ is:\n\n$$K(s) = \\min\\{|p| : U(p) =",
       "is_correct": true,
-      "j_score": 0.6929,
-      "behavioral_score": 0.6906012812892147,
-      "fused_score": 0.6922
+      "j_score": 0.69,
+      "behavioral_score": 0.7336657007109688,
+      "fused_score": 0.7031
     },
     {
       "question": "What year was the first version of Redis released?",
@@ -561,7 +561,7 @@
       "correct_answer_kws": [
         "2009"
       ],
-      "opus_answer": "The first version of Redis was released in **2009** by Italian developer Salvatore Sanfilippo (known as \"antirez\").",
+      "opus_answer": "The first version of Redis was released in **2009** by Salvatore Sanfilippo (also known as \"antirez\").",
       "is_correct": true,
       "j_score": 0.75,
       "behavioral_score": 1.0,
@@ -576,11 +576,11 @@
         "quarter",
         "physical"
       ],
-      "opus_answer": "There isn't a single fixed default heap size in OpenJDK 17 \u2014 it's calculated ergonomically based on the machine's available memory and the garbage collector in use.\n\n## Default Heap Sizing Rules\n\n**Maximum heap size (`-Xmx`):**\n- **1/4 of physical RAM** by default\n- Capped at **25 GB** on most systems\n-",
+      "opus_answer": "There isn't a single fixed default heap size in OpenJDK 17 \u2014 it's determined **ergonomically** at runtime based on the machine's physical memory and the number of available processors.\n\n## Default Heap Sizing Rules (OpenJDK 17)\n\n**Maximum heap size (`-Xmx`):**\n- Default: **1/4 of physical memory**\n- Cap",
       "is_correct": true,
       "j_score": 0.64,
-      "behavioral_score": 0.5655687578032109,
-      "fused_score": 0.6177
+      "behavioral_score": 0.6050566738783211,
+      "fused_score": 0.6295
     },
     {
       "question": "What is the Zipf's law exponent for typical English text?",
@@ -589,11 +589,11 @@
         "1",
         "approximately 1"
       ],
-      "opus_answer": "Zipf's law for typical English text has an exponent of approximately **1** (i.e., s \u2248 1).\n\nThis means the frequency of a word is roughly inversely proportional to its rank:\n\n**f(r) \u221d 1/r^s**, where s \u2248 1\n\nSo in practice:\n- The most common word (\"the\") appears about twice as often as the 2nd most common (\"",
+      "opus_answer": "Zipf's law for typical English text has an exponent of approximately **1** (i.e., s \u2248 1).\n\nThis means that the frequency of a word is roughly inversely proportional to its rank in the frequency table:\n\n$$f(r) \\propto \\frac{1}{r^s}, \\quad s \\approx 1$$\n\nSo:\n- The most common word (\"the\") appears about twice as",
       "is_correct": true,
-      "j_score": 0.6732,
-      "behavioral_score": 0.6358603350388564,
-      "fused_score": 0.662
+      "j_score": 0.69,
+      "behavioral_score": 0.5939602491724358,
+      "fused_score": 0.6612
     },
     {
       "question": "What is the default worker_processes setting in nginx?",
@@ -602,11 +602,11 @@
         "auto",
         "1"
       ],
-      "opus_answer": "The default `worker_processes` setting in nginx is **1**.\n\n```nginx\nworker_processes 1;\n```\n\nHowever, it's generally recommended to change this to `auto`, which lets nginx automatically detect the number of available CPU cores and spawn one worker process per core:\n\n```nginx\nworker_processes auto;\n```\n\nThe `auto` value has been available since nginx 1.3",
+      "opus_answer": "The default `worker_processes` setting in nginx is **1**.\n\n```nginx\nworker_processes 1;\n```\n\nHowever, in most modern nginx installations (especially on Linux distributions like Debian/Ubuntu), the default configuration file ships with:\n\n```nginx\nworker_processes auto;\n```\n\nThe `auto` value tells nginx to automatically detect the number of CPU",
       "is_correct": true,
       "j_score": 0.64,
-      "behavioral_score": 0.5347720308186129,
-      "fused_score": 0.6084
+      "behavioral_score": 0.5860686252467228,
+      "fused_score": 0.6238
     },
     {
       "question": "What was the original name of Python before it was called Python?",
@@ -616,11 +616,11 @@
         "no previous",
         "directly python"
       ],
-      "opus_answer": "Python wasn't renamed from something else \u2014 it was called Python from the start. Guido van Rossum began developing the language in December 1989 and named it Python from the beginning, inspired by the British comedy troupe **Monty Python's Flying Circus**, not the snake.\n\nYou might be thinking of **ABC**, which was a language Guido worked on at CWI in the Netherlands before",
-      "is_correct": true,
-      "j_score": 0.6822,
-      "behavioral_score": 0.6051007393927225,
-      "fused_score": 0.6591
+      "opus_answer": "Python wasn't known by a different name before being called Python. Guido van Rossum, its creator, named it \"Python\" from the very beginning when he started working on it in December 1989. The name was inspired by the British comedy group **Monty Python's Flying Circus**, not the snake, as van Rossum was a fan of the show and wanted a short, unique, and slightly mysterious name.",
+      "is_correct": false,
+      "j_score": 0.742,
+      "behavioral_score": 0.7949117526730912,
+      "fused_score": 0.7579
     },
     {
       "question": "What is the exact idle_in_transaction_session_timeout default in PostgreSQL?",
@@ -630,11 +630,11 @@
         "disabled",
         "no limit"
       ],
-      "opus_answer": "The default value of `idle_in_transaction_session_timeout` in PostgreSQL is **0**, which means the timeout is **disabled** (no limit).\n\nWhen set to 0, sessions that are idle within an open transaction will not be terminated automatically, regardless of how long they remain idle.\n\nIf you set it to a non-zero value, it's interpreted in milliseconds by default (",
+      "opus_answer": "The default value of `idle_in_transaction_session_timeout` in PostgreSQL is **0**, which means the timeout is **disabled** (sessions idle in a transaction are never terminated automatically).\n\nThe value is measured in milliseconds when set to a non-zero value. This default has been consistent since the parameter was introduced in PostgreSQL 9.6.",
       "is_correct": true,
       "j_score": 0.64,
-      "behavioral_score": 0.7076129426129426,
-      "fused_score": 0.6603
+      "behavioral_score": 0.6380366480445098,
+      "fused_score": 0.6394
     },
     {
       "question": "What is the Boltzmann constant in SI units?",
@@ -644,11 +644,11 @@
         "joule",
         "kelvin"
       ],
-      "opus_answer": "The Boltzmann constant (k or k_B) in SI units is:\n\n**k = 1.380649 \u00d7 10\u207b\u00b2\u00b3 J/K** (joules per kelvin)\n\nSince the 2019 redefinition of SI base units, this value is **exact** by definition \u2014 the Boltzmann constant is now a defined constant used to define the kelvin.",
+      "opus_answer": "The Boltzmann constant (k or k_B) in SI units is:\n\n**k = 1.380649 \u00d7 10\u207b\u00b2\u00b3 J/K** (joules per kelvin)\n\nThis is an exact value, as the Boltzmann constant was fixed by definition in the 2019 revision of the SI base units, where it is now used to define the kelvin.",
       "is_correct": true,
-      "j_score": 0.7403,
-      "behavioral_score": 0.7178714575512707,
-      "fused_score": 0.7336
+      "j_score": 0.7335,
+      "behavioral_score": 0.7242149230316698,
+      "fused_score": 0.7307
     },
     {
       "question": "How many prime numbers exist below 100?",
@@ -669,11 +669,11 @@
         "75",
         "tcp_keepalive_intvl"
       ],
-      "opus_answer": "The default Linux TCP keepalive interval is **75 seconds**.\n\nThis is controlled by the kernel parameter `net.ipv4.tcp_keepalive_intvl`, which defines the interval between successive keepalive probes once the initial keepalive time has elapsed.\n\nFor context, the related default TCP keepalive parameters on Linux are:\n\n- **`tcp_",
+      "opus_answer": "The default Linux TCP keepalive interval is **75 seconds**.\n\nThis is controlled by the `net.ipv4.tcp_keepalive_intvl` kernel parameter, which specifies the time between individual keepalive probes after the initial keepalive is sent.\n\nFor context, the related TCP keepalive defaults on Linux are:\n\n- **`tcp_keepalive",
       "is_correct": true,
       "j_score": 0.64,
-      "behavioral_score": 0.8476958334853071,
-      "fused_score": 0.7023
+      "behavioral_score": 0.765297257227576,
+      "fused_score": 0.6776
     },
     {
       "question": "What version of the HTTP spec introduced server-sent events?",
@@ -683,11 +683,11 @@
         "html5",
         "w3c"
       ],
-      "opus_answer": "Server-Sent Events (SSE) aren't actually part of the HTTP specification itself. They're defined in the **HTML specification** by the WHATWG (and were previously in a W3C recommendation), not in any HTTP RFC.\n\nSSE is a browser API and wire format that runs *over* HTTP using a standard `text/event-stream` MIME type and a long-l",
+      "opus_answer": "Server-Sent Events (SSE) weren't introduced by an HTTP specification \u2014 they're part of the **HTML specification**, not HTTP itself.\n\nSSE was introduced as part of **HTML5**, specifically standardized by the WHATWG as part of the HTML Living Standard (and published by W3C around 2009\u20132015). The `EventSource` API and the `text/",
       "is_correct": true,
       "j_score": 0.64,
-      "behavioral_score": 0.5251093845782094,
-      "fused_score": 0.6055
+      "behavioral_score": 0.5462080832332934,
+      "fused_score": 0.6119
     },
     {
       "question": "What is the default stack size for a Python thread in bytes?",
@@ -698,11 +698,11 @@
         "8192",
         "1mb"
       ],
-      "opus_answer": "In Python, the default stack size for a thread is **0**, which means the thread uses the **platform's default** stack size (not a specific value set by Python itself).\n\nYou can verify this with:\n\n```python\nimport threading\nprint(threading.stack_size())  # Returns 0\n```\n\nThe actual stack size depends on the operating system:\n\n- **Linux**: Typically **8 MB** (8,388,",
+      "opus_answer": "The default stack size for a Python thread is **0**, which means Python uses the **platform default** rather than setting a specific size itself.\n\nYou can verify this with:\n\n```python\nimport threading\nprint(threading.stack_size())  # Returns 0\n```\n\nA return value of 0 indicates \"use the system default.\"\n\nThe actual platform defaults are typically:\n- **Linux**: 8 MB (8",
       "is_correct": true,
-      "j_score": 0.6042,
-      "behavioral_score": 0.8187949233816749,
-      "fused_score": 0.6686
+      "j_score": 0.64,
+      "behavioral_score": 0.6856404947709296,
+      "fused_score": 0.6537
     },
     {
       "question": "What does the 'tombstone' concept mean in distributed databases?",
@@ -713,11 +713,11 @@
         "deleted",
         "soft delete"
       ],
-      "opus_answer": "# Tombstones in Distributed Databases\n\nA **tombstone** is a special marker used to indicate that a record has been deleted, rather than physically removing the data immediately.\n\n## Why Tombstones Exist\n\nIn distributed systems, you can't simply delete data because:\n\n1. **Replicas might be offline** \u2014 If a node is down when a delete happens, it won't know about the deletion.",
+      "opus_answer": "# Tombstones in Distributed Databases\n\nA **tombstone** is a special marker used to indicate that a piece of data has been deleted, rather than physically removing it immediately. It's essentially a \"deletion record.\"\n\n## Why Tombstones Exist\n\nIn distributed databases, simply deleting data causes problems:\n\n1. **Replica inconsistency**: If a node is offline during",
       "is_correct": true,
-      "j_score": 0.6244,
-      "behavioral_score": 0.45316679826113787,
-      "fused_score": 0.573
+      "j_score": 0.7036,
+      "behavioral_score": 0.6864723941053436,
+      "fused_score": 0.6985
     },
     {
       "question": "What is the CAP theorem impossibility result called formally?",
@@ -727,11 +727,11 @@
         "theorem",
         "cap"
       ],
-      "opus_answer": "The CAP theorem, formally proven by Seth Gilbert and Nancy Lynch in 2002, is known as the **Brewer's Conjecture** in its original form (proposed by Eric Brewer in 2000) and the **Gilbert-Lynch Theorem** after its formal proof.\n\nThe formal result is typically stated as:\n\n> **Theorem (Gil",
+      "opus_answer": "The CAP theorem's formal impossibility result is known as **Brewer's theorem**, named after computer scientist Eric Brewer, who proposed the conjecture in 2000 at the Symposium on Principles of Distributed Computing (PODC).\n\nIt was formally proven in 2002 by **Seth Gilbert and Nancy Lynch** of MIT in their pa",
       "is_correct": true,
-      "j_score": 0.6653,
-      "behavioral_score": 0.7505703942388634,
-      "fused_score": 0.6909
+      "j_score": 0.75,
+      "behavioral_score": 0.6970382129323521,
+      "fused_score": 0.7341
     },
     {
       "question": "What is the exact default wal_level in PostgreSQL 14?",
@@ -739,11 +739,11 @@
       "correct_answer_kws": [
         "replica"
       ],
-      "opus_answer": "In PostgreSQL 14, the default value of `wal_level` is **`replica`**.\n\nThe possible values are `minimal`, `replica`, and `logical`, with `replica` being the default (this has been the default since PostgreSQL 10, when the previous `archive` and `hot_standby` levels were merged into `replica`).",
+      "opus_answer": "In PostgreSQL 14, the default value of `wal_level` is **`replica`**.\n\nThe `wal_level` parameter has three possible values:\n- `minimal` \u2013 only information needed to recover from a crash or immediate shutdown\n- `replica` (default) \u2013 adds logging required for WAL archiving and replication, including running read-only queries on a standby server\n- `logical` \u2013 adds",
       "is_correct": true,
-      "j_score": 0.64,
-      "behavioral_score": 0.78,
-      "fused_score": 0.682
+      "j_score": 0.6376,
+      "behavioral_score": 1.0,
+      "fused_score": 0.7463
     },
     {
       "question": "What is the Paxos algorithm used for?",
@@ -753,11 +753,11 @@
         "distributed",
         "agreement"
       ],
-      "opus_answer": "# The Paxos Algorithm\n\nPaxos is a family of protocols used to achieve **consensus** in a distributed system\u2014getting multiple computers to agree on a single value or decision, even when some of them fail or messages are lost.\n\n## Core Purpose\n\nPaxos solves the fundamental problem of reaching agreement among unreliable processes that communicate over an unreliable network.",
+      "opus_answer": "# The Paxos Algorithm\n\nPaxos is a family of protocols used for achieving **consensus** in a distributed system\u2014that is, getting multiple computers (nodes) to agree on a single value or decision, even when some of them may fail or messages may be lost.\n\n## Primary Uses\n\n**1. Distributed Consensus**\n- Ensuring all nodes in a cluster ag",
       "is_correct": true,
-      "j_score": 0.672,
-      "behavioral_score": 0.6905286946652431,
-      "fused_score": 0.6776
+      "j_score": 0.6471,
+      "behavioral_score": 0.6086456466029739,
+      "fused_score": 0.6356
     },
     {
       "question": "What is the default linger time for TCP sockets (SO_LINGER) in Linux?",
@@ -766,11 +766,11 @@
         "0",
         "disabled"
       ],
-      "opus_answer": "By default, `SO_LINGER` is **disabled** on Linux TCP sockets \u2014 there is no active linger timeout.\n\n## Default Behavior\n\nWhen you query a freshly created socket:\n\n```c\nstruct linger sl;\nsocklen_t len = sizeof(sl);\ngetsockopt(fd, SOL_SOCKET, SO_LINGER, &sl, &len",
+      "opus_answer": "By default, `SO_LINGER` is **disabled** (off) on Linux TCP sockets \u2014 there is no default linger timeout that takes effect.\n\n### Default behavior\nWhen you query the option on a fresh socket, you get:\n\n```c\nstruct linger {\n    int l_onoff  = 0;   // linger is OFF\n    int l_linger = 0;   // timeout value (un",
       "is_correct": true,
       "j_score": 0.64,
-      "behavioral_score": 0.4399805780673411,
-      "fused_score": 0.58
+      "behavioral_score": 0.46149702268162907,
+      "fused_score": 0.5864
     },
     {
       "question": "What was the exact version of Python when the GIL was first introduced?",
@@ -780,11 +780,11 @@
         "1",
         "original"
       ],
-      "opus_answer": "The Global Interpreter Lock (GIL) has been part of CPython essentially since the beginning of the language's implementation \u2014 it wasn't added later as a distinct feature in a specific version. It was present in the original CPython implementation by Guido van Rossum when Python was first released (Python 0.9.0 in February 1991).\n\nSo there isn't a specific \"introduction version\" for the G",
+      "opus_answer": "The Global Interpreter Lock (GIL) has been part of CPython essentially since the beginning of the language's multi-threaded support. It was introduced by Guido van Rossum in **Python 1.5** (around 1997-1998) when thread support was added to CPython, though some sources trace rudimentary forms of it back even earlier to Python 1.4.\n\nI should be honest",
       "is_correct": true,
-      "j_score": 0.7495,
-      "behavioral_score": 0.5998144450429426,
-      "fused_score": 0.7046
+      "j_score": 0.75,
+      "behavioral_score": 0.5839355151916765,
+      "fused_score": 0.7002
     },
     {
       "question": "What is the exact default shared_buffers in PostgreSQL (as % of RAM)?",
@@ -795,11 +795,11 @@
         "small",
         "default"
       ],
-      "opus_answer": "The PostgreSQL default for `shared_buffers` is **128 MB**, not a percentage of RAM.\n\nIt's a fixed value (defined as 16384 \u00d7 8KB pages = 128MB) set in `postgresql.conf`, regardless of system memory.\n\nThe **recommendation** (from the PostgreSQL documentation) is to set it to about **25% of system RA",
+      "opus_answer": "PostgreSQL's default `shared_buffers` is **128 MB**, not a percentage of RAM.\n\nIt's a fixed value set in the default `postgresql.conf`, regardless of how much RAM the system has.\n\nThe **recommendation** (not the default) is commonly cited as **25% of system RAM** for dedicated database servers, but that's tuning guidance \u2014 you have",
       "is_correct": true,
       "j_score": 0.64,
-      "behavioral_score": 0.4015907416195949,
-      "fused_score": 0.5685
+      "behavioral_score": 0.3339149225212962,
+      "fused_score": 0.5482
     }
   ]
 }
