@@ -1,7 +1,7 @@
 """
 experiments/flagship/run.py
 ============================
-CLI runner for the flagship Epistemic Memory experiment.
+CLI runner for the flagship Credence experiment.
 
 Usage:
     python -m experiments.flagship.run                     # 3 trials, all scenarios
@@ -149,7 +149,7 @@ def save_results(trials: list[TrialResult], path: Path):
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Flagship Epistemic Memory Experiment")
+    parser = argparse.ArgumentParser(description="Flagship Credence Experiment")
     parser.add_argument("--trials", type=int, default=3, help="Number of trials per scenario")
     parser.add_argument("--scenarios", default="A,B,C", help="Comma-separated scenario IDs")
     parser.add_argument("--dry-run", action="store_true", help="Smoke test without API")

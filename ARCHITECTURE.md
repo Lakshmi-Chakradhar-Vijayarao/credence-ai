@@ -1,14 +1,14 @@
-# Epistemic Memory — Architecture
+# Credence — Architecture
 
 ## The Core Problem
 
 LLMs forget epistemic state. When a conversation compresses or a pipeline passes information between agents, the *content* survives but the *confidence* does not. A constraint expressed with "we're not certain about X" becomes "X" after one hop. A debugging hypothesis expressed as "possibly the race condition" becomes "the race condition" in the next agent's summary. This is the failure mode FAIL-CHAIN documented across multi-step pipelines: errors compound not because facts disappear but because their uncertainty does.
 
-## From FAIL-CHAIN to Epistemic Memory
+## From FAIL-CHAIN to Credence
 
 FAIL-CHAIN (Vijayarao 2025) measured how confident-but-wrong model outputs propagate through multi-step LLM pipelines. The core finding: compression decisions made without reference to epistemic state convert uncertain claims into apparent facts, and the confidence of downstream agents on those facts is indistinguishable from genuinely resolved knowledge. The fix is not better models — it is epistemic-aware memory management.
 
-Epistemic Memory is the memory governor that closes this loop. It operates at the context-management layer, between the user and the model, and makes a single policy decision for each turn: **compress only what is epistemically resolved**.
+Credence is the memory governor that closes this loop. It operates at the context-management layer, between the user and the model, and makes a single policy decision for each turn: **compress only what is epistemically resolved**.
 
 ## Signal Architecture
 
@@ -16,7 +16,7 @@ Three tiers of epistemic signal, increasing in cost and fidelity:
 
 ```
 Tier 1 — Linguistic Assertiveness (0 ms, 0 cost)
-  ConfidenceProxy: 5 text-pattern factors → J-score ∈ [0,1]
+  CredenceProxy: 5 text-pattern factors → J-score ∈ [0,1]
   Hedging rate, anchor density, self-correction, brevity, specificity
   Fast enough for every turn. Covers 80% of the signal.
 
@@ -59,12 +59,12 @@ Three guard rails prevent unsafe compression:
 
 Thresholds are adaptive: P75/P25 of a rolling 20-turn J-buffer, floored/capped at sensible bounds. Adapts to session J-distribution without per-model calibration.
 
-## Multi-Agent Provenance (CAMSEnvelope)
+## Multi-Agent Provenance (CredenceEnvelope)
 
 When information passes between agents, the J-score and epistemic flags travel with it:
 
 ```python
-CAMSEnvelope:
+CredenceEnvelope:
   j_score           # confidence at point of generation
   zone              # HIGH / MEDIUM / LOW
   uncertainty_preserved  # True if faithfulness probe fired
@@ -81,13 +81,13 @@ Trust degrades with each hop. An uncertain constraint generated 4 hops ago carri
 The system is deployed as an MCP (Model Context Protocol) server. Any MCP-compatible agent framework — Claude Desktop, custom agents, orchestration layers — can call it as a tool, making the system model-agnostic by construction.
 
 ```
-cams_chat              → send message, receive response + envelope
-cams_inspect_envelope  → trust analysis + actionable recommendation
-cams_propagate_envelope→ increment chain_depth, update source
-cams_get_stats         → token savings, compression counts
-cams_get_decision_log  → per-turn J-scores and decisions
-cams_save / cams_load  → cross-session continuity
-em_propagation_risk    → pre-flight risk assessment before compress/handoff
+credence_chat              → send message, receive response + envelope
+credence_inspect  → trust analysis + actionable recommendation
+credence_propagate→ increment chain_depth, update source
+credence_stats         → token savings, compression counts
+credence_log  → per-turn J-scores and decisions
+credence_save / credence_load  → cross-session continuity
+credence_risk    → pre-flight risk assessment before compress/handoff
 ```
 
 ## Why This Works

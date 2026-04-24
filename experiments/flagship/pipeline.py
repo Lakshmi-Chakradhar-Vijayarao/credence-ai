@@ -6,7 +6,7 @@ EpistemicPipeline — three-condition experiment runner.
 Conditions:
   baseline        — Full history, no compression. Oracle condition.
   naive_window    — Keep last NAIVE_WINDOW messages. Naive truncation.
-  epistemic_memory — CAMS J-selective compression + faithfulness probe.
+  epistemic_memory — Credence J-selective compression + faithfulness probe.
 
 Each condition runs the same scenario:
   1. Inject seed turns (establishes uncertain constraints)
@@ -115,7 +115,7 @@ def run_naive_window(
 
 
 # ---------------------------------------------------------------------------
-# Epistemic Memory condition — CAMS J-selective compression
+# Credence condition — Credence J-selective compression
 # ---------------------------------------------------------------------------
 
 def run_epistemic_memory(
@@ -124,9 +124,9 @@ def run_epistemic_memory(
     model: str = _MODEL_OPUS,
     verbose: bool = False,
 ) -> ScenarioResult:
-    from cams.context_manager import CAMSContextManager
+    from credence.context_manager import ContextManager
 
-    mgr = CAMSContextManager(theta_high=0.70, theta_low=0.45)
+    mgr = ContextManager(theta_high=0.70, theta_low=0.45)
     tokens_used = 0
     tokens_saved_total = 0
 
@@ -146,8 +146,8 @@ def run_epistemic_memory(
             mgr._turn_idx += 1
 
             # Compute J and update vocab for this planted turn
-            from cams.confidence_proxy import ConfidenceProxy
-            proxy = ConfidenceProxy(theta_high=mgr.proxy.theta_high, theta_low=mgr.proxy.theta_low)
+            from credence.confidence_proxy import CredenceProxy
+            proxy = CredenceProxy(theta_high=mgr.proxy.theta_high, theta_low=mgr.proxy.theta_low)
             cr = proxy.compute(turn.content)
             mgr._history_j_scores.extend([0.0, cr.j_score])  # user=0, asst=j_score
             mgr._j_buffer.append(cr.j_score)

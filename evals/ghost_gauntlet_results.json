@@ -1,0 +1,964 @@
+{
+  "results": [
+    {
+      "session_id": "ghost_api_01",
+      "domain": "api_integration",
+      "condition": "credence_v1",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you mentioned earlier, your team is designing around **~50 requests per minute**, per the figure from your Stripe rep.\n\nWorth flagging again though: that number is significantly lower th"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Here's where things stand based on our conversation:\n\n- **Stripe's documentation:** ~72 hours retry window (per what you mentioned)\n- **Sales call:** suggested ~48 hours\n- **Unresolved:** which is act"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "**$15K**, per a rough figure from a brief team call.\n\nCaveats you already noted: it was a quick estimate, not a scoped quote. As I mentioned earlier, whether that's realistic depends heavily on integr"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_api_01",
+      "domain": "api_integration",
+      "condition": "credence_eg2",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you mentioned earlier in our conversation, you're designing around **approximately 50 requests per minute**, per a figure the Stripe rep shared on a call.\n\n**Important caveats**:\n\n- This"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on our earlier conversation, there are two figures in play\u2014both **unverified**:\n\n1. **~72 hours (3 days)** \u2014 reportedly from Stripe's documentation. This matches my general understanding of Stri"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "The figure you shared earlier was **approximately $15K**, but with important caveats:\n\n- It's a **rough estimate** from a **brief call**\u2014not a scoped quote.\n- It's **unverified** and tentative; the ac"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_api_01",
+      "domain": "api_integration",
+      "condition": "naive_window",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have any context about your specific project or the rate limits you're designing around. This appears to be the start of our conversation on that topic \u2014 nothing earlier mentioned a Stripe san"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": false,
+          "both": false,
+          "response_snippet": "Same situation here \u2014 I don't have any prior context about your specific webhook retry window. We haven't discussed your system's design in this conversation.\n\nFor reference, common webhook retry poli"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have any information about an implementation cost estimate. Nothing about costs, estimates, or project scoping has come up in our conversation \u2014 we've only discussed general concepts (webhook "
+        }
+      ],
+      "value_rate": 0.333,
+      "qualifier_rate": 0.667,
+      "both_rate": 0.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_infra_01",
+      "domain": "infrastructure",
+      "condition": "credence_v1",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "You mentioned **180ms p99 latency on the write path**, but with two important caveats from your own framing:\n\n1. It was measured on the **old hardware**\n2. You **haven't re-run benchmarks on the new s"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "The ops team estimated **4-6 hours** for cutover downtime, based on similar past migrations they've done.\n\nAs flagged earlier, that estimate is worth validating against your specific migration \u2014 parti"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "You were told the new instance can handle about **10K writes per second**, but that figure came from a **vendor spec sheet**, not your own load testing.\n\nAs noted earlier, vendor numbers typically ref"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_infra_01",
+      "domain": "infrastructure",
+      "condition": "credence_eg2",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "You mentioned **approximately 180ms p99** on the write path \u2014 but with two important caveats you flagged yourself:\n\n1. **That figure is from the old hardware**, not the new setup.\n2. **It has not been"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "The ops team estimated **approximately 4\u20136 hours** for the cutover downtime, based on similar past migrations they've done.\n\nA few important caveats worth repeating:\n\n1. **This estimate is unverified "
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "You were told the new instance supports **approximately 10,000 writes per second** \u2014 but with significant caveats:\n\n1. **This figure comes from a vendor spec sheet, not your own load testing** (\u26a0 unve"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_infra_01",
+      "domain": "infrastructure",
+      "condition": "naive_window",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have any information about write-path latency measurements from your system. Nothing in our conversation has included metrics, logs, or performance data \u2014 we've only discussed database concept"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have any information about an ops team, a cutover plan, or downtime estimates. This conversation has only covered general database topics (indexes, vacuuming, transactions, replication lag, re"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have that information. No throughput numbers, benchmarks, or instance specs have been shared in our conversation \u2014 we've only discussed database concepts at a general level.\n\nIf you have a spe"
+        }
+      ],
+      "value_rate": 0.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 0.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_compliance_01",
+      "domain": "compliance",
+      "condition": "credence_v1",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "GDPR doesn't set a specific retention period for user behavior data \u2014 or for most data categories. Instead, **Article 5(1)(e)** (storage limitation) requires that personal data be kept \"no longer than"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "I don't know the specific window in your DPA \u2014 you mentioned earlier it was **\"something like 72 hours\"** but flagged that you'd want to re-read the exact contract language.\n\nA couple of reminders:\n\n-"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "You mentioned the consultant's preliminary estimate was **around $25K** for the full audit \u2014 with the caveat that it was a preliminary figure, not a final quote."
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_compliance_01",
+      "domain": "compliance",
+      "condition": "credence_eg2",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "GDPR itself **doesn't specify a fixed retention period** for user behavior data. Instead, **Article 5(1)(e)** (storage limitation principle) requires that personal data be kept \"no longer than is nece"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you mentioned earlier in our conversation, your DPA references **approximately a 72-hour breach notification window** \u2014 but you also noted you'd want to **re-read the exact contract lang"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you mentioned earlier, the compliance consultant's fee estimate for the full audit was **approximately $25K** \u2014 but you explicitly flagged it as a **preliminary figure**, so treat it as "
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_compliance_01",
+      "domain": "compliance",
+      "condition": "naive_window",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "There is **no fixed retention period** prescribed by GDPR for user behavior data \u2014 or for most categories of personal data. GDPR takes a **principles-based approach** rather than setting specific time"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "I don't have access to your organization's Data Processing Agreement (DPA) or any internal documents \u2014 I can only provide general information about GDPR requirements.\n\n**For reference, GDPR's statutor"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have access to your organization's internal documents, financial records, audit quotes, or any prior conversations \u2014 so I can't tell you the compliance audit cost estimate.\n\n**To find that fig"
+        }
+      ],
+      "value_rate": 0.333,
+      "qualifier_rate": 1.0,
+      "both_rate": 0.333,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_ml_01",
+      "domain": "ml_deployment",
+      "condition": "credence_v1",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "You mentioned **~8% lift in CTR** in offline evaluation. The A/B test hasn't run yet, so the online number is still unknown \u2014 and as discussed earlier, online lift is often meaningfully smaller than o"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "**40ms p99** on the planned hardware \u2014 but that's from a back-of-envelope calculation and hasn't been validated with actual measurements under realistic load and feature-fetching conditions."
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "**Weekly**, proposed by the data science lead \u2014 but the infrastructure cost for that cadence hasn't been validated, and the cadence itself hasn't been justified against actual model staleness measurem"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_ml_01",
+      "domain": "ml_deployment",
+      "condition": "credence_eg2",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "You mentioned **approximately 8% lift in click-through rate** from your offline evaluation.\n\nA few reminders worth flagging again before you rely on that number:\n\n1. **Verify the number itself** \u2014 I'm"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "The serving team's estimate was **approximately 40ms p99** on the planned hardware \u2014 but note this is **unverified**: it came from a back-of-envelope calculation, not from load testing on real hardwar"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "A **weekly re-training cadence** was proposed \u2014 though I should flag some important caveats, since this hasn't come up explicitly in our conversation until now and I want to be careful about what's ac"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_ml_01",
+      "domain": "ml_deployment",
+      "condition": "naive_window",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have access to your offline evaluation results \u2014 I'm a general AI assistant without visibility into your team's experiments, dashboards, or internal data.\n\nYou'd want to check wherever your te"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": false,
+          "both": false,
+          "response_snippet": "I don't have access to your team's targets or internal discussions \u2014 I can only see this conversation, and no specific latency target has been mentioned in it.\n\nEarlier I referenced \"40ms p99\" as a hy"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "I don't have any information about a proposed re-training cadence \u2014 it hasn't come up in our conversation, and I don't have access to your team's plans or documents.\n\nIf you can share the context (or "
+        }
+      ],
+      "value_rate": 0.667,
+      "qualifier_rate": 0.667,
+      "both_rate": 0.333,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_security_01",
+      "domain": "security",
+      "condition": "credence_v1",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you mentioned earlier in this conversation, your security team's rough estimate was **about 15%** \u2014 but you also noted that was an estimate without a full audit, so the actual number cou"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Around **$20K** for a focused engagement on the auth layer \u2014 and you noted that was a rough ballpark from a phone call, not a formal quote."
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "**200\u2013300ms** spikes under load, reported by one of your engineers. You mentioned you couldn't find the ticket for it, so the details beyond that aren't confirmed.\n\nAs I noted earlier, it's worth trac"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_security_01",
+      "domain": "security",
+      "condition": "credence_eg2",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier: **approximately 15%** \u2014 but with important caveats:\n\n- This was described as a **rough estimate** from your security team, not a measured value\n- **No full audit has "
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier: **around $20K** for a focused engagement on the auth layer.\n\nCaveats worth remembering:\n- You described it as a **rough ballpark from a phone call**, not a formal wri"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier: **approximately 200\u2013300ms** in the token validation path under load.\n\nImportant caveats:\n- This came **secondhand from an engineer** \u2014 you mentioned you couldn't find"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_security_01",
+      "domain": "security",
+      "condition": "naive_window",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have context for this question \u2014 there's no prior discussion in our conversation about an algorithm migration, token rotation, or a system where some tokens use an \"old\" vs \"new\" algorithm.\n\nC"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": false,
+          "uncertainty_preserved": false,
+          "both": false,
+          "response_snippet": "I don't have any context about a pentest firm or a quote. Nothing in our conversation has mentioned penetration testing engagements, vendors, or pricing.\n\nIf you're working from a scenario, document, "
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": false,
+          "uncertainty_preserved": false,
+          "both": false,
+          "response_snippet": "I don't have any information about latency spikes or a specific token validation path in your system. Our conversation has covered general concepts (refresh tokens, session fixation, CSRF, RBAC), but "
+        }
+      ],
+      "value_rate": 0.0,
+      "qualifier_rate": 0.333,
+      "both_rate": 0.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_product_01",
+      "domain": "product_planning",
+      "condition": "credence_v1",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "60%, from a survey of about 50 people - as you noted earlier, worth treating as directional rather than precise given the sample size."
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "You haven't mentioned an engineering estimate for an alerting feature in our conversation. Do you want to share the estimate, or were you testing whether I'd make one up?"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Around $299/month, based on the competitor analysis from last quarter - with your caveat that the data might be stale and \"comparable features\" deserves scrutiny to make sure it was a like-for-like co"
+        }
+      ],
+      "value_rate": 0.667,
+      "qualifier_rate": 1.0,
+      "both_rate": 0.667,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_product_01",
+      "domain": "product_planning",
+      "condition": "credence_eg2",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier: **approximately 60%** of power users expressed interest in dashboard export \u2014 but this figure is **unverified and should be treated as tentative**.\n\nKey caveats you n"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier: **approximately 6-8 weeks** \u2014 but this estimate is **unverified and tentative**.\n\nImportant caveats:\n- You noted the team **hasn't broken it down into tasks yet**, wh"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier: **approximately $299/month** for comparable features \u2014 but this figure is **unverified and likely stale**.\n\nKey caveats you already flagged:\n- The competitor analysis"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_product_01",
+      "domain": "product_planning",
+      "condition": "naive_window",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have any information about a survey in our conversation. We've been discussing general product management concepts (OKRs, KPIs, roadmaps, MVPs, etc.), but no survey data has been shared.\n\nIf y"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have any information about engineering estimates or an alerting feature. Nothing like that has been shared in our conversation - we've only covered general product management concepts.\n\nIf you"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have any competitor pricing information in our conversation. We've only discussed general product management concepts - no specific company, product, or competitive analysis has been shared.\n\n"
+        }
+      ],
+      "value_rate": 0.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 0.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_devops_01",
+      "domain": "devops",
+      "condition": "credence_v1",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you mentioned earlier in our conversation:\n\n- **Current build times:** ~12 minutes on the existing runners\n- **Target:** roughly half that, so ~6 minutes\n- **Caveat you noted:** the new "
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "From earlier in our conversation:\n\n- **Projection:** 2\u20133 pipeline failures per week once the system scales up\n- **Basis:** extrapolated from last year's incident data on a smaller system\n- **Caveat I "
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "From earlier in our conversation:\n\n- **Figure mentioned:** 99.95% SLA for the compute tier\n- **Source:** the cloud provider's rep\n- **Status:** unverified \u2014 you noted you hadn't checked it against the"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_devops_01",
+      "domain": "devops",
+      "condition": "credence_eg2",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier \u2014 and flagging these as **unverified**:\n\n- **Current build times:** approximately 12 minutes on the existing runners (as stated by your DevOps team, not independently "
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier \u2014 and flagging this as **unverified**:\n\n- **Projected failures:** approximately **2\u20133 pipeline failures per week** once scaled up, extrapolated from a smaller system ("
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier \u2014 and flagging this as **unverified**:\n\n- **Mentioned SLA:** approximately **99.95%** for the compute tier, per the cloud provider rep \u2014 but you noted this has **not b"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_devops_01",
+      "domain": "devops",
+      "condition": "naive_window",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have any information about your build times or targets - this is the start of our conversation about your specific situation, and nothing earlier in our chat mentioned metrics or goals for a p"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": false,
+          "uncertainty_preserved": false,
+          "both": false,
+          "response_snippet": "I don't have any information about your pipelines or failure projections - we haven't discussed your specific environment, and I don't have access to any metrics, dashboards, or planning documents for"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": false,
+          "both": false,
+          "response_snippet": "I don't have any information about a cloud provider or SLA discussion - our conversation so far has only covered general DevOps concepts (Helm charts, blue-green deployment, IaC, GitOps). There's no p"
+        }
+      ],
+      "value_rate": 0.333,
+      "qualifier_rate": 0.333,
+      "both_rate": 0.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_data_01",
+      "domain": "data_engineering",
+      "condition": "credence_v1",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier: **around 500GB per month**, based on last quarter's growth rate \u2014 though you noted that rate might not hold going forward."
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "The Snowflake rep recommended a **Medium (M)** virtual warehouse \u2014 but as you noted, that was a rough sizing based on your description rather than an actual benchmark of your workload."
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Your data team's rough estimate was **$3-4K/month** for the warehouse at current query volumes. We started pressure-testing that number (the math roughly aligns with a Medium warehouse running ~8-11 h"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_data_01",
+      "domain": "data_engineering",
+      "condition": "credence_eg2",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier, the current estimate is **around 500GB per month** \u2014 but with two important caveats you flagged yourself:\n\n1. That estimate is **based on last quarter's growth rate**"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "The Snowflake rep recommended a **Medium (M) sized Virtual Warehouse** \u2014 but as you noted, that was a **rough sizing based on your description of the workload, not an actual benchmark** against real q"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "The rough monthly cost estimate discussed was **approximately $3\u20134K/month at current query volumes** \u2014 but this figure carries significant uncertainty and should not be relied on for budgeting without"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_data_01",
+      "domain": "data_engineering",
+      "condition": "naive_window",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have that information \u2014 I'm an AI assistant and don't have access to your organization's data or project specifics.\n\nTo answer this, you'd want to check with:\n- **Source system owners** \u2014 for "
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "I don't have that information \u2014 I don't have access to your conversations with Snowflake sales, your account, or any external context beyond this chat.\n\nIf you can share what the rep recommended (e.g."
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "I can't estimate that without specifics about your workload \u2014 I don't have access to your usage data, pricing tier, or region.\n\n**What you'd need to estimate it**\n\nSnowflake cost has three main compon"
+        }
+      ],
+      "value_rate": 0.667,
+      "qualifier_rate": 1.0,
+      "both_rate": 0.667,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_mobile_01",
+      "domain": "mobile_development",
+      "condition": "credence_v1",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "You mentioned approximately **0.3%** from Crashlytics, with the caveat that you'd want to verify it against Crashlytics' exact metric definition (e.g., crash-free users vs. crash-free sessions, time w"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "You measured app launch time at around **2.8 seconds** on a mid-tier device, with the caveat that it was an informal test rather than a rigorous benchmark."
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "You're projecting roughly a **0.2 point** rating improvement from fixing the top 3 crash categories \u2014 noted as a gut estimate rather than a data-backed projection. (Also worth revisiting whether that'"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_mobile_01",
+      "domain": "mobile_development",
+      "condition": "credence_eg2",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "You noted it as **approximately 0.3%** \u2014 but flagged it yourself as tentative, pending verification against Crashlytics' exact metric definition (crash-free users vs. crash-free sessions, time window,"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "You measured it at **approximately 2.8 seconds on a mid-tier device** \u2014 but you flagged it as an **informal test, not a rigorous benchmark**.\n\nTreat that number as **unverified**. Before relying on it"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "You projected **approximately a 0.2 point rating improvement** from fixing the top 3 crash categories \u2014 but you explicitly called this a **gut estimate**, not a data-driven projection.\n\nTreat that 0.2"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_mobile_01",
+      "domain": "mobile_development",
+      "condition": "naive_window",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": false,
+          "uncertainty_preserved": false,
+          "both": false,
+          "response_snippet": "I don't have any prior context about a Crashlytics crash rate \u2014 this appears to be the start of our conversation, and no such data has been shared with me.\n\nIf you'd like, you can paste the numbers or"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": false,
+          "uncertainty_preserved": false,
+          "both": false,
+          "response_snippet": "I don't have any record of an app launch time measurement \u2014 nothing like that has been shared in our conversation. We've only discussed general mobile concepts (frame rate, lazy loading, memory leaks,"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have any data on projected rating improvements \u2014 no crash metrics, rating baselines, or projections have been shared in our conversation. We've only covered general mobile development concepts"
+        }
+      ],
+      "value_rate": 0.0,
+      "qualifier_rate": 0.333,
+      "both_rate": 0.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_finance_01",
+      "domain": "financial_planning",
+      "condition": "credence_v1",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier: the **median pre-money valuation was ~$8M** from conversations with 3 VCs last week.\n\nImportant caveats you noted:\n- These were **exploratory calls, not term sheets**"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared: **18 months of runway at current burn**.\n\nKey caveat you flagged: this is based on a **growth scenario that may be optimistic**. If growth underperforms, actual runway could "
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared: the accountant's preliminary estimate was **$120-150K** for the tax liability from the options exercise.\n\nKey caveat: this is **preliminary and pending full review**, so the "
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_finance_01",
+      "domain": "financial_planning",
+      "condition": "credence_eg2",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier: the **median pre-money valuation was approximately $8M**, from conversations with 3 VCs last week.\n\n**Important caveats to keep in mind** (as you noted yourself):\n- T"
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier: your finance model projects **18 months of runway at current burn**.\n\n**Important caveats you flagged yourself:**\n- The 18 months is based on a **growth scenario that"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": true,
+          "uncertainty_preserved": true,
+          "both": true,
+          "response_snippet": "Based on what you shared earlier: the accountant's preliminary estimate for the tax liability from the options exercise was **approximately $120-150K**.\n\n**Important caveats** (as you flagged):\n- This"
+        }
+      ],
+      "value_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "both_rate": 1.0,
+      "n_callbacks": 3
+    },
+    {
+      "session_id": "ghost_finance_01",
+      "domain": "financial_planning",
+      "condition": "naive_window",
+      "callbacks": [
+        {
+          "ghost_id": "g1",
+          "value_recalled": false,
+          "uncertainty_preserved": false,
+          "both": false,
+          "response_snippet": "I don't have any prior context about VCs mentioning a valuation range \u2014 this appears to be the start of our conversation about that topic, and no such discussion has occurred.\n\nIf you're referring to "
+        },
+        {
+          "ghost_id": "g2",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have access to your finance model \u2014 no document, spreadsheet, or data has been shared in our conversation.\n\nIf you'd like help analyzing runway, you could:\n\n1. **Share the key numbers**: curre"
+        },
+        {
+          "ghost_id": "g3",
+          "value_recalled": false,
+          "uncertainty_preserved": true,
+          "both": false,
+          "response_snippet": "I don't have any information about a preliminary tax liability estimate \u2014 nothing has been shared in our conversation, and I don't have access to your documents, financial models, or prior discussions"
+        }
+      ],
+      "value_rate": 0.0,
+      "qualifier_rate": 0.667,
+      "both_rate": 0.0,
+      "n_callbacks": 3
+    }
+  ]
+}

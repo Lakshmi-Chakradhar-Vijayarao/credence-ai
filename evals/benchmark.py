@@ -3,11 +3,11 @@ from __future__ import annotations
 """
 evals/benchmark.py
 ==================
-Benchmarks CAMS against two baselines on real Claude API calls:
+Benchmarks Credence against two baselines on real Claude API calls:
 
   Baseline A — No compression: full context every turn (most expensive)
   Baseline B — Naive sliding window: drop turns older than N regardless
-  CAMS       — Confidence-adaptive: compress only when J >= theta_high
+  Credence       — Confidence-adaptive: compress only when J >= theta_high
 
 Measures:
   1. Token usage per session
@@ -43,12 +43,12 @@ except ImportError:
     _CLIENT_AVAILABLE = False
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from cams.confidence_proxy import ConfidenceProxy
-from cams.context_manager import CAMSContextManager, _cost
+from credence.confidence_proxy import CredenceProxy
+from credence.context_manager import ContextManager, _cost
 
 # ---------------------------------------------------------------------------
 # Shared system prompt — used by ALL conditions so results are comparable.
-# CAMS uses this internally via CAMSContextManager; baseline/naive must use
+# Credence uses this internally via ContextManager; baseline/naive must use
 # the same prompt or the comparison conflates prompt effect with J-proxy effect.
 # ---------------------------------------------------------------------------
 BENCHMARK_SYSTEM_PROMPT = (
@@ -256,14 +256,14 @@ QUICK_PAIRS = QA_PAIRS[:3]   # smoke test: 1 per domain
 # Context-Dependent Q&A pairs
 # ---------------------------------------------------------------------------
 # Design: each SESSION is a short scripted conversation. Turn 1 plants a
-# constraint in uncertain language (LOW-J → CAMS preserves). Turns 2-7 are
+# constraint in uncertain language (LOW-J → Credence preserves). Turns 2-7 are
 # factual filler (HIGH-J → naive window or compression could drop turn 1).
 # Turn 8 is the test question — correct answer requires turn 1's constraint.
 #
 # Evaluation metric: Context Dependency Score (CDS) = does the answer at
 # turn 8 reference the constraint from turn 1?
 #
-# CAMS target: preserves turn 1 (attention sink) → correct answer at turn 8
+# Credence target: preserves turn 1 (attention sink) → correct answer at turn 8
 # Naive window (window=6): turn 1 dropped at turn 8 → incomplete/wrong answer
 # ---------------------------------------------------------------------------
 
@@ -487,8 +487,8 @@ class ConditionResult:
     reasoning_density_per_kdollar: float = 0.0
 
 
-def run_cams(pairs: list[dict], client: Anthropic) -> ConditionResult:
-    mgr   = CAMSContextManager(max_tokens=300)
+def run_credence(pairs: list[dict], client: Anthropic) -> ConditionResult:
+    mgr   = ContextManager(max_tokens=300)
     turns = []
 
     for p in pairs:
@@ -513,7 +513,7 @@ def run_cams(pairs: list[dict], client: Anthropic) -> ConditionResult:
     auarc      = compute_auarc(turns)
     rd         = reasoning_density(mean_rl, s.total_cost_usd)
     return ConditionResult(
-        condition          = "CAMS",
+        condition          = "Credence",
         turns              = turns,
         total_tokens_used  = total_used,
         total_tokens_saved = s.total_tokens_saved,
@@ -533,13 +533,13 @@ def run_random_gating(
     seed: int = 42,
 ) -> ConditionResult:
     """
-    Control condition: compress at the SAME RATE as CAMS but pick turns randomly.
+    Control condition: compress at the SAME RATE as Credence but pick turns randomly.
 
-    If CAMS ROUGE-L > random-gating ROUGE-L, the J signal is doing real work.
+    If Credence ROUGE-L > random-gating ROUGE-L, the J signal is doing real work.
     If they are equal, J adds nothing over a compression schedule.
 
-    compress_rate: fraction of eligible turns to compress (match CAMS observed rate).
-    Default 0.30 matches typical CAMS compression rate on 30-turn sessions.
+    compress_rate: fraction of eligible turns to compress (match Credence observed rate).
+    Default 0.30 matches typical Credence compression rate on 30-turn sessions.
     """
     import random as _random
     rng = _random.Random(seed)
@@ -548,8 +548,8 @@ def run_random_gating(
     turns   = []
     total_tokens_in = total_tokens_out = total_tokens_saved = 0
     compression_count = 0
-    ATTENTION_SINK = 2   # never compress first N turns (mirrors CAMS)
-    TRIM_WINDOW    = 10  # keep last N turns on trim (mirrors CAMS)
+    ATTENTION_SINK = 2   # never compress first N turns (mirrors Credence)
+    TRIM_WINDOW    = 10  # keep last N turns on trim (mirrors Credence)
 
     for idx, p in enumerate(pairs):
         history.append({"role": "user", "content": p["question"]})
@@ -559,7 +559,7 @@ def run_random_gating(
         if idx >= ATTENTION_SINK:
             roll = rng.random()
             if roll < compress_rate and len(history) > ATTENTION_SINK * 2 + 4:
-                # Random-compress: summarise oldest turns (same mechanism as CAMS TRIM)
+                # Random-compress: summarise oldest turns (same mechanism as Credence TRIM)
                 keep = history[-(TRIM_WINDOW * 2):]
                 dropped = history[:-(TRIM_WINDOW * 2)]
                 if dropped:
@@ -588,7 +588,7 @@ def run_random_gating(
         total_tokens_out += t_out
         history.append({"role": "assistant", "content": text})
 
-        proxy = ConfidenceProxy()
+        proxy = CredenceProxy()
         cr    = proxy.compute(text)
         rl    = rouge_l(text, p["reference"])
         turns.append(TurnLog(
@@ -640,7 +640,7 @@ def run_baseline(pairs: list[dict], client: Anthropic, use_system_prompt: bool =
         total_tokens_out += t_out
         history.append({"role": "assistant", "content": text})
 
-        proxy = ConfidenceProxy()
+        proxy = CredenceProxy()
         cr    = proxy.compute(text)
         rl    = rouge_l(text, p["reference"])
         turns.append(TurnLog(
@@ -695,7 +695,7 @@ def run_naive_window(pairs: list[dict], client: Anthropic, window: int = 6) -> C
         total_tokens_out += t_out
         history.append({"role": "assistant", "content": text})
 
-        proxy = ConfidenceProxy()
+        proxy = CredenceProxy()
         cr    = proxy.compute(text)
         rl    = rouge_l(text, p["reference"])
         turns.append(TurnLog(
@@ -730,25 +730,25 @@ def run_naive_window(pairs: list[dict], client: Anthropic, window: int = 6) -> C
 
 def run_context_sessions(sessions: list[dict], client: Anthropic) -> dict:
     """
-    Run each CONTEXT_SESSION against both CAMS and naive window (window=6).
+    Run each CONTEXT_SESSION against both Credence and naive window (window=6).
 
     Scores each test-turn answer: did it reference the planted constraint?
     Returns per-session and aggregate CDS for both conditions.
     CDS = fraction of sessions where the answer correctly references the constraint.
     """
-    results = {"cams": [], "naive": []}
+    results = {"credence": [], "naive": []}
 
     for sess in sessions:
-        for condition in ("cams", "naive"):
+        for condition in ("credence", "naive"):
             history = []
-            mgr     = CAMSContextManager(max_tokens=300) if condition == "cams" else None
+            mgr     = ContextManager(max_tokens=300) if condition == "credence" else None
 
             all_turns = [sess["constraint_turn"]] + sess["filler"] + [sess["test_question"]]
 
             for i, msg in enumerate(all_turns):
                 is_test = (i == len(all_turns) - 1)
 
-                if condition == "cams":
+                if condition == "credence":
                     result = mgr.chat(msg)
                     answer = result.response
                 else:
@@ -782,26 +782,26 @@ def print_cds_table(cds_results: dict):
     print("\n" + "=" * 70)
     print("CONTEXT DEPENDENCY SCORE (CDS) — does the answer reference the constraint?")
     print("=" * 70)
-    print(f"  {'Session':<20} {'CAMS':^10} {'Naive':^10}")
+    print(f"  {'Session':<20} {'Credence':^10} {'Naive':^10}")
     print("  " + "-" * 42)
 
-    cams_rows  = {r["session"]: r for r in cds_results["cams"]}
+    credence_rows  = {r["session"]: r for r in cds_results["credence"]}
     naive_rows = {r["session"]: r for r in cds_results["naive"]}
 
-    sessions = list(cams_rows.keys())
+    sessions = list(credence_rows.keys())
     for s in sessions:
-        c = "✓" if cams_rows[s]["referenced"] else "✗"
+        c = "✓" if credence_rows[s]["referenced"] else "✗"
         n = "✓" if naive_rows[s]["referenced"] else "✗"
         print(f"  {s:<20} {c:^10} {n:^10}")
 
-    cams_score  = sum(1 for r in cds_results["cams"]  if r["referenced"]) / len(sessions)
+    credence_score  = sum(1 for r in cds_results["credence"]  if r["referenced"]) / len(sessions)
     naive_score = sum(1 for r in cds_results["naive"] if r["referenced"]) / len(sessions)
     print("  " + "-" * 42)
-    print(f"  {'CDS Score':<20} {cams_score:.0%}".ljust(32) + f"{naive_score:.0%}")
-    print(f"\n  CAMS correctly references constraint in {cams_score:.0%} of sessions")
+    print(f"  {'CDS Score':<20} {credence_score:.0%}".ljust(32) + f"{naive_score:.0%}")
+    print(f"\n  Credence correctly references constraint in {credence_score:.0%} of sessions")
     print(f"  Naive window correctly references in    {naive_score:.0%} of sessions")
-    if cams_score > naive_score:
-        print(f"  ✓ CAMS preserves uncertain context that naive window silently drops")
+    if credence_score > naive_score:
+        print(f"  ✓ Credence preserves uncertain context that naive window silently drops")
 
 
 # ---------------------------------------------------------------------------
@@ -810,7 +810,7 @@ def print_cds_table(cds_results: dict):
 
 def print_table(results: list[ConditionResult]):
     print("\n" + "=" * 82)
-    print("CAMS BENCHMARK RESULTS")
+    print("Credence BENCHMARK RESULTS")
     print("=" * 82)
     header = (
         f"{'Condition':<28} {'Tokens':>8} {'Saved':>8} {'Cost($)':>8} "
@@ -831,12 +831,12 @@ def print_table(results: list[ConditionResult]):
     print()
     print("  Condition guide:")
     print("    'Baseline (no prompt)'      — no compression, no system prompt (raw API)")
-    print("    'Baseline (no compression)' — no compression, same system prompt as CAMS")
-    print("    Delta CAMS vs 'no compression' = pure J-proxy context-management contribution")
+    print("    'Baseline (no compression)' — no compression, same system prompt as Credence")
+    print("    Delta Credence vs 'no compression' = pure J-proxy context-management contribution")
     print("    Delta 'no compression' vs 'no prompt' = system prompt contribution alone")
 
-    cams_r = next(r for r in results if r.condition == "CAMS")
-    # Primary comparison: CAMS vs same-prompt baseline (isolates context management effect)
+    credence_r = next(r for r in results if r.condition == "Credence")
+    # Primary comparison: Credence vs same-prompt baseline (isolates context management effect)
     same_prompt_base = next(
         (r for r in results if r.condition == "Baseline (no compression)"), None
     )
@@ -847,30 +847,30 @@ def print_table(results: list[ConditionResult]):
     base_r = same_prompt_base or no_prompt_base
 
     if base_r and base_r.total_tokens_used > 0:
-        tok_pct  = (base_r.total_tokens_used - cams_r.total_tokens_used) / base_r.total_tokens_used * 100
-        cost_pct = (base_r.total_cost_usd - cams_r.total_cost_usd) / base_r.total_cost_usd * 100
-        qual_d   = cams_r.mean_rouge_l - base_r.mean_rouge_l
-        print(f"\nCAMS vs Baseline (same system prompt — honest comparison):")
+        tok_pct  = (base_r.total_tokens_used - credence_r.total_tokens_used) / base_r.total_tokens_used * 100
+        cost_pct = (base_r.total_cost_usd - credence_r.total_cost_usd) / base_r.total_cost_usd * 100
+        qual_d   = credence_r.mean_rouge_l - base_r.mean_rouge_l
+        print(f"\nCredence vs Baseline (same system prompt — honest comparison):")
         print(f"  Token reduction      : {tok_pct:+.1f}%")
         print(f"  Cost reduction       : {cost_pct:+.1f}%")
         print(f"  Quality delta        : {qual_d:+.3f} ROUGE-L")
-        print(f"  AUARC delta          : {cams_r.auarc - base_r.auarc:+.4f}")
-        rd_cams = cams_r.reasoning_density_per_kdollar * 1e4
+        print(f"  AUARC delta          : {credence_r.auarc - base_r.auarc:+.4f}")
+        rd_credence = credence_r.reasoning_density_per_kdollar * 1e4
         rd_base = base_r.reasoning_density_per_kdollar * 1e4
-        print(f"  Reasoning Density    : {rd_cams:.2f} vs {rd_base:.2f}  (×10⁻⁴ ROUGE/$K)")
+        print(f"  Reasoning Density    : {rd_credence:.2f} vs {rd_base:.2f}  (×10⁻⁴ ROUGE/$K)")
 
         # Bootstrap 95% CIs — n=30 point estimates have ~±0.04 inherent noise;
         # reporting only point estimates would overstate result precision.
-        cams_rouges = [t.rouge_l for t in cams_r.turns]
+        credence_rouges = [t.rouge_l for t in credence_r.turns]
         base_rouges = [t.rouge_l for t in base_r.turns]
-        cams_ci = bootstrap_ci(cams_rouges)
+        credence_ci = bootstrap_ci(credence_rouges)
         base_ci = bootstrap_ci(base_rouges)
-        n = len(cams_rouges)
+        n = len(credence_rouges)
         print(f"\n  Bootstrap 95% CI on ROUGE-L (n={n}, 2000 resamples):")
-        print(f"    CAMS               : {cams_r.mean_rouge_l:.3f}  [{cams_ci[0]:.3f}, {cams_ci[1]:.3f}]")
+        print(f"    Credence               : {credence_r.mean_rouge_l:.3f}  [{credence_ci[0]:.3f}, {credence_ci[1]:.3f}]")
         print(f"    Baseline           : {base_r.mean_rouge_l:.3f}  [{base_ci[0]:.3f}, {base_ci[1]:.3f}]")
-        delta_lo = cams_ci[0] - base_ci[1]
-        delta_hi = cams_ci[1] - base_ci[0]
+        delta_lo = credence_ci[0] - base_ci[1]
+        delta_hi = credence_ci[1] - base_ci[0]
         significant = delta_lo > 0 or delta_hi < 0
         print(f"    Delta CI           : [{delta_lo:+.3f}, {delta_hi:+.3f}]  "
               f"({'significant' if significant else 'not significant — within noise'})")
@@ -884,40 +884,40 @@ def print_table(results: list[ConditionResult]):
         # Φ(√J̄/2) theoretical certificate
         from math import sqrt
         from statistics import NormalDist
-        mean_j = cams_r.mean_j_score
+        mean_j = credence_r.mean_j_score
         phi_ceiling = NormalDist().cdf(sqrt(mean_j) / 2)
-        auarc_gain  = cams_r.auarc - (same_prompt_base.auarc if same_prompt_base else 0)
-        api_surface_pct = (cams_r.auarc / phi_ceiling) * 100
+        auarc_gain  = credence_r.auarc - (same_prompt_base.auarc if same_prompt_base else 0)
+        api_surface_pct = (credence_r.auarc / phi_ceiling) * 100
         print(f"\n── Theoretical Certificate (Fisher Information, Geom-Proof) ───")
         print(f"  Mean J-score             : {mean_j:.4f}")
         print(f"  Φ(√J̄/2) theoretical cap : {phi_ceiling:.4f}  "
               f"(AUROC ceiling w/ hidden-state access, Geom-Proof ±0.93%)")
-        print(f"  CAMS AUARC (API surface) : {cams_r.auarc:.4f}  "
+        print(f"  Credence AUARC (API surface) : {credence_r.auarc:.4f}  "
               f"({api_surface_pct:.1f}% of theoretical ceiling)")
         print(f"  AUARC gain over baseline : +{auarc_gain:.4f}")
-        print(f"  Interpretation: CAMS recovers {api_surface_pct:.0f}% of the J-signal "
+        print(f"  Interpretation: Credence recovers {api_surface_pct:.0f}% of the J-signal "
               f"available to a model with hidden-state access.")
     elif base_r:
         from math import sqrt
         from statistics import NormalDist
-        mean_j = cams_r.mean_j_score
+        mean_j = credence_r.mean_j_score
         phi_ceiling = NormalDist().cdf(sqrt(mean_j) / 2)
-        auarc_gain  = cams_r.auarc - base_r.auarc
-        api_surface_pct = (cams_r.auarc / phi_ceiling) * 100
+        auarc_gain  = credence_r.auarc - base_r.auarc
+        api_surface_pct = (credence_r.auarc / phi_ceiling) * 100
         print(f"\n── Theoretical Certificate (Fisher Information, Geom-Proof) ───")
         print(f"  Mean J-score             : {mean_j:.4f}")
         print(f"  Φ(√J̄/2) theoretical cap : {phi_ceiling:.4f}")
-        print(f"  CAMS AUARC (API surface) : {cams_r.auarc:.4f}  "
+        print(f"  Credence AUARC (API surface) : {credence_r.auarc:.4f}  "
               f"({api_surface_pct:.1f}% of theoretical ceiling)")
         print(f"  AUARC gain over baseline : +{auarc_gain:.4f}")
 
     # Random-gating ablation: does J signal beat random compression?
     rand_r = next((r for r in results if "Random" in r.condition), None)
     if rand_r:
-        rl_delta  = cams_r.mean_rouge_l - rand_r.mean_rouge_l
-        tok_delta = rand_r.total_tokens_used - cams_r.total_tokens_used
+        rl_delta  = credence_r.mean_rouge_l - rand_r.mean_rouge_l
+        tok_delta = rand_r.total_tokens_used - credence_r.total_tokens_used
         print(f"\n── Ablation: J-Gated vs Random Gating (same compression rate) ─")
-        print(f"  CAMS ROUGE-L          : {cams_r.mean_rouge_l:.4f}")
+        print(f"  Credence ROUGE-L          : {credence_r.mean_rouge_l:.4f}")
         print(f"  Random gating ROUGE-L : {rand_r.mean_rouge_l:.4f}")
         print(f"  Delta                 : {rl_delta:+.4f}")
         print(f"  Token difference      : {tok_delta:+,}")
@@ -928,19 +928,19 @@ def print_table(results: list[ConditionResult]):
         else:
             print(f"  ✗ Random gating wins — J-proxy hurts quality (investigate)")
 
-    # Per-zone quality breakdown for CAMS
+    # Per-zone quality breakdown for Credence
     for zone in ("HIGH", "MEDIUM", "LOW"):
-        zone_turns = [t for t in cams_r.turns if t.zone == zone]
+        zone_turns = [t for t in credence_r.turns if t.zone == zone]
         if zone_turns:
             mean_rl   = sum(t.rouge_l for t in zone_turns) / len(zone_turns)
             mean_j    = sum(t.j_score for t in zone_turns) / len(zone_turns)
-            print(f"\nCAMS {zone} zone: n={len(zone_turns)}  "
+            print(f"\nCredence {zone} zone: n={len(zone_turns)}  "
                   f"mean_j={mean_j:.3f}  mean_rouge={mean_rl:.3f}")
 
     # Per-domain breakdown
-    print("\nCAMS per-domain performance:")
+    print("\nCredence per-domain performance:")
     for domain in ("factual", "reasoning", "uncertain"):
-        dom_turns = [t for t in cams_r.turns if t.domain == domain]
+        dom_turns = [t for t in credence_r.turns if t.domain == domain]
         if dom_turns:
             mean_rl = sum(t.rouge_l for t in dom_turns) / len(dom_turns)
             mean_j  = sum(t.j_score for t in dom_turns) / len(dom_turns)
@@ -1051,14 +1051,14 @@ def judge_with_gpt4o_mini(
         for cond, jr in judge_results.items():
             print(f"  {cond:<28} mean={jr['mean_judge_score']:.2f}/5  "
                   f"ρ(ROUGE,judge)={jr['spearman_rouge_judge']:+.3f}")
-        cams_j  = judge_results.get("CAMS", {})
+        credence_j  = judge_results.get("Credence", {})
         base_j  = judge_results.get("Baseline (no compression)", {})
-        if cams_j and base_j:
-            delta = cams_j["mean_judge_score"] - base_j["mean_judge_score"]
-            agree = "✓ ROUGE-L and judge agree" if cams_j["spearman_rouge_judge"] > 0.3 else \
-                    "△ ROUGE-L and judge partially agree" if cams_j["spearman_rouge_judge"] > 0 else \
+        if credence_j and base_j:
+            delta = credence_j["mean_judge_score"] - base_j["mean_judge_score"]
+            agree = "✓ ROUGE-L and judge agree" if credence_j["spearman_rouge_judge"] > 0.3 else \
+                    "△ ROUGE-L and judge partially agree" if credence_j["spearman_rouge_judge"] > 0 else \
                     "✗ ROUGE-L and judge disagree"
-            print(f"\n  CAMS vs Baseline judge delta: {delta:+.3f}/5  —  {agree}")
+            print(f"\n  Credence vs Baseline judge delta: {delta:+.3f}/5  —  {agree}")
 
     return judge_results
 
@@ -1114,11 +1114,11 @@ def main():
     conditions = [
         # No-prompt baseline: isolates the raw prompt effect vs. context management
         ("Baseline (no prompt)",      lambda: run_baseline(pairs, client, use_system_prompt=False)),
-        # Prompt-only baseline: same system prompt as CAMS, no compression
-        # Delta between this and CAMS = pure J-proxy context management contribution
+        # Prompt-only baseline: same system prompt as Credence, no compression
+        # Delta between this and Credence = pure J-proxy context management contribution
         ("Baseline (no compression)", lambda: run_baseline(pairs, client, use_system_prompt=True)),
         ("Naive sliding window",      lambda: run_naive_window(pairs, client)),
-        ("CAMS",                      lambda: run_cams(pairs, client)),
+        ("Credence",                      lambda: run_credence(pairs, client)),
     ]
     if args.ablation:
         conditions.append(

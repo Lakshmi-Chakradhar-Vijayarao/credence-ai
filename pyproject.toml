@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.backends.legacy:build"
 
 [project]
-name = "cams-claude"
-version = "1.1.0"
-description = "Confidence-Adaptive Memory System — epistemic integrity layer for Claude"
+name = "credence-ai"
+version = "2.0.0"
+description = "Credence — confidence-aware epistemic memory for AI pipelines"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
@@ -43,10 +43,10 @@ dev = [
 ]
 
 [project.scripts]
-cams-mcp-server = "cams.mcp_server:main"
+credence-server = "credence.mcp_server:main"
 
 [project.urls]
-Repository = "https://github.com/Lakshmi-Chakradhar-Vijayarao/cams-claude"
+Repository = "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai"
 
 [tool.setuptools.packages.find]
-include = ["cams*", "evals*", "demo*"]
+include = ["credence*", "evals*", "demo*"]

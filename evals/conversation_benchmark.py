@@ -1,11 +1,11 @@
 """
 evals/conversation_benchmark.py
 ================================
-Multi-turn Conversational Benchmark for CAMS v1.1.
+Multi-turn Conversational Benchmark for Credence v1.1.
 
-Tests CAMS on the scenario it was *built for*: long conversations where earlier
+Tests Credence on the scenario it was *built for*: long conversations where earlier
 turns contain uncertain constraints that must survive to be recalled later.
-Independent Q&A benchmarks (like evals/benchmark.py) do not stress CAMS because
+Independent Q&A benchmarks (like evals/benchmark.py) do not stress Credence because
 each question is self-contained — compression of T3 does not affect T12.
 
 Scenario types:
@@ -22,7 +22,7 @@ Metrics (per session):
 Conditions:
   baseline     — raw Opus, full history, no compression
   naive_window — sliding window (last 6 turn-pairs = 12 messages)
-  cams         — CAMSContextManager with all v1.1 guards active
+  credence     — ContextManager with all v1.1 guards active
 
 Run:
     python -m evals.conversation_benchmark
@@ -40,7 +40,7 @@ from typing import Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from anthropic import Anthropic
-from cams.context_manager import CAMSContextManager
+from credence.context_manager import ContextManager
 
 _CLIENT: Optional[Anthropic] = None
 
@@ -674,11 +674,11 @@ def _run_naive_window(session: Session) -> SessionResult:
     )
 
 
-def _run_cams(session: Session) -> SessionResult:
-    mgr = CAMSContextManager(
+def _run_credence(session: Session) -> SessionResult:
+    mgr = ContextManager(
         api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
-        theta_high=0.65,
-        theta_low=0.35,
+        theta_high=0.70,
+        theta_low=0.45,
         system_prompt=session.system_prompt,
         max_tokens=400,
     )
@@ -696,7 +696,7 @@ def _run_cams(session: Session) -> SessionResult:
         recall = _score_recall(r.response, cb.expected_fragments)
         hallucinated = _score_hallucination(r.response, cb.contradiction_markers)
         per_cb.append({"question": cb.question[:60], "recall": recall, "hallucinated": hallucinated})
-        print(f"    [cams]     recall={recall:.2f} halluc={hallucinated}  {cb.question[:55]}…")
+        print(f"    [credence] recall={recall:.2f} halluc={hallucinated}  {cb.question[:55]}…")
         time.sleep(0.4)
 
     mean_recall = sum(c["recall"] for c in per_cb) / len(per_cb)
@@ -705,7 +705,7 @@ def _run_cams(session: Session) -> SessionResult:
 
     return SessionResult(
         session_id=session.session_id,
-        condition="cams",
+        condition="credence",
         constraint_recall=round(mean_recall, 4),
         chain_complete=chain_complete,
         hallucination_rate=round(halluc_rate, 4),
@@ -720,7 +720,7 @@ def _run_cams(session: Session) -> SessionResult:
 # ---------------------------------------------------------------------------
 
 def _aggregate(all_results: list[SessionResult]) -> BenchmarkResult:
-    conditions = ["baseline", "naive_window", "cams"]
+    conditions = ["baseline", "naive_window", "credence"]
     means_recall = {}
     means_chain  = {}
     means_halluc = {}
@@ -750,7 +750,7 @@ def print_table(result: BenchmarkResult) -> None:
     print("=" * 72)
     print(f"{'Condition':<18} {'Recall':>8} {'Chain%':>8} {'Halluc%':>9} {'Tokens':>10}")
     print("-" * 72)
-    for cond in ["baseline", "naive_window", "cams"]:
+    for cond in ["baseline", "naive_window", "credence"]:
         if cond not in result.mean_constraint_recall:
             continue
         print(
@@ -800,7 +800,7 @@ def save_results(result: BenchmarkResult, path: str = "evals/conv_results.json")
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="CAMS Conversational Benchmark")
+    parser = argparse.ArgumentParser(description="Credence Conversational Benchmark")
     parser.add_argument(
         "--session",
         choices=[s.session_id for s in ALL_SESSIONS],
@@ -808,7 +808,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--condition",
-        choices=["baseline", "naive_window", "cams", "all"],
+        choices=["baseline", "naive_window", "credence", "all"],
         default="all",
         help="Run a specific condition only.",
     )
@@ -842,13 +842,13 @@ def main() -> None:
         print("ERROR: ANTHROPIC_API_KEY not set.")
         sys.exit(1)
 
-    conditions = ["baseline", "naive_window", "cams"] if args.condition == "all" else [args.condition]
+    conditions = ["baseline", "naive_window", "credence"] if args.condition == "all" else [args.condition]
     all_results: list[SessionResult] = []
 
     runners = {
         "baseline":     _run_baseline,
         "naive_window": _run_naive_window,
-        "cams":         _run_cams,
+        "credence":         _run_credence,
     }
 
     for session in sessions:

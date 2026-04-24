@@ -19,7 +19,7 @@ import argparse
 import random
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from cams.confidence_proxy import ConfidenceProxy
+from credence.confidence_proxy import CredenceProxy
 
 try:
     from anthropic import Anthropic
@@ -81,7 +81,7 @@ API_QUESTIONS = [
 
 def calibrate(items: list[dict]) -> dict:
     """Grid-search theta_high and theta_low to maximize zone accuracy."""
-    proxy = ConfidenceProxy(theta_high=0.65, theta_low=0.35)
+    proxy = CredenceProxy(theta_high=0.65, theta_low=0.35)
 
     scored = []
     for item in items:
@@ -182,7 +182,7 @@ def calibrate_oof(items: list[dict], n_folds: int = 5, seed: int = 42) -> dict:
 
     Returns honest (non-inflated) accuracy and AUARC across folds.
     """
-    proxy = ConfidenceProxy(theta_high=0.65, theta_low=0.35)
+    proxy = CredenceProxy(theta_high=0.65, theta_low=0.35)
 
     # Score all items once
     scored = []
@@ -330,7 +330,7 @@ def main():
         print(f"\nNote: calibrated thresholds differ from defaults "
               f"(θ_h={default_th}, θ_l={default_tl}).")
         print(f"To use calibrated values:")
-        print(f"  ConfidenceProxy(theta_high={result['theta_high']}, "
+        print(f"  CredenceProxy(theta_high={result['theta_high']}, "
               f"theta_low={result['theta_low']})")
     else:
         print(f"\nDefault thresholds (θ_h=0.65, θ_l=0.35) are optimal for this dataset.")

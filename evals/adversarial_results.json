@@ -46,9 +46,9 @@
     "passed": true,
     "description": "Faithfulness probe detects uncertainty prefix in mixed-signal response",
     "expected": "has_uncertainty=True",
-    "actual": "has_uncertainty=True, zone=MEDIUM, j=0.618",
+    "actual": "has_uncertainty=True, zone=MEDIUM, j=0.642",
     "details": {
-      "j_score": 0.6177,
+      "j_score": 0.6419,
       "zone": "MEDIUM",
       "has_uncertainty": true
     }
@@ -60,7 +60,7 @@
     "expected": "has_uncertainty=True",
     "actual": "has_uncertainty=True, zone=MEDIUM, content_type=code",
     "details": {
-      "j_score": 0.6088,
+      "j_score": 0.6233,
       "zone": "MEDIUM",
       "content_type": "code",
       "has_uncertainty": true
@@ -71,9 +71,9 @@
     "passed": true,
     "description": "Semantic entropy proxy detects multi-answer responses",
     "expected": "has_multi_answer=True",
-    "actual": "has_multi_answer=True, zone=MEDIUM, j=0.533",
+    "actual": "has_multi_answer=True, zone=MEDIUM, j=0.537",
     "details": {
-      "j_score": 0.5326,
+      "j_score": 0.5373,
       "zone": "MEDIUM",
       "has_multi_answer": true
     }
@@ -89,7 +89,7 @@
         {
           "label": "fresh HIGH-J trusted",
           "j_score": 0.85,
-          "source": "cams",
+          "source": "credence",
           "chain_depth": 0,
           "trust_score": 0.85,
           "should_verify": false,
@@ -99,7 +99,7 @@
         {
           "label": "3-hop trusted (trust=0.70)",
           "j_score": 0.85,
-          "source": "cams",
+          "source": "credence",
           "chain_depth": 3,
           "trust_score": 0.7,
           "should_verify": false,
@@ -109,7 +109,7 @@
         {
           "label": "10-hop trusted (trust=0.35)",
           "j_score": 0.85,
-          "source": "cams",
+          "source": "credence",
           "chain_depth": 10,
           "trust_score": 0.35,
           "should_verify": true,
@@ -139,7 +139,7 @@
         {
           "label": "LOW-J trusted depth=1 (trust=0.25)",
           "j_score": 0.3,
-          "source": "cams",
+          "source": "credence",
           "chain_depth": 1,
           "trust_score": 0.25,
           "should_verify": true,
@@ -149,7 +149,7 @@
         {
           "label": "MEDIUM-J trusted depth=2 (trust=0.35) below threshold",
           "j_score": 0.45,
-          "source": "cams",
+          "source": "credence",
           "chain_depth": 2,
           "trust_score": 0.35,
           "should_verify": true,

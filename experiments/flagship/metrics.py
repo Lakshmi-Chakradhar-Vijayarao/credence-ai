@@ -1,13 +1,13 @@
 """
 experiments/flagship/metrics.py
 ================================
-Metrics for the flagship Epistemic Memory experiment.
+Metrics for the flagship Credence experiment.
 
 Three core metrics:
 
 1. propagation_rate  — fraction of post-seed steps where the model states
    an uncertain value as a definite fact (the headline "failure propagation" metric).
-   Lower is better. Epistemic Memory should drive this to zero.
+   Lower is better. Credence should drive this to zero.
 
 2. constraint_recall — for each callback question, what fraction of required
    fragments appear in the answer? Measures whether uncertain constraints

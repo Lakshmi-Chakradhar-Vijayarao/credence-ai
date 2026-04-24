@@ -1,0 +1,1425 @@
+{
+  "summary": {
+    "credence": {
+      "n": 23,
+      "correction_recall_mean": 1.0,
+      "correction_recall_ci95": [
+        1.0,
+        1.0
+      ],
+      "hallucination_rate_mean": 0.0435,
+      "hallucination_rate_ci95": [
+        0.0,
+        0.1087
+      ]
+    },
+    "naive_window": {
+      "n": 23,
+      "correction_recall_mean": 0.1957,
+      "correction_recall_ci95": [
+        0.087,
+        0.3261
+      ],
+      "hallucination_rate_mean": 0.0217,
+      "hallucination_rate_ci95": [
+        0.0,
+        0.0652
+      ]
+    },
+    "baseline": {
+      "n": 23,
+      "correction_recall_mean": 1.0,
+      "correction_recall_ci95": [
+        1.0,
+        1.0
+      ],
+      "hallucination_rate_mean": 0.0217,
+      "hallucination_rate_ci95": [
+        0.0,
+        0.0652
+      ]
+    }
+  },
+  "trials": [
+    {
+      "trial": 0,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier in this conversation:\n\n- **Rate limit: ~50 requests/minute (UNVERIFIED \u2014 pending vendor confirmation)**\n\nSo your "
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Token lifetime: ~24 hours (TENTATIVE \u2014 docs unclear, may be shorter)**\n\nGiven that uncertainty, I'd recommend "
+        }
+      ]
+    },
+    {
+      "trial": 0,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design for Retry Logic\n\n**Check vendor documentation first.** Based on what you've stated:\n\n- **Your limit:** 50 requests/minute\n- **Stat"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\n**Based on what we've discussed:** I don't have established facts about your token situation yet. We haven't covered:\n\n1. **To"
+        }
+      ]
+    },
+    {
+      "trial": 0,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design Recommendation\n\nBased on your earlier note:\n- **Stated limit: ~50 requests per minute** (\u26a0\ufe0f **flagged as uncertain \u2014 needs vendor "
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\nBased on your earlier note:\n- **Token expiry: approximately 24 hours** (\u26a0\ufe0f **flagged as tentative \u2014 documentation unclear, act"
+        }
+      ]
+    },
+    {
+      "trial": 1,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me, you should design around the **unverified ~50 requests/minute limit (to be confirmed with vendor)** that you mentioned e"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier \u2014 **unverified: token expiry ~24 hours, possibly less (docs unclear, to be confirmed)** \u2014 here's the refresh window "
+        }
+      ]
+    },
+    {
+      "trial": 1,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "## Rate Limit Design Considerations\n\nBased on what you've established so far, I need to flag **uncertainty** \u2014 you haven't definitively confirmed the "
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "## Token Refresh Window \u2014 Uncertainty Flag\n\nI need to be precise here: **We have not established your token expiry time definitively.**\n\n**What was me"
+        }
+      ]
+    },
+    {
+      "trial": 1,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design Decision\n\n**Current situation (flagged as uncertain):**\n- Your rate limit: **~50 requests/minute** \u2014 needs vendor verification\n- T"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\n**Current situation (flagged as tentative):**\n- Token expiry: **~24 hours** \u2014 documentation unclear, might be less\n\n## Recomme"
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier in this conversation, design around **~50 requests/minute (unverified, pending vendor confirmation)**.\n\nGiven tha"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier: token lifetime is **~24 hours (tentative; docs unclear, could be shorter)**.\n\nGiven that uncertainty, here's what I"
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "## Rate Limit Design for Retry Logic\n\nYou haven't yet provided vendor-specific rate limit details. I need clarification before recommending thresholds"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "I don't have information about your vendor's token expiration or refresh requirements from our conversation.\n\nWe've discussed:\n- Circuit breaker patte"
+        }
+      ]
+    },
+    {
+      "trial": 2,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit for Retry Logic Design\n\nBased on your earlier note: **approximately 50 requests per minute \u2014 flagged as uncertain, needs vendor verificat"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\nBased on your earlier note: **Token expiry is approximately 24 hours, marked as tentative pending documentation clarification."
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me, you should design around **~50 requests per minute**, but I have to flag this clearly:\n\n**This number is unverified** \u2014 "
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me, the token expiry is **~24 hours, but possibly less** \u2014 you explicitly marked this as tentative because the docs are uncl"
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "condition": "naive_window",
+      "correction_recall": 0.5,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Designing Retry Logic Around Rate Limits\n\n**Critical information needed:** I don't have your vendor's rate limit details from earlier.\n\n\u26a0\ufe0f **You est"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\n**What we established:** Token expiry is ~24 hours (tentative/uncertain)\n\n\u26a0\ufe0f **I cannot recommend a specific refresh window wi"
+        }
+      ]
+    },
+    {
+      "trial": 3,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "## Rate Limit for Retry Logic Design\n\nBased on what we've established:\n\n**Your rate limit: ~50 requests per minute \u2014 flagged as UNCERTAIN, needs vendo"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "## Token Refresh Window\n\nBased on what we established:\n\n**Token expiry: approximately 24 hours \u2014 flagged as TENTATIVE, documentation unclear**\n\n## Rec"
+        }
+      ]
+    },
+    {
+      "trial": 4,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier in this conversation:\n\n- **Rate limit: ~50 requests/minute (unverified, pending vendor confirmation)**\n\nSo design"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Token lifetime: ~24 hours (tentative, docs unclear \u2014 may be less)**\n\nGiven that uncertainty, I'd recommend **n"
+        }
+      ]
+    },
+    {
+      "trial": 4,
+      "condition": "naive_window",
+      "correction_recall": 0.5,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design for Retry Logic\n\n**Based on your earlier information:**\n\nYou mentioned the vendor's rate limit is approximately **50 requests/minu"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\n**I don't have established facts about your token refresh requirements.**\n\nFrom our conversation, we've discussed:\n- Circuit b"
+        }
+      ]
+    },
+    {
+      "trial": 4,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Use the tentative rate limit you identified: ~50 req/min**\n\nHowever, apply these caveats:\n\n**Current status:**\n- Rate limit: ~50 req/min (flagged as"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Token expiry is ~24 hours (tentative) \u2014 refresh window should be 1-2 hours before expiry**\n\n**Reasoning:**\n\nGiven the uncertainty you flagged:\n- Tok"
+        }
+      ]
+    },
+    {
+      "trial": 5,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Rate limit: ~50 requests/minute (UNVERIFIED \u2014 to be confirmed with vendor)**\n\nSo design around **~50 requests/"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Auth token lifetime: ~24 hours (TENTATIVE \u2014 docs unclear, may be shorter; to be confirmed)**\n\nGiven that uncer"
+        }
+      ]
+    },
+    {
+      "trial": 5,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "**Rate Limit Design Considerations**\n\nWithout your vendor's specific rate limit details, I cannot provide an exact figure. However, here's how to dete"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "**Unable to Determine Token Refresh Window**\n\nI don't have sufficient information about your vendor's token specifications to recommend a specific ref"
+        }
+      ]
+    },
+    {
+      "trial": 5,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit for Retry Logic Design\n\nBased on established facts:\n\n**Rate limit: approximately 50 requests per minute \u2014 flagged as uncertain, needs ven"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\nBased on established facts:\n\n**Token expiry: approximately 24 hours \u2014 marked as tentative pending documentation clarification."
+        }
+      ]
+    },
+    {
+      "trial": 6,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Rate limit: ~50 requests/minute (unverified \u2014 pending vendor confirmation)**\n\nSo design provisionally around *"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Auth token lifetime: ~24 hours (tentative \u2014 docs unclear, may be shorter)**\n\nGiven that uncertainty, I'd recom"
+        }
+      ]
+    },
+    {
+      "trial": 6,
+      "condition": "naive_window",
+      "correction_recall": 0.5,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design for Retry Logic\n\nBased on your earlier context: **~50 requests/minute tentative rate limit (needs vendor documentation confirmatio"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\nI need to flag **uncertainty here** \u2014 we haven't established your token expiration details in our conversation.\n\n## What I nee"
+        }
+      ]
+    },
+    {
+      "trial": 6,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design Decision\n\nBased on the information established earlier:\n\n**Your rate limit is approximately 50 requests per minute \u2014 flagged as un"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window Design\n\nBased on information established earlier:\n\n**Token expiry is approximately 24 hours \u2014 marked as tentative, pending docu"
+        }
+      ]
+    },
+    {
+      "trial": 7,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Rate limit: ~50 requests/minute (UNVERIFIED \u2014 pending vendor confirmation)**\n\nSince this is tentative, I'd rec"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Token lifetime: ~24 hours (TENTATIVE \u2014 docs unclear, may be shorter)**\n\nGiven that uncertainty, I wouldn't des"
+        }
+      ]
+    },
+    {
+      "trial": 7,
+      "condition": "naive_window",
+      "correction_recall": 0.5,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "## Rate Limit Design for Retry Logic\n\n**Key question to clarify with your vendor first:**\n\nYou mentioned a tentative ~50 req/min limit, but confirm:\n-"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "## Token Refresh Window \u2014 Cannot Determine Yet\n\n**What we've discussed so far:**\n- Circuit breaker pattern\n- Idempotency and retries\n- Connection pool"
+        }
+      ]
+    },
+    {
+      "trial": 7,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Use the ~50 req/min limit you identified \u2014 flagged as uncertain, needs vendor verification.**\n\nUntil you confirm with the vendor, design conservativ"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Token refresh should be proactive, before the ~24 hour expiry \u2014 but this is tentative pending documentation clarification.**\n\n**Current state (flagg"
+        }
+      ]
+    },
+    {
+      "trial": 8,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier in this conversation:\n\n- **Rate limit: ~50 requests/minute (UNVERIFIED \u2014 needs vendor confirmation)**\n\nSo the hon"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Auth token lifetime: ~24 hours, possibly less (TENTATIVE \u2014 docs unclear, needs verification)**\n\nSo again, the "
+        }
+      ]
+    },
+    {
+      "trial": 8,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "## Rate Limit Design for Retry Logic\n\nYou mentioned **\u224850 req/min rate limit** earlier. Design retry logic around this constraint.\n\n### Analysis of Yo"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "## Token Refresh Window Recommendation\n\n**I don't have established facts about your token expiration time** from our earlier discussion to base this o"
+        }
+      ]
+    },
+    {
+      "trial": 8,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit for Retry Logic Design\n\nBased on what you've established:\n\n**~50 requests per minute \u2014 flagged as uncertain, needs vendor verification**\n"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\nBased on what you've established:\n\n**Token expiry: approximately 24 hours \u2014 flagged as tentative, pending documentation clarif"
+        }
+      ]
+    },
+    {
+      "trial": 9,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier in this conversation:\n\n**Unconfirmed: ~50 requests/minute, pending vendor verification.**\n\nYou mentioned you were"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n**Unconfirmed: token TTL ~24 hours, possibly less \u2014 docs unclear, pending vendor clarification.**\n\nGiven that unce"
+        }
+      ]
+    },
+    {
+      "trial": 9,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Designing Retry Logic Around Rate Limits\n\nYou need to check your vendor's documentation for their specific rate limits. **I don't have this informat"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\nI don't have information about your vendor's token expiration time from our earlier discussion. **This wasn't established yet."
+        }
+      ]
+    },
+    {
+      "trial": 9,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Rate Limit for Retry Logic Design**\n\nBased on our established facts:\n\n- **Your approximate limit**: ~50 requests per minute\n- **Status**: Unverified"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Token Refresh Window**\n\nBased on our established facts:\n\n- **Token expiry**: Approximately 24 hours\n- **Status**: Tentative \u2014 documentation unclear,"
+        }
+      ]
+    },
+    {
+      "trial": 10,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier in this conversation:\n\n- **Rate limit (unverified):** ~50 requests/minute \u2014 needs vendor confirmation.\n\nSo design"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Token TTL (tentative):** ~24 hours per docs, but unclear \u2014 may be shorter. Needs verification.\n\nGiven that ten"
+        }
+      ]
+    },
+    {
+      "trial": 10,
+      "condition": "naive_window",
+      "correction_recall": 0.5,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit for Retry Logic Design\n\n**Your established rate limit:**\n~50 req/min \u26a0\ufe0f (tentative \u2014 verify with vendor)\n\n**Design your retry logic aroun"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\n**I need to flag uncertainty here:** \u26a0\ufe0f\n\nWe haven't established any facts about token refresh in our conversation. You haven't"
+        }
+      ]
+    },
+    {
+      "trial": 10,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "## Rate Limit for Retry Logic Design\n\n**Current status:** Your rate limit is approximately **50 requests per minute**, flagged as **uncertain and requ"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "## Token Refresh Window\n\n**Current status:** Token expiry is approximately **24 hours**, flagged as **tentative pending documentation clarification**."
+        }
+      ]
+    },
+    {
+      "trial": 11,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Rate limit: ~50 requests/minute** *(unverified \u2014 pending confirmation from vendor)*\n\nSo your retry logic shoul"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Token expiry: ~24 hours** *(tentative \u2014 docs unclear, may be shorter)*\n\nGiven that uncertainty, I'd **not** re"
+        }
+      ]
+    },
+    {
+      "trial": 11,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Designing Retry Logic Around Rate Limits\n\n**Need vendor specifics first:**\n\nYou haven't yet established the vendor's rate limit policy. Determine:\n\n"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\n**No token details established yet.**\n\nI need to flag that we haven't discussed:\n\n1. **Token expiration time** \u2014 How long does"
+        }
+      ]
+    },
+    {
+      "trial": 11,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design Decision\n\n**\u26a0\ufe0f Flagged as uncertain**: Your rate limit is **approximately 50 requests per minute** \u2014 this needs vendor verificatio"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\n**\u26a0\ufe0f Flagged as tentative**: Token expiry is **approximately 24 hours** \u2014 documentation is unclear, needs vendor clarification"
+        }
+      ]
+    },
+    {
+      "trial": 12,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier in this conversation:\n\n- **Rate limit: approximately 50 requests per minute** \u2014 flagged as **unverified**, pendin"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Token lifetime: approximately 24 hours, possibly less** \u2014 flagged as **tentative** due to unclear vendor docs."
+        }
+      ]
+    },
+    {
+      "trial": 12,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "**Rate Limit Design \u2014 Key Information Needed**\n\nYou haven't yet provided the vendor's rate limit specification. **I need to flag this as critical miss"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "**Token Refresh Window \u2014 Missing Context**\n\nI need to flag that **we haven't discussed token refresh or authentication timing yet** in our conversatio"
+        }
+      ]
+    },
+    {
+      "trial": 12,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit for Retry Logic Design\n\nBased on our earlier discussion, design around **~50 requests per minute** \u2014 **flagged as uncertain, requires ven"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\nBased on our earlier discussion, token expiry is **approximately 24 hours** \u2014 **flagged as tentative, pending documentation cl"
+        }
+      ]
+    },
+    {
+      "trial": 13,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier in this conversation:\n\n- **Rate limit: ~50 requests/minute (unverified \u2014 pending vendor confirmation)**\n\nSo desig"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Auth token lifetime: ~24 hours (tentative \u2014 docs unclear, may be shorter)**\n\nGiven that uncertainty, I wouldn'"
+        }
+      ]
+    },
+    {
+      "trial": 13,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "**Rate Limit Design: Key Unknowns**\n\nYou haven't yet established the vendor's actual rate limits. Before designing retry logic, you need:\n\n1. **Reques"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "**Token Refresh Window: Insufficient Information**\n\nWe haven't established the vendor's token expiration time, which is the determining factor.\n\n**Wha"
+        }
+      ]
+    },
+    {
+      "trial": 13,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design Decision\n\n**Current status:** You have ~50 requests per minute \u26a0\ufe0f **unverified**\n\n**Before designing retry logic, you MUST verify "
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window Design\n\n**Current status:** Token expiry is approximately 24 hours \u26a0\ufe0f **tentative, needs documentation clarification**\n\n**You c"
+        }
+      ]
+    },
+    {
+      "trial": 14,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier in this conversation:\n\n**Rate limit: ~50 requests per minute (unverified, pending vendor confirmation)**\n\nYou fla"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n**Token lifetime: ~24 hours (tentative; docs unclear, may be shorter)**\n\nYou explicitly asked me to keep this tent"
+        }
+      ]
+    },
+    {
+      "trial": 14,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Designing Retry Logic Around Rate Limits\n\n**Critical information gap:**\nYou haven't yet clarified the vendor's rate limiting details. Before designi"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window \u2014 Information Gap\n\n**I cannot determine this yet** because we haven't discussed token expiration specifics.\n\n**What I need to k"
+        }
+      ]
+    },
+    {
+      "trial": 14,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Rate Limit for Retry Logic Design**\n\nBased on what we've established \u26a0\ufe0f **flagged as uncertain**:\n\nYour rate limit is **approximately 50 requests pe"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Token Refresh Window**\n\nBased on what we established \u26a0\ufe0f **flagged as tentative**:\n\nYour tokens expire in **approximately 24 hours** \u2014 but the docs a"
+        }
+      ]
+    },
+    {
+      "trial": 15,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier in our conversation:\n\n**Rate limit: ~50 requests/minute (unverified, pending vendor confirmation)**\n\nSo until you"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n**Token expiry: ~24 hours (tentative; docs unclear, could be less)**\n\nGiven that uncertainty, I'd recommend **not*"
+        }
+      ]
+    },
+    {
+      "trial": 15,
+      "condition": "naive_window",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Rate Limit Design Consideration:**\n\nBased on facts established in our conversation:\n\n- Your tentative rate limit: **~50 requests/minute** (noted as "
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Token Refresh Window:**\n\nI need to flag uncertainty here. Earlier in our conversation, I noted:\n\n- Token expiry: **~24 hours** (flagged as **tentati"
+        }
+      ]
+    },
+    {
+      "trial": 15,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Rate limit: approximately 50 requests per minute** \u2014 flagged as uncertain, needs vendor verification before implementation.\n\nThis is the constraint "
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Token expiry: approximately 24 hours** \u2014 flagged as tentative, pending documentation clarification.\n\n**Recommended refresh window: ~23 hours**\n\n**Ra"
+        }
+      ]
+    },
+    {
+      "trial": 16,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Rate limit: ~50 requests/minute** *(unverified \u2014 pending vendor confirmation)*\n\nSo design the retry logic arou"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Auth token lifetime: ~24 hours** *(tentative \u2014 docs unclear, could be less)*\n\nGiven that uncertainty, I'd **no"
+        }
+      ]
+    },
+    {
+      "trial": 16,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "## Designing Retry Logic Around Rate Limits\n\nThis depends on information you need to clarify with your vendor:\n\n### Critical Questions to Ask\n\n1. **Wh"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "## Token Refresh Window\n\nI need to clarify: **we haven't discussed token refresh or authentication details yet in our conversation.**\n\nTo recommend a "
+        }
+      ]
+    },
+    {
+      "trial": 16,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Rate Limit Design Consideration**\n\nBased on what you've established:\n- **Your rate limit:** ~50 requests per minute \u2014 **flagged as uncertain, requir"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "**Token Refresh Window**\n\nBased on your established facts:\n- **Token expiry:** ~24 hours \u2014 **flagged as tentative, docs unclear, might be less**\n\n**Re"
+        }
+      ]
+    },
+    {
+      "trial": 17,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier: **~50 requests per minute, tentative \u2014 you flagged this as needing vendor confirmation.**\n\nSo the honest answer "
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier: **token lifetime is roughly 24 hours, tentative \u2014 the docs are unclear and it might be less.**\n\nGiven that uncertai"
+        }
+      ]
+    },
+    {
+      "trial": 17,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design for Retry Logic\n\nBased on your integration, I need to flag an **uncertainty** here:\n\n## What We Know\nYou mentioned your API has a "
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\nI need to flag **significant uncertainty** here:\n\n## What We Haven't Discussed\n\nWe haven't covered token refresh timing in our"
+        }
+      ]
+    },
+    {
+      "trial": 17,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "## Rate Limit Design Decision\n\nBased on what you've established:\n\n**Your rate limit is approximately 50 requests per minute \u2014 flagged as uncertain, ne"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "## Token Refresh Window\n\nBased on your established facts:\n\n**Token expiry is approximately 24 hours \u2014 flagged as tentative, documentation unclear, mig"
+        }
+      ]
+    },
+    {
+      "trial": 18,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me: **~50 requests/minute (unverified \u2014 pending vendor confirmation)**.\n\n### Recommended design targets given that uncertain"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me: the token lifetime is **~24 hours (tentative \u2014 docs unclear, could be less)**.\n\n### Recommended refresh window given that u"
+        }
+      ]
+    },
+    {
+      "trial": 18,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design for Retry Logic\n\n**You need vendor clarification first.** I don't have established facts about their rate limits. Ask them:\n\n1. **"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\n**I cannot determine this from our discussion.** We haven't established facts about your token requirements.\n\nYou need to clar"
+        }
+      ]
+    },
+    {
+      "trial": 18,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "## Rate Limit for Retry Logic\n\n**Your current information:**\n- Approximate limit: **50 requests/minute** (flagged as uncertain, needs vendor verificat"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "## Token Refresh Window\n\n**Your current information:**\n- Token expiry: approximately **24 hours** (flagged as tentative, needs documentation clarifica"
+        }
+      ]
+    },
+    {
+      "trial": 19,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier in this conversation:\n\n**Unverified: ~50 requests/minute (pending vendor confirmation).**\n\nI want to flag this cl"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n**Unverified: auth token lifetime ~24 hours, possibly shorter (docs unclear).**\n\nGiven that uncertainty, here's wh"
+        }
+      ]
+    },
+    {
+      "trial": 19,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design for Retry Logic\n\n**I need clarification \u2014 do you know your vendor's rate limits yet?**\n\nSince this wasn't established in our earli"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window \u2014 Need Clarification\n\n**I don't have this information established in our conversation.**\n\nWe've discussed:\n- Circuit breaker pa"
+        }
+      ]
+    },
+    {
+      "trial": 19,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design Consideration\n\nBased on our earlier conversation, you have:\n\n**Rate limit: approximately 50 requests per minute** \u26a0\ufe0f *uncertain, f"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\nBased on our earlier discussion:\n\n**Token expiry: approximately 24 hours** \u26a0\ufe0f *tentative, needs documentation clarification*\n\n"
+        }
+      ]
+    },
+    {
+      "trial": 20,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier in this conversation:\n\n- **Rate limit: ~50 requests/minute (UNCONFIRMED \u2014 pending vendor verification)**\n\nSo the "
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Token TTL: ~24 hours (TENTATIVE \u2014 docs unclear, could be less)**\n\nGiven that uncertainty, I wouldn't commit to"
+        }
+      ]
+    },
+    {
+      "trial": 20,
+      "condition": "naive_window",
+      "correction_recall": 0.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "## Rate Limit Design for Retry Logic\n\nBased on your earlier mention, you have a **50 req/min limit** from the API vendor. Design around this.\n\n### Key"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "## Token Refresh Window Design\n\nI need to clarify \u2014 **we have not established the token expiration time** in our earlier discussion.\n\n### What We Know"
+        }
+      ]
+    },
+    {
+      "trial": 20,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on our earlier conversation, you established:\n\n**Rate limit: ~50 requests per minute** \u26a0\ufe0f **UNVERIFIED \u2014 needs vendor confirmation**\n\n---\n\n## De"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on our earlier conversation:\n\n**Token expiry: approximately 24 hours** \u26a0\ufe0f **TENTATIVE \u2014 documentation unclear, needs clarification**\n\n---\n\n## Re"
+        }
+      ]
+    },
+    {
+      "trial": 21,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.5,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on the facts on record:\n\n- **Rate limit: ~50 requests/minute (UNVERIFIED \u2014 pending vendor confirmation)**\n- **Token expiry: ~24 hours (TENTATIVE"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": true,
+          "answer": "Based on the facts on record:\n\n- **Token expiry: ~24 hours (TENTATIVE \u2014 docs unclear, may be shorter)**\n\nSo any window I recommend is provisional unti"
+        }
+      ]
+    },
+    {
+      "trial": 21,
+      "condition": "naive_window",
+      "correction_recall": 0.5,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design for Retry Logic\n\n**Your established limit:** ~50 requests/minute (from earlier context)\n\n## Design considerations:\n\n**1. Sustainab"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\n**Established facts:**\n- Token lifetime: ~24 hours (tentative, from earlier context)\n- Rate limit: ~50 req/min\n- Retry budget:"
+        }
+      ]
+    },
+    {
+      "trial": 21,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.5,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit Design Question\n\nBased on our earlier conversation, you mentioned:\n\n**~50 requests per minute \u2014 flagged as uncertain, needs vendor verifi"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": true,
+          "answer": "# Token Refresh Window\n\nBased on what we established earlier:\n\n**Token expiry: approximately 24 hours \u2014 marked as tentative pending documentation clar"
+        }
+      ]
+    },
+    {
+      "trial": 22,
+      "condition": "credence",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.5,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "Based on what you've told me earlier in this conversation:\n\n- **Rate limit: ~50 requests/minute** (unverified \u2014 pending vendor confirmation)\n\nSo the h"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": true,
+          "answer": "Based on what you told me earlier:\n\n- **Auth token lifetime: ~24 hours, possibly less** (tentative \u2014 docs unclear)\n\nGiven that uncertainty, I'd recomm"
+        }
+      ]
+    },
+    {
+      "trial": 22,
+      "condition": "naive_window",
+      "correction_recall": 0.5,
+      "hallucination_rate": 0.5,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": true,
+          "answer": "## Rate Limit Design: Unknown Until Vendor Clarifies\n\n**Critical issue:** You don't yet have confirmed rate limit information from the vendor.\n\n**From"
+        },
+        {
+          "question": 1,
+          "correct": false,
+          "hallucinated": false,
+          "answer": "## Token Refresh Window: Insufficient Information\n\n**Critical gap:** You haven't confirmed the vendor's token expiration time yet.\n\n**From earlier dis"
+        }
+      ]
+    },
+    {
+      "trial": 22,
+      "condition": "baseline",
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "callback_details": [
+        {
+          "question": 0,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Rate Limit for Retry Logic Design\n\nBased on our earlier conversation, you established:\n\n**Rate limit: ~50 requests per minute** \u2014 **flagged as uncer"
+        },
+        {
+          "question": 1,
+          "correct": true,
+          "hallucinated": false,
+          "answer": "# Token Refresh Window\n\nBased on our earlier discussion, your token expiry is:\n\n**~24 hours \u2014 flagged as tentative, documentation unclear**\n\n## Recomm"
+        }
+      ]
+    }
+  ]
+}

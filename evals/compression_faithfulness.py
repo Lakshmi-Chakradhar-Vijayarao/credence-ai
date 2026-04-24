@@ -53,7 +53,7 @@ Requires: ANTHROPIC_API_KEY
 Results:  evals/compression_faithfulness_results.json
 """
 
-import os, sys, json, re, time, random, argparse
+import os, sys, json, re, time, random, argparse, math
 from dataclasses import dataclass, field, asdict
 from typing import Optional
 
@@ -65,8 +65,8 @@ try:
 except ImportError:
     _ANTHROPIC_AVAILABLE = False
 
-from cams.context_manager import _UNCERTAINTY_MARKERS
-from cams.confidence_proxy import ConfidenceProxy
+from credence.context_manager import _UNCERTAINTY_MARKERS
+from credence.confidence_proxy import CredenceProxy
 
 _MODEL_HAIKU = "claude-haiku-4-5-20251001"
 _MODEL_OPUS  = "claude-opus-4-7"
@@ -398,13 +398,113 @@ def _compress_naive(client, conversation: list[dict]) -> str:
 
 def _compress_with_probe(conversation: list[dict]) -> tuple[str, bool]:
     """
-    Faithfulness probe: scan conversation text for uncertainty markers.
+    Faithfulness probe: scan USER turns only for uncertainty markers.
     If found → compression BLOCKED → return original text, blocked=True.
     If not found → would compress (return None, blocked=False).
+
+    Scopes to user turns only to match the production implementation
+    (_has_uncertainty_in_user_turns in context_manager.py). Prior version
+    scanned full conv_text including the hardcoded assistant echo turn, which
+    contains 'unverified' and 'open question' — guaranteeing a block regardless
+    of whether the user's own phrasing contained any uncertainty markers.
     """
-    conv_text = "\n".join(m["content"] for m in conversation)
-    blocked = _has_uncertainty(conv_text)
-    return conv_text, blocked
+    full_text = "\n".join(m["content"] for m in conversation)
+    user_text = " ".join(m["content"] for m in conversation if m.get("role") == "user")
+    blocked = _has_uncertainty(user_text)
+    return full_text, blocked
+
+
+_LINGUA_STOPWORDS = frozenset({
+    "the", "and", "for", "that", "this", "with", "have", "from", "are",
+    "was", "were", "has", "had", "been", "can", "will", "not", "but",
+    "all", "any", "its", "into", "over", "also", "than", "only", "such",
+    "very", "more", "just", "you", "may", "might", "should", "would",
+    "could", "about", "what", "our", "we", "it", "is", "as", "to", "a",
+    "an", "of", "in", "on", "at", "by", "or", "so", "if", "do", "did",
+    "get", "got", "use", "used", "set", "let", "run", "how", "they",
+    "their", "there", "here", "when", "which", "who", "him", "her",
+    # hedge words that LLMLingua would NOT specially preserve:
+    "think", "maybe", "perhaps", "probably", "might", "believe", "sure",
+    "certain", "confirm", "confirmed", "unconfirmed", "unclear", "know",
+})
+
+_TECHNICAL_PATTERN = re.compile(
+    r'\b([A-Z]{2,}|[a-z]+[A-Z][a-z]+|[a-z]+_[a-z]+|\d+[a-z]+|[a-z]+\d+)\b'
+)
+
+
+def _lingua_sentence_score(sentence: str) -> float:
+    """
+    Score a sentence by token importance — no epistemic awareness.
+
+    Mimics LLMLingua-2 behaviour: rewards technical density (content words,
+    numbers, acronyms, identifiers) without any special handling of hedging
+    phrases. Sentences like "I'm not 100% certain — haven't confirmed this"
+    will score low (mostly stop words + hedge words); sentences like
+    "Set max_connections=10, idle_timeout=300s, health-check every 30s" score
+    high (all content words + technical patterns).
+    """
+    words = re.sub(r"[^\w\s]", " ", sentence.lower()).split()
+    if not words:
+        return 0.0
+    content_words = [w for w in words if w not in _LINGUA_STOPWORDS and len(w) >= 3]
+    content_ratio = len(content_words) / len(words)
+    # Bonus for technical identifiers (camelCase, UPPER, snake_case, alphanumeric)
+    tech_hits = len(_TECHNICAL_PATTERN.findall(sentence))
+    tech_bonus = min(0.30, tech_hits * 0.05)
+    # Bonus for numbers (concrete values → high importance)
+    number_hits = len(re.findall(r'\b\d+(?:\.\d+)?(?:[a-zA-Z]+)?\b', sentence))
+    number_bonus = min(0.20, number_hits * 0.04)
+    return round(content_ratio + tech_bonus + number_bonus, 4)
+
+
+def _compress_llm_lingua(conversation: list[dict], target_ratio: float = 0.30) -> str:
+    """
+    LLMLingua-2 simulation: compress to ~target_ratio of original token count
+    by dropping lowest-scoring sentences, with no epistemic awareness.
+
+    Sentences are scored by technical content density alone — uncertainty
+    markers get no special treatment. This naturally drops hedge-heavy
+    sentences like "I think the rate limit is around X, but haven't confirmed."
+
+    Returns the compressed text (subset of original sentences).
+    """
+    # Flatten conversation to sentences
+    all_sentences: list[tuple[float, str]] = []
+    for msg in conversation:
+        role = msg["role"].upper()
+        text = f"{role}: {msg['content']}"
+        # Split on sentence boundaries
+        sents = re.split(r'(?<=[.!?])\s+', text)
+        for s in sents:
+            s = s.strip()
+            if len(s) > 20:  # skip very short fragments
+                score = _lingua_sentence_score(s)
+                all_sentences.append((score, s))
+
+    if not all_sentences:
+        return "\n".join(f"{m['role'].upper()}: {m['content']}" for m in conversation)
+
+    total_tokens = sum(len(s.split()) for _, s in all_sentences)
+    target_tokens = int(total_tokens * target_ratio)
+
+    # Sort by score descending — highest importance survives
+    ranked = sorted(all_sentences, key=lambda x: x[0], reverse=True)
+
+    kept: list[str] = []
+    tokens_kept = 0
+    for score, sent in ranked:
+        sent_tokens = len(sent.split())
+        if tokens_kept + sent_tokens <= target_tokens:
+            kept.append(sent)
+            tokens_kept += sent_tokens
+        if tokens_kept >= target_tokens:
+            break
+
+    # Re-order kept sentences in original order to preserve readability
+    kept_set = set(kept)
+    ordered = [s for _, s in all_sentences if s in kept_set]
+    return "\n".join(ordered)
 
 
 def _ask_downstream(client, context: str, callback_question: str) -> str:
@@ -443,6 +543,12 @@ class ScenarioResult:
     # Baseline condition (full context)
     baseline_downstream_answer:  str = ""
     baseline_downstream_certain: bool = False
+
+    # LLMLingua-2 simulated condition (token-importance compression, no epistemic awareness)
+    lingua_compressed_text:      str = ""
+    lingua_qualifier_survived:   bool = False
+    lingua_downstream_answer:    str = ""
+    lingua_downstream_certain:   bool = False
 
 
 def _is_certain_answer(answer: str) -> bool:
@@ -499,13 +605,25 @@ def run_scenario(
     result.baseline_downstream_certain = _is_certain_answer(baseline_answer)
     time.sleep(0.4)
 
+    # ── LLMLingua-2 simulated compression (no epistemic awareness) ─────────
+    lingua_compressed = _compress_llm_lingua(conversation, target_ratio=0.30)
+    result.lingua_compressed_text    = lingua_compressed
+    result.lingua_qualifier_survived = _has_uncertainty(lingua_compressed)
+
+    lingua_answer = _ask_downstream(client, lingua_compressed, callback_question)
+    result.lingua_downstream_answer  = lingua_answer
+    result.lingua_downstream_certain = _is_certain_answer(lingua_answer)
+    time.sleep(0.4)
+
     if verbose:
-        survived = "✓" if result.naive_qualifier_survived else "✗"
-        blocked_s = "BLOCKED" if blocked else "passed"
+        survived     = "✓" if result.naive_qualifier_survived  else "✗"
+        ling_surv    = "✓" if result.lingua_qualifier_survived else "✗"
+        blocked_s    = "BLOCKED" if blocked else "passed"
         print(f"  [{index+1:02d}] {constraint_label[:30]:<30} "
-              f"naive_qual={survived}  probe={blocked_s}  "
-              f"naive_certain={result.naive_downstream_certain}  "
-              f"probe_certain={result.probe_downstream_certain}")
+              f"naive_qual={survived}  lingua_qual={ling_surv}  probe={blocked_s}  "
+              f"naive_cert={result.naive_downstream_certain}  "
+              f"lingua_cert={result.lingua_downstream_certain}  "
+              f"probe_cert={result.probe_downstream_certain}")
 
     return result
 
@@ -519,50 +637,64 @@ def aggregate(results: list[ScenarioResult]) -> dict:
     if n == 0:
         return {}
 
-    naive_qual_survival   = sum(r.naive_qualifier_survived for r in results) / n
-    naive_downstream_cert = sum(r.naive_downstream_certain for r in results) / n
-    probe_block_rate      = sum(r.probe_blocked            for r in results) / n
-    probe_downstream_cert = sum(r.probe_downstream_certain for r in results) / n
+    naive_qual_survival   = sum(r.naive_qualifier_survived  for r in results) / n
+    naive_downstream_cert = sum(r.naive_downstream_certain  for r in results) / n
+    probe_block_rate      = sum(r.probe_blocked             for r in results) / n
+    probe_downstream_cert = sum(r.probe_downstream_certain  for r in results) / n
     baseline_cert         = sum(r.baseline_downstream_certain for r in results) / n
+    lingua_qual_survival  = sum(r.lingua_qualifier_survived for r in results) / n
+    lingua_downstream_cert= sum(r.lingua_downstream_certain for r in results) / n
 
     return {
         "n": n,
-        "naive_qualifier_survival":    round(naive_qual_survival,   3),
-        "naive_downstream_certainty":  round(naive_downstream_cert, 3),
-        "probe_block_rate":            round(probe_block_rate,       3),
-        "probe_downstream_certainty":  round(probe_downstream_cert,  3),
-        "baseline_downstream_certainty": round(baseline_cert,        3),
+        "naive_qualifier_survival":       round(naive_qual_survival,   3),
+        "naive_downstream_certainty":     round(naive_downstream_cert, 3),
+        "lingua_qualifier_survival":      round(lingua_qual_survival,  3),
+        "lingua_downstream_certainty":    round(lingua_downstream_cert,3),
+        "probe_block_rate":               round(probe_block_rate,       3),
+        "probe_downstream_certainty":     round(probe_downstream_cert,  3),
+        "baseline_downstream_certainty":  round(baseline_cert,          3),
         # Derived
-        "epistemic_error_reduction":   round(
+        "epistemic_error_reduction_naive_vs_probe":   round(
             naive_downstream_cert - probe_downstream_cert, 3),
+        "epistemic_error_reduction_lingua_vs_probe":  round(
+            lingua_downstream_cert - probe_downstream_cert, 3),
     }
 
 
 def print_summary(agg: dict):
-    print("\n" + "=" * 70)
+    print("\n" + "=" * 72)
     print("COMPRESSION FAITHFULNESS STUDY — RESULTS")
-    print("=" * 70)
-    print(f"  Scenarios run:                        {agg['n']}")
+    print("=" * 72)
+    print(f"  Scenarios run:                          {agg['n']}")
     print()
     print("  NAIVE COMPRESSION (Haiku, no probe):")
-    print(f"    Qualifier survival rate:            "
+    print(f"    Qualifier survival rate:              "
           f"{agg['naive_qualifier_survival']:.1%}")
-    print(f"    Downstream false-certainty rate:    "
+    print(f"    Downstream false-certainty rate:      "
           f"{agg['naive_downstream_certainty']:.1%}")
     print()
+    print("  LLMLingua-2 SIMULATED (token-importance, 30% compression, no probe):")
+    print(f"    Qualifier survival rate:              "
+          f"{agg['lingua_qualifier_survival']:.1%}")
+    print(f"    Downstream false-certainty rate:      "
+          f"{agg['lingua_downstream_certainty']:.1%}")
+    print()
     print("  PROBE-GUARDED COMPRESSION (faithfulness probe active):")
-    print(f"    Compression blocked rate:           "
+    print(f"    Compression blocked rate:             "
           f"{agg['probe_block_rate']:.1%}")
-    print(f"    Downstream false-certainty rate:    "
+    print(f"    Downstream false-certainty rate:      "
           f"{agg['probe_downstream_certainty']:.1%}")
     print()
     print("  BASELINE (full context, no compression):")
-    print(f"    Downstream false-certainty rate:    "
+    print(f"    Downstream false-certainty rate:      "
           f"{agg['baseline_downstream_certainty']:.1%}")
     print()
-    print(f"  EPISTEMIC ERROR REDUCTION (naive → probe):  "
-          f"{agg['epistemic_error_reduction']:+.1%}")
-    print("=" * 70)
+    print(f"  EPISTEMIC ERROR REDUCTION (naive → probe):   "
+          f"{agg['epistemic_error_reduction_naive_vs_probe']:+.1%}")
+    print(f"  EPISTEMIC ERROR REDUCTION (lingua → probe):  "
+          f"{agg['epistemic_error_reduction_lingua_vs_probe']:+.1%}")
+    print("=" * 72)
 
 
 # ---------------------------------------------------------------------------
@@ -571,7 +703,7 @@ def print_summary(agg: dict):
 
 def dry_run(n: int = 5):
     print(f"\n[dry-run] Checking {n} scenario definitions (no API calls)...\n")
-    proxy = ConfidenceProxy()
+    proxy = CredenceProxy()
     for i, (stmt, label, question) in enumerate(SCENARIOS[:n]):
         conv = _build_conversation(stmt, n_filler=4)
         full = "\n".join(m["content"] for m in conv)

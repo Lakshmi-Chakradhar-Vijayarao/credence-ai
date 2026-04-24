@@ -8,147 +8,147 @@
           "question": "I'm researching the Apollo program. The Saturn V rocket had ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 818
+          "tokens_in_context": 845
         },
         {
           "turn": 2,
           "question": "I think the first spacewalk lasted roughly 12 minutes \u2014 I'm ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 1586
+          "tokens_in_context": 1612
         },
         {
           "turn": 3,
           "question": "Neil Armstrong's first words on the Moon were: 'That's one s",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 2465
+          "tokens_in_context": 2532
         },
         {
           "turn": 4,
           "question": "I believe the Apollo 1 fire occurred in January 1967, though",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3210
+          "tokens_in_context": 3248
         },
         {
           "turn": 5,
           "question": "The Lunar Module was named Eagle for the Apollo 11 mission.",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3990
+          "tokens_in_context": 3992
         },
         {
           "turn": 6,
           "question": "What was the thrust of the Saturn V rocket at liftoff?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 4514
+          "tokens_in_context": 4325
         },
         {
           "turn": 7,
           "question": "What is the speed of light in a vacuum?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5312
+          "tokens_in_context": 5135
         },
         {
           "turn": 8,
           "question": "Who wrote the Federalist Papers?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 6057
+          "tokens_in_context": 5890
         },
         {
           "turn": 9,
           "question": "What is the capital of Australia?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 6873
+          "tokens_in_context": 6714
         },
         {
           "turn": 10,
           "question": "What is the boiling point of nitrogen?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 7517
+          "tokens_in_context": 7407
         },
         {
           "turn": 11,
           "question": "What uncertain fact did we note about the first spacewalk?",
           "recall_score": 0.75,
           "is_callback": true,
-          "tokens_in_context": 7931
+          "tokens_in_context": 7853
         },
         {
           "turn": 12,
           "question": "What is the difference between RAM and ROM?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 8649
+          "tokens_in_context": 8589
         },
         {
           "turn": 13,
           "question": "Who invented the telephone?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 9376
+          "tokens_in_context": 9348
         },
         {
           "turn": 14,
           "question": "What is the Pythagorean theorem?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 10054
+          "tokens_in_context": 10057
         },
         {
           "turn": 15,
           "question": "What is the tallest mountain on Earth?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 10656
+          "tokens_in_context": 10727
         },
         {
           "turn": 16,
           "question": "What were Neil Armstrong's exact first words on the Moon?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 11476
+          "tokens_in_context": 11562
         },
         {
           "turn": 17,
           "question": "What is photosynthesis?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 12101
+          "tokens_in_context": 12241
         },
         {
           "turn": 18,
           "question": "What is the chemical formula for table salt?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 12732
+          "tokens_in_context": 12902
         },
         {
           "turn": 19,
           "question": "Who painted the Mona Lisa?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 13366
+          "tokens_in_context": 13586
         },
         {
           "turn": 20,
           "question": "What is a black hole?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 14165
+          "tokens_in_context": 14398
         },
         {
           "turn": 21,
           "question": "What uncertain fact did we establish about the Apollo 1 fire",
           "recall_score": 0.75,
           "is_callback": true,
-          "tokens_in_context": 14662
+          "tokens_in_context": 14883
         }
       ],
       "callback_recall_by_turn": {
@@ -158,7 +158,7 @@
         "21": 0.75
       },
       "mean_callback_recall": 0.875,
-      "total_tokens": 64411,
+      "total_tokens": 63507,
       "drift_activations": 0
     },
     {
@@ -169,147 +169,147 @@
           "question": "I'm researching the Apollo program. The Saturn V rocket had ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 803
+          "tokens_in_context": 818
         },
         {
           "turn": 2,
           "question": "I think the first spacewalk lasted roughly 12 minutes \u2014 I'm ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 1555
+          "tokens_in_context": 1616
         },
         {
           "turn": 3,
           "question": "Neil Armstrong's first words on the Moon were: 'That's one s",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 2442
+          "tokens_in_context": 2504
         },
         {
           "turn": 4,
           "question": "I believe the Apollo 1 fire occurred in January 1967, though",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3216
+          "tokens_in_context": 3255
         },
         {
           "turn": 5,
           "question": "The Lunar Module was named Eagle for the Apollo 11 mission.",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3979
+          "tokens_in_context": 4040
         },
         {
           "turn": 6,
           "question": "What was the thrust of the Saturn V rocket at liftoff?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 4280
+          "tokens_in_context": 4381
         },
         {
           "turn": 7,
           "question": "What is the speed of light in a vacuum?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5038
+          "tokens_in_context": 5146
         },
         {
           "turn": 8,
           "question": "Who wrote the Federalist Papers?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4962
+          "tokens_in_context": 5036
         },
         {
           "turn": 9,
           "question": "What is the capital of Australia?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5018
+          "tokens_in_context": 5044
         },
         {
           "turn": 10,
           "question": "What is the boiling point of nitrogen?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4849
+          "tokens_in_context": 4832
         },
         {
           "turn": 11,
           "question": "What uncertain fact did we note about the first spacewalk?",
           "recall_score": 0.5,
           "is_callback": true,
-          "tokens_in_context": 4806
+          "tokens_in_context": 4737
         },
         {
           "turn": 12,
           "question": "What is the difference between RAM and ROM?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4764
+          "tokens_in_context": 4670
         },
         {
           "turn": 13,
           "question": "Who invented the telephone?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5185
+          "tokens_in_context": 5044
         },
         {
           "turn": 14,
           "question": "What is the Pythagorean theorem?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5117
+          "tokens_in_context": 4998
         },
         {
           "turn": 15,
           "question": "What is the tallest mountain on Earth?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5007
+          "tokens_in_context": 4894
         },
         {
           "turn": 16,
           "question": "What were Neil Armstrong's exact first words on the Moon?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 5019
+          "tokens_in_context": 4872
         },
         {
           "turn": 17,
           "question": "What is photosynthesis?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4975
+          "tokens_in_context": 4833
         },
         {
           "turn": 18,
           "question": "What is the chemical formula for table salt?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4876
+          "tokens_in_context": 4789
         },
         {
           "turn": 19,
           "question": "Who painted the Mona Lisa?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4800
+          "tokens_in_context": 4683
         },
         {
           "turn": 20,
           "question": "What is a black hole?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4895
+          "tokens_in_context": 4743
         },
         {
           "turn": 21,
           "question": "What uncertain fact did we establish about the Apollo 1 fire",
           "recall_score": 0.5,
           "is_callback": true,
-          "tokens_in_context": 4860
+          "tokens_in_context": 4694
         }
       ],
       "callback_recall_by_turn": {
@@ -319,25 +319,25 @@
         "21": 0.5
       },
       "mean_callback_recall": 0.75,
-      "total_tokens": 35465,
+      "total_tokens": 35334,
       "drift_activations": 0
     },
     {
-      "condition": "cams",
+      "condition": "credence",
       "turn_logs": [
         {
           "turn": 1,
           "question": "I'm researching the Apollo program. The Saturn V rocket had ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 825
+          "tokens_in_context": 804
         },
         {
           "turn": 2,
           "question": "I think the first spacewalk lasted roughly 12 minutes \u2014 I'm ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 1645
+          "tokens_in_context": 1615
         },
         {
           "turn": 3,
@@ -351,136 +351,136 @@
           "question": "I believe the Apollo 1 fire occurred in January 1967, though",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3269
+          "tokens_in_context": 3290
         },
         {
           "turn": 5,
           "question": "The Lunar Module was named Eagle for the Apollo 11 mission.",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4044
+          "tokens_in_context": 4088
         },
         {
           "turn": 6,
           "question": "What was the thrust of the Saturn V rocket at liftoff?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 4222
+          "tokens_in_context": 4503
         },
         {
           "turn": 7,
           "question": "What is the speed of light in a vacuum?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4885
+          "tokens_in_context": 5248
         },
         {
           "turn": 8,
           "question": "Who wrote the Federalist Papers?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5629
+          "tokens_in_context": 6015
         },
         {
           "turn": 9,
           "question": "What is the capital of Australia?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 6332
+          "tokens_in_context": 6709
         },
         {
           "turn": 10,
           "question": "What is the boiling point of nitrogen?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 7017
+          "tokens_in_context": 7397
         },
         {
           "turn": 11,
           "question": "What uncertain fact did we note about the first spacewalk?",
           "recall_score": 0.75,
           "is_callback": true,
-          "tokens_in_context": 7386
+          "tokens_in_context": 8007
         },
         {
           "turn": 12,
           "question": "What is the difference between RAM and ROM?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 8108
+          "tokens_in_context": 8743
         },
         {
           "turn": 13,
           "question": "Who invented the telephone?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 8875
+          "tokens_in_context": 9512
         },
         {
           "turn": 14,
           "question": "What is the Pythagorean theorem?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 9566
+          "tokens_in_context": 10203
         },
         {
           "turn": 15,
           "question": "What is the tallest mountain on Earth?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 10227
+          "tokens_in_context": 10850
         },
         {
           "turn": 16,
           "question": "What were Neil Armstrong's exact first words on the Moon?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 10180
+          "tokens_in_context": 11677
         },
         {
           "turn": 17,
           "question": "What is photosynthesis?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 10171
+          "tokens_in_context": 12306
         },
         {
           "turn": 18,
           "question": "What is the chemical formula for table salt?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 10121
+          "tokens_in_context": 12245
         },
         {
           "turn": 19,
           "question": "Who painted the Mona Lisa?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 10765
+          "tokens_in_context": 12918
         },
         {
           "turn": 20,
           "question": "What is a black hole?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 11594
+          "tokens_in_context": 13769
         },
         {
           "turn": 21,
           "question": "What uncertain fact did we establish about the Apollo 1 fire",
-          "recall_score": 0.75,
+          "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 12365
+          "tokens_in_context": 13689
         }
       ],
       "callback_recall_by_turn": {
         "6": 1.0,
         "11": 0.75,
         "16": 1.0,
-        "21": 0.75
+        "21": 1.0
       },
-      "mean_callback_recall": 0.875,
-      "total_tokens": 57542,
+      "mean_callback_recall": 0.9375,
+      "total_tokens": 63063,
       "drift_activations": 0
     },
     {
@@ -491,157 +491,157 @@
           "question": "I'm researching the Apollo program. The Saturn V rocket had ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 847
+          "tokens_in_context": 828
         },
         {
           "turn": 2,
           "question": "I think the first spacewalk lasted roughly 12 minutes \u2014 I'm ",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 1678
+          "tokens_in_context": 1644
         },
         {
           "turn": 3,
           "question": "Neil Armstrong's first words on the Moon were: 'That's one s",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 2587
+          "tokens_in_context": 2545
         },
         {
           "turn": 4,
           "question": "I believe the Apollo 1 fire occurred in January 1967, though",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3333
+          "tokens_in_context": 3282
         },
         {
           "turn": 5,
           "question": "The Lunar Module was named Eagle for the Apollo 11 mission.",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4100
+          "tokens_in_context": 4006
         },
         {
           "turn": 6,
           "question": "What was the thrust of the Saturn V rocket at liftoff?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 3605
+          "tokens_in_context": 4436
         },
         {
           "turn": 7,
           "question": "What is the speed of light in a vacuum?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3664
+          "tokens_in_context": 3500
         },
         {
           "turn": 8,
           "question": "Who wrote the Federalist Papers?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4396
+          "tokens_in_context": 4230
         },
         {
           "turn": 9,
           "question": "What is the capital of Australia?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5210
+          "tokens_in_context": 4972
         },
         {
           "turn": 10,
           "question": "What is the boiling point of nitrogen?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 5902
+          "tokens_in_context": 5598
         },
         {
           "turn": 11,
           "question": "What uncertain fact did we note about the first spacewalk?",
-          "recall_score": 1.0,
+          "recall_score": 0.75,
           "is_callback": true,
-          "tokens_in_context": 6443
+          "tokens_in_context": 6047
         },
         {
           "turn": 12,
           "question": "What is the difference between RAM and ROM?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 7185
+          "tokens_in_context": 6783
         },
         {
           "turn": 13,
           "question": "Who invented the telephone?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 7929
+          "tokens_in_context": 7498
         },
         {
           "turn": 14,
           "question": "What is the Pythagorean theorem?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 8608
+          "tokens_in_context": 8211
         },
         {
           "turn": 15,
           "question": "What is the tallest mountain on Earth?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 6783
+          "tokens_in_context": 6476
         },
         {
           "turn": 16,
           "question": "What were Neil Armstrong's exact first words on the Moon?",
           "recall_score": 1.0,
           "is_callback": true,
-          "tokens_in_context": 7161
+          "tokens_in_context": 6834
         },
         {
           "turn": 17,
           "question": "What is photosynthesis?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 7787
+          "tokens_in_context": 7465
         },
         {
           "turn": 18,
           "question": "What is the chemical formula for table salt?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 6923
+          "tokens_in_context": 6644
         },
         {
           "turn": 19,
           "question": "Who painted the Mona Lisa?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 3468
+          "tokens_in_context": 3242
         },
         {
           "turn": 20,
           "question": "What is a black hole?",
           "recall_score": 0.0,
           "is_callback": false,
-          "tokens_in_context": 4286
+          "tokens_in_context": 4044
         },
         {
           "turn": 21,
           "question": "What uncertain fact did we establish about the Apollo 1 fire",
-          "recall_score": 0.25,
+          "recall_score": 0.75,
           "is_callback": true,
-          "tokens_in_context": 3755
+          "tokens_in_context": 3367
         }
       ],
       "callback_recall_by_turn": {
         "6": 1.0,
-        "11": 1.0,
+        "11": 0.75,
         "16": 1.0,
-        "21": 0.25
+        "21": 0.75
       },
-      "mean_callback_recall": 0.8125,
-      "total_tokens": 44487,
+      "mean_callback_recall": 0.875,
+      "total_tokens": 44099,
       "drift_activations": 0
     }
   ],
@@ -654,106 +654,28 @@
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "Exponential backoff is a retry strategy where the wait time between successive r"
+          "answer": "Exponential backoff is a retry strategy where the wait time between retries grow"
         },
         {
           "turn": 6,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "**429 Too Many Requests** is the standard HTTP status code for rate limiting.\n\nK"
+          "answer": "HTTP **429 Too Many Requests** indicates rate limiting.\n\nKey details for your im"
         },
         {
           "turn": 7,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "**Access tokens** and **refresh tokens** serve complementary roles in OAuth 2.0 "
+          "answer": "**Access tokens** and **refresh tokens** serve distinct roles in OAuth-style aut"
         },
         {
           "turn": 8,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "The **circuit breaker pattern** prevents an application from repeatedly attempti"
-        },
-        {
-          "turn": 9,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**Idempotency** means an operation produces the same result whether performed on"
-        },
-        {
-          "turn": 10,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**Connection pooling** reuses a set of pre-established network connections rathe"
-        },
-        {
-          "turn": 11,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "The **`Retry-After`** header tells the client how long to wait before making ano"
-        },
-        {
-          "turn": 12,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "A **webhook** is an HTTP callback: instead of your application polling an extern"
-        },
-        {
-          "turn": 13,
-          "is_callback": true,
-          "correct_recall": true,
-          "hallucinated": false,
-          "answer": "Based on what you established earlier: **approximately 50 requests per minute** \u2014 but this was flagged as **uncertain an"
-        },
-        {
-          "turn": 14,
-          "is_callback": true,
-          "correct_recall": true,
-          "hallucinated": false,
-          "answer": "Based on what you established earlier: token expiry is **approximately 24 hours**, flagged as **tentative** because the "
-        }
-      ],
-      "correction_recall": 1.0,
-      "hallucination_rate": 0.0,
-      "tokens_used": 25700
-    },
-    {
-      "condition": "naive_window",
-      "needle_logs": [
-        {
-          "turn": 5,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "Exponential backoff is a retry strategy where the delay between retries grows ex"
-        },
-        {
-          "turn": 6,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "HTTP **429 Too Many Requests** indicates rate limiting.\n\nWhen you receive a 429,"
-        },
-        {
-          "turn": 7,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "**Access tokens** and **refresh tokens** serve different roles in OAuth 2.0 and "
-        },
-        {
-          "turn": 8,
-          "is_callback": false,
-          "correct_recall": false,
-          "hallucinated": false,
-          "answer": "The **circuit breaker pattern** is a resilience mechanism that prevents an appli"
+          "answer": "A **circuit breaker** is a resilience pattern that prevents an application from "
         },
         {
           "turn": 9,
@@ -767,7 +689,85 @@
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "**Connection pooling** is the practice of maintaining a reusable set of open con"
+          "answer": "**Connection pooling** is the practice of maintaining a reusable set of open net"
+        },
+        {
+          "turn": 11,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "The **Retry-After** header tells the client how long to wait before making anoth"
+        },
+        {
+          "turn": 12,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "A **webhook** is an HTTP callback: instead of your application polling an extern"
+        },
+        {
+          "turn": 13,
+          "is_callback": true,
+          "correct_recall": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier: **approximately 50 requests per minute** \u2014 but this was flagged as uncertain and need"
+        },
+        {
+          "turn": 14,
+          "is_callback": true,
+          "correct_recall": true,
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier: **token expiry is approximately 24 hours**, marked as tentative pending documentation"
+        }
+      ],
+      "correction_recall": 1.0,
+      "hallucination_rate": 0.0,
+      "tokens_used": 25031
+    },
+    {
+      "condition": "naive_window",
+      "needle_logs": [
+        {
+          "turn": 5,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "Exponential backoff is a retry strategy where the wait time between retries incr"
+        },
+        {
+          "turn": 6,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**429 Too Many Requests** is the standard HTTP status code for rate limiting.\n\n*"
+        },
+        {
+          "turn": 7,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**Access tokens** and **refresh tokens** serve complementary roles in OAuth-styl"
+        },
+        {
+          "turn": 8,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "The **circuit breaker pattern** prevents a client from repeatedly calling a fail"
+        },
+        {
+          "turn": 9,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**Idempotency** means an operation produces the same result whether executed onc"
+        },
+        {
+          "turn": 10,
+          "is_callback": false,
+          "correct_recall": false,
+          "hallucinated": false,
+          "answer": "**Connection pooling** is the practice of maintaining a cache of reusable open c"
         },
         {
           "turn": 11,
@@ -781,64 +781,64 @@
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "A **webhook** is an HTTP callback: instead of your system repeatedly polling ano"
+          "answer": "A **webhook** is an HTTP callback: a server sends an HTTP request (usually POST)"
         },
         {
           "turn": 13,
           "is_callback": true,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "I don't have a specific rate limit established for your integration \u2014 that hasn't been discussed in our conversation so "
+          "answer": "I don't have that information \u2014 no rate limit has been established in our conversation so far. You haven't shared the ta"
         },
         {
           "turn": 14,
           "is_callback": true,
           "correct_recall": false,
-          "hallucinated": true,
-          "answer": "We haven't discussed a token refresh window in this conversation. The topics we've covered are:\n\n1. Circuit breaker patt"
+          "hallucinated": false,
+          "answer": "I don't have that information \u2014 we haven't discussed token refresh, authentication, or token lifetimes in this conversat"
         }
       ],
       "correction_recall": 0.0,
-      "hallucination_rate": 0.5,
-      "tokens_used": 20494
+      "hallucination_rate": 0.0,
+      "tokens_used": 22484
     },
     {
-      "condition": "cams",
+      "condition": "credence",
       "needle_logs": [
         {
           "turn": 5,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "**Exponential backoff** is a retry strategy where the wait time between retry at"
+          "answer": "Exponential backoff is a retry strategy where the wait time between attempts gro"
         },
         {
           "turn": 6,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "**HTTP 429 Too Many Requests** is the standard status code for rate limiting (de"
+          "answer": "**`429 Too Many Requests`** is the standard HTTP status code for rate limiting.\n"
         },
         {
           "turn": 7,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "**Access tokens** and **refresh tokens** are both credentials, but they serve di"
+          "answer": "Good question \u2014 this distinction matters for how you implement your token refres"
         },
         {
           "turn": 8,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "The **circuit breaker pattern** is a resilience pattern that stops your system f"
+          "answer": "The **circuit breaker pattern** is a resilience technique that stops your system"
         },
         {
           "turn": 9,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "**Idempotency** means an operation produces the same result whether it's perform"
+          "answer": "**Idempotency** means that performing an operation multiple times has the same e"
         },
         {
           "turn": 10,
@@ -852,33 +852,33 @@
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "The **`Retry-After`** HTTP header tells the client how long to wait before makin"
+          "answer": "The **`Retry-After`** header is a server's way of telling the client *how long t"
         },
         {
           "turn": 12,
           "is_callback": false,
           "correct_recall": false,
           "hallucinated": false,
-          "answer": "A **webhook** is a mechanism where a server sends an HTTP request to *your* appl"
+          "answer": "A **webhook** is a mechanism where a server makes an HTTP request *to your appli"
         },
         {
           "turn": 13,
           "is_callback": true,
           "correct_recall": true,
           "hallucinated": false,
-          "answer": "Based on what you told me earlier:\n\n- **Rate limit: ~50 requests/minute (UNVERIFIED \u2014 pending vendor confirmation)**\n\nSo"
+          "answer": "Based on what you've told me earlier:\n\n- **Rate limit: ~50 requests/minute (UNVERIFIED \u2014 pending vendor confirmation)**\n"
         },
         {
           "turn": 14,
           "is_callback": true,
           "correct_recall": true,
-          "hallucinated": true,
-          "answer": "Based on what you told me earlier:\n\n- **Token lifetime: ~24 hours (TENTATIVE \u2014 docs unclear, could be less)**\n\nGiven tha"
+          "hallucinated": false,
+          "answer": "Based on what you told me earlier:\n\n- **Auth token lifetime: ~24 hours (TENTATIVE \u2014 docs unclear, could be less)**\n\nGive"
         }
       ],
       "correction_recall": 1.0,
-      "hallucination_rate": 0.5,
-      "tokens_used": 46050
+      "hallucination_rate": 0.0,
+      "tokens_used": 45639
     }
   ],
   "E7": [
@@ -900,7 +900,7 @@
       ],
       "chain_complete": true,
       "hops_recalled": 3,
-      "tokens_used": 14726
+      "tokens_used": 14732
     },
     {
       "condition": "naive_window",
@@ -920,10 +920,10 @@
       ],
       "chain_complete": false,
       "hops_recalled": 0,
-      "tokens_used": 13777
+      "tokens_used": 13791
     },
     {
-      "condition": "cams",
+      "condition": "credence",
       "hop_logs": [
         {
           "hop_id": 1,
@@ -940,7 +940,7 @@
       ],
       "chain_complete": true,
       "hops_recalled": 3,
-      "tokens_used": 34258
+      "tokens_used": 34257
     }
   ],
   "E1": [
@@ -1006,65 +1006,65 @@
         {
           "question": "What was the exact original error and which file and line number did it occur on?",
           "recall_score": 1.0,
-          "answer": "From the established facts:\n\n- **Exact error:** `RuntimeError: dictionary changed size during iteration`\n- **File:** `payment_processor.py`\n- **Line:*"
+          "answer": "From my tracked context:\n\n**Original error:**\n- `RuntimeError: dictionary changed size during iteration`\n- File: `payment_processor.py`\n- Line: 147\n- "
         },
         {
           "question": "What two uncertain hypotheses did we have about the root cause?",
-          "recall_score": 0.8333333333333334,
-          "answer": "From the established facts, with the uncertainty flag preserved exactly as you stated it:\n\n**Hypotheses (uncertainty flag: genuinely unsure which, cou"
+          "recall_score": 1.0,
+          "answer": "From my tracked context, your two hypotheses \u2014 both flagged by you as uncertain (\"genuinely not sure\"):\n\n1. *Possibly* a threading issue with the GIL "
         },
         {
           "question": "What fix did we try and what happened after we deployed it?",
           "recall_score": 1.0,
-          "answer": "From the established facts:\n\n**Attempted fix:**\n- Wrapped iteration with `list(self.pending_transactions.items())` to snapshot first\n- Deployed yester"
+          "answer": "From my tracked context:\n\n**Attempted fix:**\n- Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot before iteratin"
         }
       ],
-      "mean_recall": 0.9444444444444445,
-      "tokens_used": 37867
+      "mean_recall": 1.0,
+      "tokens_used": 44715
     },
     {
       "condition": "naive_window",
       "callback_logs": [
         {
           "question": "What was the exact original error and which file and line number did it occur on?",
-          "recall_score": 1.0,
-          "answer": "**Original error (from established facts):**\n\n- **Error:** `RuntimeError: dictionary changed size during iteration`\n- **File/line:** `payment_processo"
+          "recall_score": 0.4,
+          "answer": "I don't have that information. In our session you described:\n\n- **Error type:** `RuntimeError: dictionary changed size during iteration`\n- **Affected "
         },
         {
           "question": "What two uncertain hypotheses did we have about the root cause?",
-          "recall_score": 0.3333333333333333,
-          "answer": "Looking back at our discussion, I need to flag something: **we didn't explicitly establish two uncertain hypotheses about the root cause.**\n\nWhat was "
+          "recall_score": 0.16666666666666666,
+          "answer": "I don't have two uncertain hypotheses on record from this session. Looking back at what we actually established:\n\n## What was stated as fact / strong "
         },
         {
           "question": "What fix did we try and what happened after we deployed it?",
           "recall_score": 1.0,
-          "answer": "**Attempted fix #1 (deployed yesterday):**\n\n- **Change:** Wrapped the iteration with `list(self.pending_transactions.items())` in `process_pending` (`"
+          "answer": "## Fix attempted\n\nWrapped the iteration with `list(self.pending_transactions.items())` to iterate over a snapshot instead of the live dict. Deployed y"
         }
       ],
-      "mean_recall": 0.7777777777777778,
-      "tokens_used": 32905
+      "mean_recall": 0.5222222222222223,
+      "tokens_used": 32771
     },
     {
-      "condition": "cams",
+      "condition": "credence",
       "callback_logs": [
         {
           "question": "What was the exact original error and which file and line number did it occur on?",
           "recall_score": 1.0,
-          "answer": "From what you reported:\n\n- **Exact error**: `RuntimeError: dictionary changed size during iteration`\n- **File**: `payment_processor.py`\n- **Line**: 14"
+          "answer": "From the logged state:\n\n- **Exact error**: `RuntimeError: dictionary changed size during iteration`\n- **File**: `payment_processor.py`\n- **Line**: 147"
         },
         {
           "question": "What two uncertain hypotheses did we have about the root cause?",
-          "recall_score": 1.0,
-          "answer": "Your two hypotheses, stated with your original uncertainty (\"genuinely not sure\", could be either one or both):\n\n1. **Threading issue with the GIL**\n2"
+          "recall_score": 0.8333333333333334,
+          "answer": "From the logged state, your two hypotheses (flagged: *genuinely not sure which, could be either one, or both*):\n\n1. **Threading issue with the GIL**\n2"
         },
         {
           "question": "What fix did we try and what happened after we deployed it?",
           "recall_score": 1.0,
-          "answer": "**Attempted fix (deployed yesterday)**: Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot before iterating.\n\n**R"
+          "answer": "From the logged state:\n\n**Fix attempted**: Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot of the dict before "
         }
       ],
-      "mean_recall": 1.0,
-      "tokens_used": 43540
+      "mean_recall": 0.9444444444444445,
+      "tokens_used": 42012
     }
   ]
 }

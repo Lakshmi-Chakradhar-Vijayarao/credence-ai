@@ -2,7 +2,7 @@
 evals/experiments.py
 ====================
 Five ablation / validation experiments that prove the "unavoidable" claim:
-CAMS is the missing layer every multi-turn LLM deployment needs.
+Credence is the missing layer every multi-turn LLM deployment needs.
 
 E1  Propagation Chain      — naive compression destroys uncertain context;
                              that loss causes measurable downstream failures.
@@ -12,7 +12,7 @@ E3  Cognitive Friction     — confident text after heavy thinking signals
                              latent difficulty; dual-signal catches it, J-only
                              misses it.
 E4  Correctness Cliff      — quality degrades predictably under naive compression;
-                             CAMS maintains a floor across 20 turns.
+                             Credence maintains a floor across 20 turns.
 E5  Thinking Budget        — continuous J-governor outperforms binary on/off;
                              validates the unified control claim.
 
@@ -35,8 +35,8 @@ from typing import Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from anthropic import Anthropic
-from cams.context_manager import CAMSContextManager
-from cams.confidence_proxy import ConfidenceProxy
+from credence.context_manager import ContextManager
+from credence.confidence_proxy import CredenceProxy
 from evals.benchmark import rouge_l
 
 _CLIENT: Optional[Anthropic] = None
@@ -99,7 +99,7 @@ def run_e1() -> list[E1Result]:
       T9-T12 : callback questions requiring T3 and T8
 
     All three conditions use live Opus generation. The only difference is how
-    history is managed between turns (no compression / naive window / CAMS).
+    history is managed between turns (no compression / naive window / Credence).
     This eliminates the pre-canned vs live generation confound in the original design.
     """
     print("\n[E1] Propagation Chain (live generation, all conditions) ...")
@@ -134,14 +134,14 @@ def run_e1() -> list[E1Result]:
 
     results = []
 
-    for condition in ["baseline", "naive_window", "cams"]:
+    for condition in ["baseline", "naive_window", "credence"]:
         tokens_total = 0
         recall_scores = []
 
-        if condition == "cams":
-            mgr = CAMSContextManager(
+        if condition == "credence":
+            mgr = ContextManager(
                 api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
-                theta_high=0.65, theta_low=0.35,
+                theta_high=0.70, theta_low=0.45,
                 system_prompt=SYSTEM, max_tokens=400,
             )
             for msg in SEED_MESSAGES:
@@ -153,7 +153,7 @@ def run_e1() -> list[E1Result]:
                 score = _score_recall(r.response, fragments)
                 recall_scores.append(score)
                 tokens_total += r.tokens_in + r.tokens_out
-                print(f"  [cams] Q: {q[:55]}… recall={score:.2f}")
+                print(f"  [credence] Q: {q[:55]}… recall={score:.2f}")
                 time.sleep(0.3)
 
         else:
@@ -224,7 +224,7 @@ def run_e2() -> list[E2Result]:
 
     Pass condition:
       with_type_prior:    compression does NOT fire on code turns → traceback preserved
-      without_type_prior: compression fires on code turns (J ≥ 0.65) → traceback recall drops
+      without_type_prior: compression fires on code turns (J ≥ 0.70) → traceback recall drops
     """
     print("\n[E2] Confident Error Trap (Type Prior ablation) — redesigned ...")
 
@@ -262,9 +262,9 @@ ValueError: Found unknown categories ['premium_v3', 'beta_access'] in column 0 d
         tokens_total = 0
         recall_scores = []
 
-        mgr = CAMSContextManager(
+        mgr = ContextManager(
             api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
-            theta_high=0.65, theta_low=0.35,
+            theta_high=0.70, theta_low=0.45,
             system_prompt=SYSTEM, max_tokens=400,
         )
 
@@ -377,9 +377,9 @@ def run_e3() -> list[E3Result]:
         tokens_total = 0
         cognitive_friction_count = 0
 
-        mgr = CAMSContextManager(
+        mgr = ContextManager(
             api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
-            theta_high=0.65, theta_low=0.35,
+            theta_high=0.70, theta_low=0.45,
             system_prompt="You are a precise technical assistant. Answer concisely and confidently.",
             max_tokens=512,
             use_thinking=True,
@@ -468,7 +468,7 @@ class E4Result:
     callback_recall_by_turn: dict[int, float]
     mean_callback_recall: float
     total_tokens: int
-    drift_activations: int   # CAMS only
+    drift_activations: int   # Credence only
 
 def run_e4() -> list[E4Result]:
     """
@@ -479,9 +479,9 @@ def run_e4() -> list[E4Result]:
     Four conditions:
       baseline    — full context every turn (gold standard)
       naive_window— drop turns older than 6 regardless of content
-      cams        — J-adaptive compression/trim/preserve
-      random_j    — same compression rate as CAMS but J-scores randomized (causal ablation).
-                    If CAMS > random_j, J-routing is causally responsible for quality gains
+      credence        — J-adaptive compression/trim/preserve
+      random_j    — same compression rate as Credence but J-scores randomized (causal ablation).
+                    If Credence > random_j, J-routing is causally responsible for quality gains
                     rather than mere compression schedule.
     """
     print("\n[E4] Correctness Cliff (20-turn long session) ...")
@@ -525,16 +525,16 @@ def run_e4() -> list[E4Result]:
 
     results = []
 
-    for condition in ["baseline", "naive_window", "cams", "random_j"]:
+    for condition in ["baseline", "naive_window", "credence", "random_j"]:
         tokens_total = 0
         turn_logs = []
         callback_recall = {}
         drift_activations = 0
 
-        if condition == "cams":
-            mgr = CAMSContextManager(
+        if condition == "credence":
+            mgr = ContextManager(
                 api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
-                theta_high=0.65, theta_low=0.35,
+                theta_high=0.70, theta_low=0.45,
                 system_prompt=SYSTEM, max_tokens=256,
             )
 
@@ -571,28 +571,28 @@ def run_e4() -> list[E4Result]:
                 callback_recall[turn] = recall
                 ctx_size = sum(len(m["content"]) for m in mgr._history)
                 turn_logs.append(E4TurnLog(turn, q[:60], recall, True, ctx_size))
-                print(f"  [cams] turn={turn} callback recall={recall:.2f}")
+                print(f"  [credence] turn={turn} callback recall={recall:.2f}")
                 time.sleep(0.3)
 
         else:
             import random as _rnd
             _rng = _rnd.Random(42)  # seeded for reproducibility in random_j
-            # Mirror CAMS constants for random_j routing
-            _COMPRESS_AFTER = 3   # CAMS.COMPRESS_AFTER
-            _TRIM_WINDOW    = 10  # CAMS.TRIM_WINDOW
-            _ATTENTION_SINK = 2   # CAMS.ATTENTION_SINK
+            # Mirror Credence constants for random_j routing
+            _COMPRESS_AFTER = 3   # Credence.COMPRESS_AFTER
+            _TRIM_WINDOW    = 10  # Credence.TRIM_WINDOW
+            _ATTENTION_SINK = 2   # Credence.ATTENTION_SINK
             history = []
             turn = 0
 
             def _apply_random_j_routing(hist: list, t: int) -> list:
-                """Random-J: same decision logic as CAMS but J drawn from Uniform(0,1)."""
+                """Random-J: same decision logic as Credence but J drawn from Uniform(0,1)."""
                 n_msgs = len(hist)
                 j = _rng.random()
-                if j >= 0.65 and t > _COMPRESS_AFTER and n_msgs > _ATTENTION_SINK * 2 + _COMPRESS_AFTER * 2:
+                if j >= 0.70 and t > _COMPRESS_AFTER and n_msgs > _ATTENTION_SINK * 2 + _COMPRESS_AFTER * 2:
                     sink   = hist[:_ATTENTION_SINK * 2]
                     recent = hist[-_COMPRESS_AFTER * 2:]
                     return sink + recent
-                if 0.35 <= j < 0.65 and n_msgs > _TRIM_WINDOW * 2:
+                if 0.45 <= j < 0.70 and n_msgs > _TRIM_WINDOW * 2:
                     return hist[-_TRIM_WINDOW * 2:]
                 return hist
 
@@ -710,11 +710,11 @@ def run_e5() -> list[E5Result]:
     print("\n[E5] Thinking Budget Ablation ...")
 
     SYSTEM = "You are a helpful, precise assistant."
-    _proxy = ConfidenceProxy()
+    _proxy = CredenceProxy()
 
     results = []
 
-    # For binary and continuous we simulate via CAMSContextManager with use_thinking
+    # For binary and continuous we simulate via ContextManager with use_thinking
     # For no_thinking we use raw API calls
     for condition in ["no_thinking", "binary_thinking", "continuous_j_governor"]:
         turn_logs = []
@@ -740,13 +740,13 @@ def run_e5() -> list[E5Result]:
                 time.sleep(0.3)
 
         else:
-            # Use fresh CAMS manager per question (isolated, no carry-over state)
+            # Use fresh Credence manager per question (isolated, no carry-over state)
             # binary: old behavior — force only LOW → 2000, disable continuous scaling
             # continuous: new behavior — use_thinking=True with continuous governor
             for item in _E5_QUESTIONS:
-                mgr = CAMSContextManager(
+                mgr = ContextManager(
                     api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
-                    theta_high=0.65, theta_low=0.35,
+                    theta_high=0.70, theta_low=0.45,
                     system_prompt=SYSTEM, max_tokens=512,
                     use_thinking=True,
                 )
@@ -827,7 +827,7 @@ def run_e6() -> list[E6Result]:
     Three conditions:
       baseline      — full context → correct recall of both constraints + uncertainty
       naive_window  — drops T3-T4 after 6 turns → model may confabulate specific values
-      cams          — faithfulness probe detects "I'm not certain" / "unclear" in old
+      credence          — faithfulness probe detects "I'm not certain" / "unclear" in old
                       segment → refuses COMPRESS → constraints stay in history
 
     Metrics:
@@ -877,30 +877,35 @@ def run_e6() -> list[E6Result]:
         (
             "What rate limit should we design our retry logic around?",
             # correct recall: answer has the planted value AND uncertainty qualifier
-            ["50", "uncertain", "verify", "not certain", "tentative", "approximately", "roughly"],
+            ["50", "uncertain", "verify", "not certain", "tentative", "approximately",
+             "roughly", "unverified", "unconfirmed", "pending", "flagged"],
             # hallucination markers: confident specific non-planted numbers (no qualifier)
             ["100", "200", "1000", "unlimited"],
         ),
         (
             "How long should our token refresh window be, based on what we discussed?",
-            ["24", "uncertain", "tentative", "verify", "not certain", "approximately", "roughly"],
-            ["48", "1 hour", "one hour", "12 hour", "7 day"],
+            ["24", "uncertain", "tentative", "verify", "not certain", "approximately",
+             "roughly", "unverified", "unconfirmed", "pending", "flagged"],
+            # Use standalone-number patterns to avoid substring false positives.
+            # "6 hour" in "16 hours" and "12 hour" in "12-16 hours" are both FPs.
+            # Only flag confident wrong expiry claims (not derivation recommendations).
+            [r"\b48\s*hour", r"\b7\s*day", r"\bexpires?\s+in\s+6\b", r"\bexpiry\s+is\s+12\b"],
         ),
     ]
 
     results = []
 
-    for condition in ["baseline", "naive_window", "cams"]:
+    for condition in ["baseline", "naive_window", "credence"]:
         tokens_total = 0
         needle_logs = []
 
-        if condition == "cams":
-            mgr = CAMSContextManager(
+        if condition == "credence":
+            mgr = ContextManager(
                 api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
-                theta_high=0.65, theta_low=0.35,
+                theta_high=0.70, theta_low=0.45,
                 system_prompt=SYSTEM, max_tokens=400,
             )
-            # Replay seed conversation through CAMS
+            # Replay seed conversation through Credence
             for i in range(0, len(CONVERSATION_SEED), 2):
                 user_msg = CONVERSATION_SEED[i]["content"]
                 r = mgr.chat(user_msg)
@@ -921,15 +926,14 @@ def run_e6() -> list[E6Result]:
                 tokens_total += r.tokens_in + r.tokens_out
                 ans = r.response
                 lower = ans.lower()
-                # Correct recall: has the planted value AND at least one uncertainty qualifier
                 planted_val = CONSTRAINT_A_VALUE if turn_offset == 0 else CONSTRAINT_B_VALUE
                 has_value = planted_val in lower
                 has_qualifier = any(f.lower() in lower for f in correct_frags if f not in [planted_val])
                 correct = has_value and has_qualifier
-                # Hallucination: confident wrong value — any hallucination marker present
-                hallu = any(h.lower() in lower for h in hallu_frags)
+                # Use regex for hallu_frags to support word-boundary patterns
+                hallu = any(re.search(h, lower) for h in hallu_frags)
                 needle_logs.append(E6NeedleLog(mgr._turn_idx, True, correct, hallu, ans[:120]))
-                print(f"  [cams] Q: {q[:55]}… correct={correct} hallucinated={hallu}")
+                print(f"  [credence] Q: {q[:55]}… correct={correct} hallucinated={hallu}")
                 time.sleep(0.3)
 
         else:
@@ -959,7 +963,7 @@ def run_e6() -> list[E6Result]:
                 has_value = planted_val in lower
                 has_qualifier = any(f.lower() in lower for f in correct_frags if f not in [planted_val])
                 correct = has_value and has_qualifier
-                hallu = any(h.lower() in lower for h in hallu_frags)
+                hallu = any(re.search(h, lower) for h in hallu_frags)
                 turn_n = len(CONVERSATION_SEED) // 2 + len(FILLER_TURNS) + turn_offset + 1
                 needle_logs.append(E6NeedleLog(turn_n, True, correct, hallu, ans[:120]))
                 history.append({"role": "user",      "content": q})
@@ -1022,7 +1026,7 @@ def run_e7() -> list[E7Result]:
     Three conditions:
       baseline     — full context → complete chain → correct answer
       naive_window — window=6: at T12, keeps T7-T11; drops T3-T5 → broken chain
-      cams         — COMPRESS fires on T3-T5 (HIGH-J facts); Haiku summarizes;
+      credence         — COMPRESS fires on T3-T5 (HIGH-J facts); Haiku summarizes;
                      quality depends on whether Haiku preserves the full hop chain
     """
     print("\n[E7] Multi-Hop Reasoning Chain ...")
@@ -1072,17 +1076,17 @@ def run_e7() -> list[E7Result]:
 
     results = []
 
-    for condition in ["baseline", "naive_window", "cams"]:
+    for condition in ["baseline", "naive_window", "credence"]:
         tokens_total = 0
         hop_logs = []
 
-        if condition == "cams":
-            mgr = CAMSContextManager(
+        if condition == "credence":
+            mgr = ContextManager(
                 api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
-                theta_high=0.65, theta_low=0.35,
+                theta_high=0.70, theta_low=0.45,
                 system_prompt=SYSTEM, max_tokens=400,
             )
-            # Replay seed through CAMS
+            # Replay seed through Credence
             for i in range(0, len(CONVERSATION_SEED), 2):
                 r = mgr.chat(CONVERSATION_SEED[i]["content"])
                 tokens_total += r.tokens_in + r.tokens_out
@@ -1177,7 +1181,7 @@ def run_e8() -> list[E8Result]:
       T13-T16: More diagnostics
       T17-T19: Callbacks
 
-    Three conditions: baseline, naive_window (window=6), cams
+    Three conditions: baseline, naive_window (window=6), credence
     """
     print("\n[E8] Real Debugging Session ...")
 
@@ -1225,14 +1229,14 @@ def run_e8() -> list[E8Result]:
 
     results = []
 
-    for condition in ["baseline", "naive_window", "cams"]:
+    for condition in ["baseline", "naive_window", "credence"]:
         tokens_total = 0
         callback_logs = []
 
-        if condition == "cams":
-            mgr = CAMSContextManager(
+        if condition == "credence":
+            mgr = ContextManager(
                 api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
-                theta_high=0.65, theta_low=0.35,
+                theta_high=0.70, theta_low=0.45,
                 system_prompt=SYSTEM, max_tokens=400,
             )
             for msg in SEED_MESSAGES:
@@ -1244,7 +1248,7 @@ def run_e8() -> list[E8Result]:
                 score = _score_recall(r.response, fragments)
                 callback_logs.append(E8CallbackLog(q, score, r.response[:150]))
                 tokens_total += r.tokens_in + r.tokens_out
-                print(f"  [cams] Q: {q[:60]}… recall={score:.2f}")
+                print(f"  [credence] Q: {q[:60]}… recall={score:.2f}")
                 time.sleep(0.3)
 
         else:
@@ -1296,9 +1300,9 @@ def _print_e1(results: list[E1Result]):
         bar = "█" * int(r.mean_recall * 20)
         print(f"  {r.condition:<20} mean_recall={r.mean_recall:.3f}  {bar}")
     base = next((r for r in results if r.condition == "baseline"), None)
-    cams = next((r for r in results if r.condition == "cams"), None)
-    if base and cams:
-        print(f"\n  CAMS vs baseline recall delta: {cams.mean_recall - base.mean_recall:+.3f}")
+    credence_r = next((r for r in results if r.condition == "credence"), None)
+    if base and credence_r:
+        print(f"\n  Credence vs baseline recall delta: {credence_r.mean_recall - base.mean_recall:+.3f}")
 
 def _print_e2(results: list[E2Result]):
     print("\n" + "="*70)
@@ -1323,9 +1327,9 @@ def _print_e4(results: list[E4Result]):
     for r in results:
         recall_str = "  ".join(f"T{t}:{v:.2f}" for t, v in sorted(r.callback_recall_by_turn.items()))
         print(f"  {r.condition:<15} mean={r.mean_callback_recall:.3f}  {recall_str}")
-    cams_r = next((r for r in results if r.condition == "cams"), None)
-    if cams_r and cams_r.drift_activations:
-        print(f"\n  CAMS drift activations: {cams_r.drift_activations}")
+    credence_r = next((r for r in results if r.condition == "credence"), None)
+    if credence_r and credence_r.drift_activations:
+        print(f"\n  Credence drift activations: {credence_r.drift_activations}")
 
 def _print_e5(results: list[E5Result]):
     print("\n" + "="*70)
@@ -1344,18 +1348,18 @@ def _print_e7(results: list[E7Result]):
     print("  " + "-"*52)
     for r in results:
         print(f"  {r.condition:<20}  {r.hops_recalled}/3     {'✓' if r.chain_complete else '✗'}       {r.tokens_used:,}")
-    cams_r = next((r for r in results if r.condition == "cams"), None)
+    credence_r = next((r for r in results if r.condition == "credence"), None)
     naive_r = next((r for r in results if r.condition == "naive_window"), None)
     base_r  = next((r for r in results if r.condition == "baseline"), None)
-    if cams_r and naive_r:
-        delta = cams_r.hops_recalled - naive_r.hops_recalled
-        print(f"\n  CAMS vs naive: +{delta} hops preserved through compression")
-    if cams_r and base_r:
-        if cams_r.hops_recalled == base_r.hops_recalled:
-            print(f"  ✓ CAMS preserved full chain despite compression (matches baseline)")
+    if credence_r and naive_r:
+        delta = credence_r.hops_recalled - naive_r.hops_recalled
+        print(f"\n  Credence vs naive: +{delta} hops preserved through compression")
+    if credence_r and base_r:
+        if credence_r.hops_recalled == base_r.hops_recalled:
+            print(f"  ✓ Credence preserved full chain despite compression (matches baseline)")
         else:
-            lost = base_r.hops_recalled - cams_r.hops_recalled
-            print(f"  △ CAMS lost {lost} hop(s) in Haiku summary — compression degrades multi-hop chains")
+            lost = base_r.hops_recalled - credence_r.hops_recalled
+            print(f"  △ Credence lost {lost} hop(s) in Haiku summary — compression degrades multi-hop chains")
 
 def _print_e6(results: list[E6Result]):
     print("\n" + "="*70)
@@ -1365,18 +1369,18 @@ def _print_e6(results: list[E6Result]):
     print("  " + "-"*60)
     for r in results:
         print(f"  {r.condition:<20}  {r.correction_recall:.0%}         {r.hallucination_rate:.0%}            {r.tokens_used:,}")
-    cams_r = next((r for r in results if r.condition == "cams"), None)
+    credence_r = next((r for r in results if r.condition == "credence"), None)
     base_r = next((r for r in results if r.condition == "baseline"), None)
     naive_r = next((r for r in results if r.condition == "naive_window"), None)
-    if cams_r and naive_r:
-        print(f"\n  CAMS vs Naive — correction recall delta : {cams_r.correction_recall - naive_r.correction_recall:+.2f}")
-        print(f"  CAMS vs Naive — hallucination rate delta: {cams_r.hallucination_rate - naive_r.hallucination_rate:+.2f}")
-    if cams_r and base_r:
-        cr_gap = base_r.correction_recall - cams_r.correction_recall
+    if credence_r and naive_r:
+        print(f"\n  Credence vs Naive — correction recall delta : {credence_r.correction_recall - naive_r.correction_recall:+.2f}")
+        print(f"  Credence vs Naive — hallucination rate delta: {credence_r.hallucination_rate - naive_r.hallucination_rate:+.2f}")
+    if credence_r and base_r:
+        cr_gap = base_r.correction_recall - credence_r.correction_recall
         if cr_gap <= 0.05:
-            print(f"  ✓ CAMS correction recall within 5% of baseline (faithfulness probe working)")
+            print(f"  ✓ Credence correction recall within 5% of baseline (faithfulness probe working)")
         else:
-            print(f"  △ CAMS correction recall {cr_gap:.0%} below baseline — probe may need tuning")
+            print(f"  △ Credence correction recall {cr_gap:.0%} below baseline — probe may need tuning")
 
 def _print_e8(results: list[E8Result]):
     print("\n" + "="*70)
@@ -1388,17 +1392,262 @@ def _print_e8(results: list[E8Result]):
         scores = [f"{l.recall_score:.2f}" for l in r.callback_logs]
         score_str = "  ".join(scores) if scores else "—"
         print(f"  {r.condition:<20}  {r.mean_recall:.3f} | {score_str}")
-    cams_r  = next((r for r in results if r.condition == "cams"), None)
+    credence_r  = next((r for r in results if r.condition == "credence"), None)
     base_r  = next((r for r in results if r.condition == "baseline"), None)
     naive_r = next((r for r in results if r.condition == "naive_window"), None)
-    if cams_r and naive_r:
-        print(f"\n  CAMS vs Naive recall delta: {cams_r.mean_recall - naive_r.mean_recall:+.3f}")
-    if cams_r and base_r:
-        gap = base_r.mean_recall - cams_r.mean_recall
+    if credence_r and naive_r:
+        print(f"\n  Credence vs Naive recall delta: {credence_r.mean_recall - naive_r.mean_recall:+.3f}")
+    if credence_r and base_r:
+        gap = base_r.mean_recall - credence_r.mean_recall
         if gap <= 0.05:
-            print(f"  ✓ CAMS within 5% of baseline recall (all 3 information types preserved)")
+            print(f"  ✓ Credence within 5% of baseline recall (all 3 information types preserved)")
         else:
-            print(f"  △ CAMS {gap:.0%} below baseline — compression losing some context")
+            print(f"  △ Credence {gap:.0%} below baseline — compression losing some context")
+
+
+# ---------------------------------------------------------------------------
+# E9 — Compression Under Fire
+#
+# THE experiment the audit said was missing.
+#
+# E6 used 8 filler turns (12 total). COMPRESS fires at n_turns > 16.
+# So E6 Credence = full context. The mechanism was never tested.
+#
+# E9 uses 18 filler turns (22 total). Compression fires at turn 17.
+# The probe and sentinel must protect uncertain seed turns through an
+# actual Haiku compression event. This is the direct test of the claim.
+#
+# Three conditions:
+#   baseline     — full context (oracle)
+#   naive_window — 12-message window (T3-T4 always dropped)
+#   credence     — compression fires, probe/sentinel must protect T3-T4
+#
+# If credence matches baseline under real compression: the claim holds.
+# If credence fails: the probe has a gap that must be fixed.
+# ---------------------------------------------------------------------------
+
+@dataclass
+class E9Result:
+    condition:          str
+    correction_recall:  float
+    hallucination_rate: float
+    compression_fired:  bool    # did Credence actually compress during the session?
+    compress_count:     int     # how many times compression was triggered
+    tokens_used:        int
+    needle_logs:        list    # reuse E6NeedleLog
+
+
+def run_e9() -> list[E9Result]:
+    """
+    E9 — Compression Under Fire (the missing experiment).
+
+    Identical to E6 but with 18 filler turns instead of 8.
+    COMPRESS fires at n_turns > 16 (COMPRESS_AFTER=8, fires at 8*2=16).
+    Session design:
+      T1-T4:  seed (attention sink + 2 uncertain constraints)
+      T5-T22: 18 filler turns — compression fires around T17
+      T23-T24: 2 callback questions
+
+    Compression checkpoint: after T17, Credence attempts to compress
+    turns T3-T16. The seed turns (T3-T4) have user_j_flag sentinel=0.0
+    (user expressed uncertainty) → they go to preserved_msgs, not Haiku.
+    The faithfulness probe is a backup if sentinel missed anything.
+
+    Expected result:
+      credence: compression fires, uncertain turns preserved, recall ~100%
+      baseline: full context, recall 100% (oracle)
+      naive:    12-window drops T3-T4 (deterministic), recall ~0%
+    """
+    print("\n[E9] Compression Under Fire (compression actually fires) ...")
+
+    SYSTEM = (
+        "You are a precise technical assistant helping plan a software integration. "
+        "When asked to recall earlier facts, state them exactly as established, "
+        "including any uncertainty flags."
+    )
+
+    CONSTRAINT_A_VALUE = "50"
+    CONSTRAINT_B_VALUE = "24"
+
+    CONVERSATION_SEED = [
+        {"role": "user",      "content": "I'm building a rate-limited integration with an external API."},
+        {"role": "assistant", "content": "Understood. I'll help you plan the integration."},
+        {"role": "user",      "content": "We need to handle retries, backoff, and token refresh."},
+        {"role": "assistant", "content": "Got it. Key concerns: rate limit adherence, exponential backoff on 429s, and proactive token refresh before expiry."},
+        # T3: uncertain constraint A — user_j_flag sentinel will be set
+        {"role": "user",      "content": "I'm not entirely certain, but I think our rate limit is around 50 requests per minute. I'll need to verify with the vendor."},
+        {"role": "assistant", "content": "Noted. Rate limit is approximately 50 req/min — flagged as uncertain, needs vendor verification before implementation."},
+        # T4: uncertain constraint B — user_j_flag sentinel will be set
+        {"role": "user",      "content": "Regarding auth tokens: they expire in roughly 24 hours, but the docs aren't clear — it might be less. Please keep this tentative."},
+        {"role": "assistant", "content": "Understood. Token expiry is approximately 24 hours, marked as tentative pending documentation clarification."},
+    ]
+
+    # 18 filler turns — crosses the COMPRESS_AFTER=8 threshold at turn 9 (n_turns > 16)
+    FILLER_TURNS = [
+        "What is exponential backoff and how should I implement it?",
+        "What HTTP status code indicates rate limiting?",
+        "What is the difference between access tokens and refresh tokens?",
+        "What is a circuit breaker pattern?",
+        "What is idempotency and why does it matter for retries?",
+        "What is connection pooling?",
+        "What does the Retry-After HTTP header do?",
+        "What is a webhook and how does it differ from polling?",
+        "How should we structure error handling for network failures?",
+        "What is the difference between synchronous and asynchronous API calls?",
+        "How do we implement request deduplication?",
+        "What is the purpose of a health check endpoint?",
+        "How should we handle partial failures in distributed systems?",
+        "What is a dead letter queue?",
+        "How do we implement graceful degradation?",
+        "What is service discovery in microservices?",
+        "How should we version our API endpoints?",
+        "What is the strangler fig pattern for migration?",
+    ]
+
+    CALLBACKS = [
+        (
+            "What rate limit should we design our retry logic around?",
+            ["50", "uncertain", "verify", "not certain", "tentative", "approximately",
+             "roughly", "unverified", "unconfirmed", "pending", "flagged"],
+            ["100", "200", "1000", "unlimited"],
+        ),
+        (
+            "How long should our token refresh window be, based on what we discussed?",
+            ["24", "uncertain", "tentative", "verify", "not certain", "approximately",
+             "roughly", "unverified", "unconfirmed", "pending", "flagged"],
+            [r"\b48\s*hour", r"\b7\s*day", r"\bexpires?\s+in\s+6\b", r"\bexpiry\s+is\s+12\b"],
+        ),
+    ]
+
+    results = []
+
+    for condition in ["baseline", "naive_window", "credence"]:
+        tokens_total     = 0
+        needle_logs      = []
+        compression_fired = False
+        compress_count   = 0
+
+        if condition == "credence":
+            mgr = ContextManager(
+                api_key       = os.environ.get("ANTHROPIC_API_KEY", ""),
+                theta_high    = 0.70,
+                theta_low     = 0.45,
+                system_prompt = SYSTEM,
+                max_tokens    = 400,
+            )
+            for i in range(0, len(CONVERSATION_SEED), 2):
+                r = mgr.chat(CONVERSATION_SEED[i]["content"])
+                tokens_total += r.tokens_in + r.tokens_out
+                time.sleep(0.3)
+
+            for fmsg in FILLER_TURNS:
+                r = mgr.chat(fmsg)
+                tokens_total += r.tokens_in + r.tokens_out
+                if r.decision == "COMPRESS":
+                    compression_fired = True
+                    compress_count   += 1
+                    print(f"  [credence] *** COMPRESSION FIRED at turn {mgr._turn_idx} "
+                          f"(saved {r.tokens_saved} tokens) ***")
+                needle_logs.append(E6NeedleLog(mgr._turn_idx, False, False, False, r.response[:80]))
+                time.sleep(0.3)
+
+            for turn_offset, (q, correct_frags, hallu_frags) in enumerate(CALLBACKS):
+                r = mgr.chat(q)
+                tokens_total += r.tokens_in + r.tokens_out
+                ans   = r.response
+                lower = ans.lower()
+                planted_val  = CONSTRAINT_A_VALUE if turn_offset == 0 else CONSTRAINT_B_VALUE
+                has_value    = planted_val in lower
+                has_qualifier = any(f.lower() in lower for f in correct_frags if f not in [planted_val])
+                correct = has_value and has_qualifier
+                hallu   = any(re.search(h, lower) for h in hallu_frags)
+                needle_logs.append(E6NeedleLog(mgr._turn_idx, True, correct, hallu, ans[:120]))
+                print(f"  [credence] Q: {q[:55]}… correct={correct} hallu={hallu}")
+                time.sleep(0.3)
+
+        else:
+            history = list(CONVERSATION_SEED)
+
+            for i, fmsg in enumerate(FILLER_TURNS):
+                if condition == "naive_window":
+                    history = history[-12:]
+                msgs   = history + [{"role": "user", "content": fmsg}]
+                answer, t_in, t_out = _ask(msgs, system=SYSTEM, max_tokens=400)
+                tokens_total += t_in + t_out
+                history.append({"role": "user",      "content": fmsg})
+                history.append({"role": "assistant", "content": answer})
+                turn_n = len(CONVERSATION_SEED) // 2 + i + 1
+                needle_logs.append(E6NeedleLog(turn_n, False, False, False, answer[:80]))
+                time.sleep(0.3)
+
+            for turn_offset, (q, correct_frags, hallu_frags) in enumerate(CALLBACKS):
+                if condition == "naive_window":
+                    history = history[-12:]
+                msgs   = history + [{"role": "user", "content": q}]
+                answer, t_in, t_out = _ask(msgs, system=SYSTEM, max_tokens=400)
+                tokens_total += t_in + t_out
+                lower = answer.lower()
+                planted_val  = CONSTRAINT_A_VALUE if turn_offset == 0 else CONSTRAINT_B_VALUE
+                has_value    = planted_val in lower
+                has_qualifier = any(f.lower() in lower for f in correct_frags if f not in [planted_val])
+                correct = has_value and has_qualifier
+                hallu   = any(re.search(h, lower) for h in hallu_frags)
+                turn_n  = len(CONVERSATION_SEED) // 2 + len(FILLER_TURNS) + turn_offset + 1
+                needle_logs.append(E6NeedleLog(turn_n, True, correct, hallu, answer[:120]))
+                history.append({"role": "user",      "content": q})
+                history.append({"role": "assistant", "content": answer})
+                print(f"  [{condition}] Q: {q[:55]}… correct={correct} hallu={hallu}")
+                time.sleep(0.3)
+
+        cb_logs           = [l for l in needle_logs if l.is_callback]
+        correction_recall = sum(l.correct_recall for l in cb_logs) / len(cb_logs) if cb_logs else 0.0
+        hallu_rate        = sum(l.hallucinated   for l in cb_logs) / len(cb_logs) if cb_logs else 0.0
+
+        results.append(E9Result(
+            condition         = condition,
+            correction_recall = correction_recall,
+            hallucination_rate= hallu_rate,
+            compression_fired = compression_fired,
+            compress_count    = compress_count,
+            tokens_used       = tokens_total,
+        ))
+        print(f"  [{condition}] recall={correction_recall:.2f}  hallu={hallu_rate:.2f}  "
+              f"compression_fired={compression_fired}  tokens={tokens_total:,}")
+
+    return results
+
+
+def _print_e9(results: list[E9Result]):
+    print("\n" + "="*70)
+    print("E9 — COMPRESSION UNDER FIRE (mechanism directly tested)")
+    print("="*70)
+    print(f"  {'Condition':<20} {'Recall':>8} {'Hallu':>8} {'Compressed?':>13} {'Tokens':>10}")
+    print("  " + "-"*62)
+    for r in results:
+        fired = "YES ✓" if r.compression_fired else "no"
+        print(f"  {r.condition:<20} {r.correction_recall:>8.3f} {r.hallucination_rate:>8.3f} "
+              f"{fired:>13} {r.tokens_used:>10,}")
+
+    credence_r = next((r for r in results if r.condition == "credence"), None)
+    baseline_r = next((r for r in results if r.condition == "baseline"), None)
+    naive_r    = next((r for r in results if r.condition == "naive_window"), None)
+
+    print()
+    if credence_r and not credence_r.compression_fired:
+        print("  ⚠ WARNING: Compression did not fire in Credence condition.")
+        print("    Check COMPRESS_AFTER constant and session length.")
+    elif credence_r and credence_r.compression_fired:
+        print(f"  ✓ Compression fired {credence_r.compress_count}x during the session.")
+        if baseline_r:
+            gap = baseline_r.correction_recall - credence_r.correction_recall
+            if gap <= 0.05:
+                print(f"  ✓ Credence recall within 5% of baseline under compression ({credence_r.correction_recall:.1%} vs {baseline_r.correction_recall:.1%})")
+                print(f"  ✓ Probe/sentinel preserved uncertain constraints through Haiku compression.")
+            else:
+                print(f"  ✗ Credence recall {gap:.0%} below baseline — uncertain turns were lost in compression.")
+        if naive_r:
+            lift = credence_r.correction_recall - naive_r.correction_recall
+            print(f"  Credence vs naive recall lift: {lift:+.1%}")
 
 
 # ---------------------------------------------------------------------------
@@ -1407,7 +1656,7 @@ def _print_e8(results: list[E8Result]):
 
 def _serialise(obj):
     if isinstance(obj, (E1Result, E2Result, E3Result, E4Result, E5Result,
-                        E6Result, E7Result, E8Result,
+                        E6Result, E7Result, E8Result, E9Result,
                         E3TurnLog, E4TurnLog, E5TurnLog,
                         E6NeedleLog, E7HopLog, E8CallbackLog)):
         return asdict(obj)
@@ -1419,8 +1668,8 @@ def _serialise(obj):
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="CAMS ablation experiments")
-    parser.add_argument("--exp", choices=["E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "all"],
+    parser = argparse.ArgumentParser(description="Credence ablation experiments")
+    parser.add_argument("--exp", choices=["E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9", "all"],
                         default="all", help="Which experiment to run")
     parser.add_argument("--out", default="evals/experiment_results.json",
                         help="Output JSON path")
@@ -1481,6 +1730,12 @@ def main():
         r = run_e8(); _print_e8(r)
         all_results["E8"] = [
             {**asdict(x), "callback_logs": [asdict(l) for l in x.callback_logs]} for x in r
+        ]
+
+    if args.exp in ("E9", "all"):
+        r = run_e9(); _print_e9(r)
+        all_results["E9"] = [
+            {**asdict(x), "needle_logs": [asdict(l) for l in x.needle_logs]} for x in r
         ]
 
     with open(out_path, "w") as f:

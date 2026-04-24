@@ -1,9 +1,9 @@
 """
 evals/adversarial_tests.py
 ==========================
-Adversarial stress tests for CAMS v1.1.
+Adversarial stress tests for Credence v1.1.
 
-These tests deliberately try to break CAMS by exploiting known weaknesses.
+These tests deliberately try to break Credence by exploiting known weaknesses.
 Unlike the benchmark (which evaluates aggregate performance), adversarial tests
 probe specific failure modes listed in the README's "Known Failure Modes" table.
 
@@ -11,7 +11,7 @@ Test scenarios:
   A1  Confident-Wrong Attack  — factually incorrect statements delivered with
                                 high linguistic confidence (no hedges, specific numbers).
                                 Goal: J-proxy must NOT score high; compression must not bury the error.
-                                Success: CAMS keeps the turn visible (PRESERVE or TRIM, not COMPRESS).
+                                Success: Credence keeps the turn visible (PRESERVE or TRIM, not COMPRESS).
 
   A2  Mixed Signal Injection  — uncertainty markers embedded inside a strongly-toned response.
                                 "I'm not entirely sure, but here's my analysis: [1000 words of
@@ -51,9 +51,9 @@ from typing import Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from cams.context_manager import CAMSContextManager
-from cams.confidence_proxy import ConfidenceProxy
-from cams.envelope import CAMSEnvelope
+from credence.context_manager import ContextManager
+from credence.confidence_proxy import CredenceProxy
+from credence.envelope import CredenceEnvelope
 
 _ANTHROPIC_AVAILABLE = False
 try:
@@ -110,17 +110,17 @@ def run_a1() -> AdversarialResult:
     A system that COMPRESSES these turns buries the error — future turns inherit
     a wrong "fact" that Haiku's summary will state as confirmed.
 
-    Pass condition: CAMS does NOT COMPRESS any of the confident-wrong turns.
+    Pass condition: Credence does NOT COMPRESS any of the confident-wrong turns.
     (TRIM or PRESERVE are both acceptable — the wrong fact stays visible for correction.)
 
     Note: this tests the J-proxy's ability to distinguish high-confidence *form* from
     wrong *substance*. A pure linguistic proxy cannot detect factual errors — that's
     a known limitation. What we test is whether short factual assertions (which score
-    LOW on brevity and specificity from the CAMS formula) avoid COMPRESS decisions.
+    LOW on brevity and specificity from the Credence formula) avoid COMPRESS decisions.
     """
     print("\n[A1] Confident-Wrong Attack ...")
 
-    proxy = ConfidenceProxy()
+    proxy = CredenceProxy()
     results_detail = []
     compress_count = 0
 
@@ -192,12 +192,12 @@ def run_a2() -> AdversarialResult:
     """
     print("\n[A2] Mixed Signal Injection ...")
 
-    mgr = CAMSContextManager.__new__(CAMSContextManager)
+    mgr = ContextManager.__new__(ContextManager)
     mgr._content_vocab = set()
 
     has_unc = mgr._has_uncertainty(_A2_MIXED_RESPONSE)
 
-    proxy = ConfidenceProxy()
+    proxy = CredenceProxy()
     cr = proxy.compute(_A2_MIXED_RESPONSE)
 
     print(f"  J={cr.j_score:.3f} zone={cr.zone}")
@@ -263,12 +263,12 @@ def run_a3() -> AdversarialResult:
     """
     print("\n[A3] Code Comment Ambiguity ...")
 
-    mgr = CAMSContextManager.__new__(CAMSContextManager)
+    mgr = ContextManager.__new__(ContextManager)
     mgr._content_vocab = set()
 
     has_unc = mgr._has_uncertainty(_A3_CODE_WITH_HIDDEN_UNCERTAINTY)
 
-    proxy = ConfidenceProxy()
+    proxy = CredenceProxy()
     cr = proxy.compute(_A3_CODE_WITH_HIDDEN_UNCERTAINTY)
 
     print(f"  J={cr.j_score:.3f} zone={cr.zone} content_type={cr.content_type}")
@@ -324,12 +324,12 @@ def run_a4() -> AdversarialResult:
     """
     print("\n[A4] Semantic Entropy Trap ...")
 
-    mgr = CAMSContextManager.__new__(CAMSContextManager)
+    mgr = ContextManager.__new__(ContextManager)
     mgr._content_vocab = set()
 
     has_multi = mgr._has_multi_answer(_A4_MULTI_ANSWER_RESPONSE)
 
-    proxy = ConfidenceProxy()
+    proxy = CredenceProxy()
     cr = proxy.compute(_A4_MULTI_ANSWER_RESPONSE)
 
     print(f"  J={cr.j_score:.3f} zone={cr.zone}")
@@ -356,7 +356,7 @@ def run_a5() -> AdversarialResult:
     """
     A5 — Chain-Depth Trust Decay.
 
-    Verifies that CAMSEnvelope.trust_score degrades correctly with chain_depth
+    Verifies that CredenceEnvelope.trust_score degrades correctly with chain_depth
     and unknown sources — ensuring `should_verify` fires when it should.
 
     Test cases:
@@ -374,20 +374,20 @@ def run_a5() -> AdversarialResult:
 
     test_cases = [
         # (j_score, source, chain_depth, expected_should_verify, label)
-        (0.85, "cams",         0,  False, "fresh HIGH-J trusted"),
-        (0.85, "cams",         3,  False, "3-hop trusted (trust=0.70)"),
-        (0.85, "cams",        10,  True,  "10-hop trusted (trust=0.35)"),
+        (0.85, "credence",         0,  False, "fresh HIGH-J trusted"),
+        (0.85, "credence",         3,  False, "3-hop trusted (trust=0.70)"),
+        (0.85, "credence",        10,  True,  "10-hop trusted (trust=0.35)"),
         (0.85, "unknown_agent", 0, False, "unknown source depth=0 (trust=0.75)"),
         (0.85, "unknown_agent", 8, True,  "unknown source depth=8 (trust=0.35)"),
-        (0.30, "cams",          1, True,  "LOW-J trusted depth=1 (trust=0.25)"),
-        (0.45, "cams",          2, True,  "MEDIUM-J trusted depth=2 (trust=0.35) below threshold"),
+        (0.30, "credence",          1, True,  "LOW-J trusted depth=1 (trust=0.25)"),
+        (0.45, "credence",          2, True,  "MEDIUM-J trusted depth=2 (trust=0.35) below threshold"),
     ]
 
     failures = []
     details = []
 
     for j, source, depth, expected_verify, label in test_cases:
-        env = CAMSEnvelope(
+        env = CredenceEnvelope(
             content="test content",
             j_score=j,
             zone="HIGH" if j >= 0.65 else ("MEDIUM" if j >= 0.35 else "LOW"),
@@ -458,7 +458,7 @@ def save_results(results: list[AdversarialResult], path: str = "evals/adversaria
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="CAMS Adversarial Tests")
+    parser = argparse.ArgumentParser(description="Credence Adversarial Tests")
     parser.add_argument(
         "--test",
         choices=["A1", "A2", "A3", "A4", "A5"],

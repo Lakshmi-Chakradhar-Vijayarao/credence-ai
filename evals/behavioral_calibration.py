@@ -65,8 +65,8 @@ try:
 except ImportError:
     _ANTHROPIC_AVAILABLE = False
 
-from cams.confidence_proxy import ConfidenceProxy
-from cams.behavioral_signal import behavioral_consistency, fuse_scores
+from credence.confidence_proxy import CredenceProxy
+from credence.behavioral_signal import behavioral_consistency, fuse_scores
 
 _MODEL_HAIKU = "claude-haiku-4-5-20251001"
 _MODEL_OPUS  = "claude-opus-4-7"
@@ -332,7 +332,7 @@ def run_calibration(
     verbose: bool = False,
 ) -> list[QAResult]:
 
-    proxy   = ConfidenceProxy()
+    proxy   = CredenceProxy()
     results = []
 
     for i, (question, keywords, stratum) in enumerate(dataset):
@@ -448,7 +448,7 @@ def print_calibration_summary(agg: dict):
 
 
 def dry_run(n: int = 10):
-    proxy = ConfidenceProxy()
+    proxy = CredenceProxy()
     print(f"\n[dry-run] Checking {n} QA items (no API)...\n")
     for i, (q, kws, stratum) in enumerate(QA_DATASET[:n]):
         print(f"  [{i+1:02d}] {stratum:<6}  {q[:60]}…")

@@ -1,7 +1,7 @@
 """
 experiments/flagship/scenarios.py
 ==================================
-Three realistic multi-turn scenarios for the flagship Epistemic Memory experiment.
+Three realistic multi-turn scenarios for the flagship Credence experiment.
 
 Each scenario:
   - Has 3-4 seed turns establishing uncertain constraints (LOW-J)

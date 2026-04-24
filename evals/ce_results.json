@@ -1,0 +1,46 @@
+{
+  "results": [
+    {
+      "test_id": "CE1",
+      "description": "Direct query about unverified rate limit \u2192 enforcer fires, model hedges",
+      "query": "What rate limit should we design our retry logic around?",
+      "enforcement_fired": true,
+      "has_uncertainty": true,
+      "hallucinated": false,
+      "passed": true,
+      "note": "OK"
+    },
+    {
+      "test_id": "CE2",
+      "description": "Indirect query (OAuth2 explanation) \u2192 no enforcer, normal answer",
+      "query": "Can you explain the difference between OAuth2 and API key authentication?",
+      "enforcement_fired": false,
+      "has_uncertainty": false,
+      "hallucinated": false,
+      "passed": true,
+      "note": "OK"
+    },
+    {
+      "test_id": "CE3",
+      "description": "Direct query about unverified token expiry \u2192 enforcer fires, model hedges",
+      "query": "What token expiry should we configure for auth?",
+      "enforcement_fired": true,
+      "has_uncertainty": true,
+      "hallucinated": false,
+      "passed": true,
+      "note": "OK"
+    },
+    {
+      "test_id": "CE4",
+      "description": "Verified constraint \u2014 enforcer should NOT fire (constraint is resolved)",
+      "query": "What rate limit should we design our retry logic around?",
+      "enforcement_fired": false,
+      "has_uncertainty": true,
+      "hallucinated": false,
+      "passed": true,
+      "note": "OK"
+    }
+  ],
+  "passed": 4,
+  "total": 4
+}

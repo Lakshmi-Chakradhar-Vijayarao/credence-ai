@@ -52,7 +52,7 @@ class PaymentAPIClient:
         self._token = data["access_token"]
 
         # ── EPISTEMIC MEMORY FLAG POINT ────────────────────────────────────
-        # The expiry value below should trigger em_propagation_risk BEFORE
+        # The expiry value below should trigger credence_risk BEFORE
         # being hardcoded.  The uncertain constraint from the planning session:
         # "token expires in 3600s or 86400s — unconfirmed."
         # Without epistemic memory: Claude writes expires_in = 3600 here.
