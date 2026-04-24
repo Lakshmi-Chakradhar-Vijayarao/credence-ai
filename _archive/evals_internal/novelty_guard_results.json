@@ -1,0 +1,122 @@
+{
+  "stable_fp_rate": 0.0,
+  "pivot_recall": 0.0,
+  "total_stable_fp": 0,
+  "total_pivot_tp": 0,
+  "total_pivot_fn": 3,
+  "sequences": [
+    {
+      "sequence_name": "Database engineering",
+      "sequence_type": "stable",
+      "pivot_turn": -1,
+      "turn_firings": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "false_positives": 0,
+      "false_negatives": 0,
+      "true_positives": 0,
+      "accuracy_note": "0 false positives (should be 0)"
+    },
+    {
+      "sequence_name": "Machine learning training",
+      "sequence_type": "stable",
+      "pivot_turn": -1,
+      "turn_firings": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "false_positives": 0,
+      "false_negatives": 0,
+      "true_positives": 0,
+      "accuracy_note": "0 false positives (should be 0)"
+    },
+    {
+      "sequence_name": "HTTP and web APIs",
+      "sequence_type": "stable",
+      "pivot_turn": -1,
+      "turn_firings": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "false_positives": 0,
+      "false_negatives": 0,
+      "true_positives": 0,
+      "accuracy_note": "0 false positives (should be 0)"
+    },
+    {
+      "sequence_name": "Database \u2192 Cryptography pivot at turn 5",
+      "sequence_type": "pivot",
+      "pivot_turn": 4,
+      "turn_firings": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "false_positives": 0,
+      "false_negatives": 1,
+      "true_positives": 0,
+      "accuracy_note": "tp=0 fp=0 fn=1"
+    },
+    {
+      "sequence_name": "ML training \u2192 Systems programming pivot at turn 4",
+      "sequence_type": "pivot",
+      "pivot_turn": 3,
+      "turn_firings": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "false_positives": 0,
+      "false_negatives": 1,
+      "true_positives": 0,
+      "accuracy_note": "tp=0 fp=0 fn=1"
+    },
+    {
+      "sequence_name": "Web APIs \u2192 Compiler design pivot at turn 6",
+      "sequence_type": "pivot",
+      "pivot_turn": 5,
+      "turn_firings": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "false_positives": 0,
+      "false_negatives": 1,
+      "true_positives": 0,
+      "accuracy_note": "tp=0 fp=0 fn=1"
+    }
+  ]
+}

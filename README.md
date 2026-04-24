@@ -644,7 +644,6 @@ evals/
   e6_repeated.py                E6 multi-trial statistical validation
   behavioral_calibration.py     Behavioral consistency calibration (n=60)
   benchmark.py                  30-pair QA benchmark (4 conditions)
-  gauntlet.py                   50 scenarios × 5 domains × 4 conditions
   conversation_benchmark.py     10-session × 3-condition benchmark
 
 etp-v1.json               Epistemic Transport Protocol v1 JSON Schema

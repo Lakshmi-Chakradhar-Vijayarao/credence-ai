@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "epistemic-memory": {
+      "command": "python",
+      "args": ["-m", "cams.mcp_server"],
+      "env": {
+        "ANTHROPIC_API_KEY": "YOUR_API_KEY_HERE"
+      }
+    }
+  }
+}

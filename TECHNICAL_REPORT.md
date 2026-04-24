@@ -277,7 +277,7 @@ def _direct_constraint_matches(self, user_message, constraints) -> list[dict]:
 
 The enforcer is distinguished from the Truth Buffer in three ways: (1) it fires only on direct topical matches, not on every turn; (2) it uses imperative rather than informational language; (3) the `TurnResult.enforcement_active` flag records whether enforcement fired, enabling downstream evaluation. A verified constraint bypasses enforcement — once the user confirms a value, the constraint is removed from the unverified pool.
 
-The logic tests in `evals/consistency_enforcer_test.py` (flag `--no-api`) verify the overlap detection on 5 labelled query-constraint pairs, covering direct matches, indirect queries, and boundary cases.
+The logic tests in `test_stress.py` (S10 and S16 suites) verify the overlap detection on labelled query-constraint pairs, covering direct matches, synonym-expanded paraphrases, indirect queries, and boundary cases.
 
 ---
 
