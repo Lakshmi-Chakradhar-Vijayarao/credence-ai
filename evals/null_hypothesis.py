@@ -1,5 +1,5 @@
 """
-evals/haiku_baseline.py
+evals/null_hypothesis.py
 =======================
 Missing Baseline Test — the most important methodological gap to close.
 
@@ -34,12 +34,12 @@ METRICS
   downstream_certain : bool — did downstream answer without hedging?
 
 Run:
-    python -m evals.haiku_baseline
-    python -m evals.haiku_baseline --n 10        # quick 10-scenario test
-    python -m evals.haiku_baseline --dry-run     # validate structure only
-    python -m evals.haiku_baseline --resume      # add to existing results
+    python -m evals.null_hypothesis
+    python -m evals.null_hypothesis --n 10        # quick 10-scenario test
+    python -m evals.null_hypothesis --dry-run     # validate structure only
+    python -m evals.null_hypothesis --resume      # add to existing results
 
-Results: evals/haiku_baseline_results.json
+Results: evals/null_hypothesis_results.json
 """
 
 import os, sys, json, re, time, argparse
@@ -503,7 +503,7 @@ def main():
     parser.add_argument("--resume",   action="store_true",       help="Skip already-completed scenarios")
     args = parser.parse_args()
 
-    output_path = os.path.join(os.path.dirname(__file__), "haiku_baseline_results.json")
+    output_path = os.path.join(os.path.dirname(__file__), "null_hypothesis_results.json")
 
     if not args.dry_run:
         if not _ANTHROPIC_AVAILABLE:

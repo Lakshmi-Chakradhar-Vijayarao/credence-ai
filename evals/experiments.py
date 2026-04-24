@@ -37,7 +37,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from anthropic import Anthropic
 from credence.context_manager import ContextManager
 from credence.confidence_proxy import CredenceProxy
-from evals.benchmark import rouge_l
+from evals.qa_benchmark import rouge_l
 
 _CLIENT: Optional[Anthropic] = None
 

@@ -1,5 +1,5 @@
 """
-test_stress.py — Comprehensive edge-case and bottleneck stress test for Credence.
+tests.py — Unit and component tests for Credence (107 tests, S1–S22 suites).
 
 Tests every identified risk from the codebase audit:
   - Null/empty inputs to all public methods
@@ -17,8 +17,8 @@ Tests every identified risk from the codebase audit:
   - End-to-end ContextManager with ghost detector enabled (API, if key present)
 
 Usage:
-    python test_stress.py          # non-API tests only
-    python test_stress.py --api    # all tests including live API calls
+    python tests.py          # non-API tests only
+    python tests.py --api    # all tests including live API calls
 """
 
 import os

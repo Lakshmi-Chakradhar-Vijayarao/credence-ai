@@ -808,7 +808,7 @@ def render_evidence_tab():
 
     # ── Flagship results (if run) ─────────────────────────────────────────
     flagship_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                  "experiments", "flagship", "flagship_results.json")
+                                  "evals", "flagship", "flagship_results.json")
     if os.path.exists(flagship_path):
         with open(flagship_path) as f:
             flagship = json.load(f)

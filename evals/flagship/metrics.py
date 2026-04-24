@@ -1,5 +1,5 @@
 """
-experiments/flagship/metrics.py
+evals/flagship/metrics.py
 ================================
 Metrics for the flagship Credence experiment.
 

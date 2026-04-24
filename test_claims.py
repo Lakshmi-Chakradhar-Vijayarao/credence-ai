@@ -1,15 +1,26 @@
 """
-test_final.py
-=============
-Credence — Final Lock-Down Test Suite
+test_claims.py
+==============
+Credence — Submission Claim Validation Suite
 
-Tests every claim made in the demo and submission.
-Deterministic tests run offline. Ghost detector / API tests require
-ANTHROPIC_API_KEY (auto-skipped with a warning if absent).
+Verifies every specific claim made in the demo and submission:
+  T1  Explicit constraint registered, GTS annotates, probe blocks compression
+  T2  All 108 uncertainty markers trigger the faithfulness probe
+  T3  Clean facts do not trigger the probe; J-score stays HIGH/MEDIUM
+  T4  Registry correctly stores and retrieves 10 constraints; Truth Buffer caps at 6
+  T5  Full lifecycle: register → verify → contradict → DISPUTED → re-enters TB
+  T6  Ghost detector fires on implicit vendor claims; passes on clean facts
+  T7  Latency: all deterministic layers < 5ms total (registry ~0.37ms, probe ~0.07ms)
+  T8  Noisy user messages: probe still detects uncertainty; no duplicate registration
+  T9  Qualitative checks: ghost method exists, trajectory tracked, clean facts pass
+  T10 live_demo.py runs end-to-end and prints all 5 checkpoints
+
+Deterministic tests run offline (no API key needed).
+Ghost detector / API tests auto-skip if ANTHROPIC_API_KEY absent.
 
 Run:
-    python3 test_final.py           # deterministic only if no API key
-    python3 test_final.py --api     # force API tests (needs ANTHROPIC_API_KEY)
+    python3 test_claims.py           # deterministic only (no API key needed)
+    python3 test_claims.py --api     # force all tests including live API calls
 
 Exit code 0 = all run tests passed (GO).
 Exit code 1 = one or more failures (NO-GO).
@@ -603,7 +614,7 @@ if skipped_tests:
     print()
     print("  To run API tests (Ghost Detector true/false positives):")
     print("  export ANTHROPIC_API_KEY=your_key")
-    print("  python3 test_final.py --api")
+    print("  python3 test_claims.py --api")
 
 print()
 

@@ -56,7 +56,7 @@ certainty entirely — 100% block rate across all 30 study scenarios.
 
 **Null hypothesis tested**: Does simply adding "preserve uncertainty qualifiers" to the
 Haiku prompt achieve the same result without any middleware?
-Run `python -m evals.haiku_baseline` to find out.
+Run `python -m evals.null_hypothesis` to find out.
 
 ---
 
@@ -566,7 +566,7 @@ python -m evals.experiments --exp E7
 python -m evals.compression_faithfulness
 
 # Null hypothesis test: does "preserve qualifiers" instruction alone suffice?
-python -m evals.haiku_baseline
+python -m evals.null_hypothesis
 
 # E6 multi-trial (re-run after model fix to all Opus, ~$15 API)
 python -m evals.e6_repeated --n 20
@@ -639,12 +639,14 @@ packages/
 
 evals/
   compression_faithfulness.py   Headline result: compression strips qualifiers (n=30)
-  haiku_baseline.py             Null hypothesis test (hedge-instruction vs probe)
-  experiments.py                E1–E8 ablation experiments
-  e6_repeated.py                E6 multi-trial statistical validation
-  behavioral_calibration.py     Behavioral consistency calibration (n=60)
-  benchmark.py                  30-pair QA benchmark (4 conditions)
+  null_hypothesis.py            Null hypothesis test: does a prompt instruction alone work?
+  experiments.py                E1–E9 ablation experiments
+  e6_repeated.py                E6 multi-trial statistical validation (n=23)
+  ghost_gauntlet.py             Ghost constraint benchmark (10 sessions × 3 claims)
+  adversarial_tests.py          5 adversarial tests (passes offline)
+  qa_benchmark.py               30-pair QA benchmark (4 conditions)
   conversation_benchmark.py     10-session × 3-condition benchmark
+  flagship/                     3-scenario × 3-condition flagship experiment
 
 etp-v1.json               Epistemic Transport Protocol v1 JSON Schema
 ARCHITECTURE.md           Full system design

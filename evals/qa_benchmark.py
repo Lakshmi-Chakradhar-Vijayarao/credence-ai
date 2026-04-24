@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 """
-evals/benchmark.py
-==================
+evals/qa_benchmark.py
+=====================
 Benchmarks Credence against two baselines on real Claude API calls:
 
   Baseline A — No compression: full context every turn (most expensive)
@@ -20,8 +20,8 @@ Measures:
   6. J-score zone calibration: do HIGH-zone answers score better quality?
 
 Run:
-    python -m evals.benchmark          # runs all 3 conditions, prints table
-    python -m evals.benchmark --quick  # 3 questions only (fast smoke test)
+    python -m evals.qa_benchmark          # runs all 3 conditions, prints table
+    python -m evals.qa_benchmark --quick  # 3 questions only (fast smoke test)
 
 Results saved to evals/results.json for the demo to load.
 """

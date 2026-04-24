@@ -1,5 +1,5 @@
 """
-experiments/flagship/pipeline.py
+evals/flagship/pipeline.py
 =================================
 EpistemicPipeline — three-condition experiment runner.
 

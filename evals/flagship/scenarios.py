@@ -1,5 +1,5 @@
 """
-experiments/flagship/scenarios.py
+evals/flagship/scenarios.py
 ==================================
 Three realistic multi-turn scenarios for the flagship Credence experiment.
 

@@ -1,17 +1,17 @@
 """
-experiments/flagship/run.py
+evals/flagship/run.py
 ============================
 CLI runner for the flagship Credence experiment.
 
 Usage:
-    python -m experiments.flagship.run                     # 3 trials, all scenarios
-    python -m experiments.flagship.run --trials 1          # quick smoke test
-    python -m experiments.flagship.run --scenarios A,B     # subset of scenarios
-    python -m experiments.flagship.run --dry-run           # no API calls, mock data
+    python -m evals.flagship.run                     # 3 trials, all scenarios
+    python -m evals.flagship.run --trials 1          # quick smoke test
+    python -m evals.flagship.run --scenarios A,B     # subset of scenarios
+    python -m evals.flagship.run --dry-run           # no API calls, mock data
 
 Output:
     Prints per-scenario, per-condition results to terminal.
-    Saves full results to experiments/flagship/flagship_results.json
+    Saves full results to evals/flagship/flagship_results.json
 
 Metrics:
     recall          — mean fragment recall across callbacks (higher = better)
@@ -29,9 +29,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from experiments.flagship.scenarios import ALL_SCENARIOS
-from experiments.flagship.pipeline import run_scenario_trial, TrialResult
-from experiments.flagship.metrics import ScenarioResult, bootstrap_ci
+from evals.flagship.scenarios import ALL_SCENARIOS
+from evals.flagship.pipeline import run_scenario_trial, TrialResult
+from evals.flagship.metrics import ScenarioResult, bootstrap_ci
 
 _RESULTS_PATH = Path(__file__).parent / "flagship_results.json"
 _MODEL = "claude-opus-4-7"
