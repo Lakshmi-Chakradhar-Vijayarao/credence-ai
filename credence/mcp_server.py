@@ -783,6 +783,148 @@ if _FASTMCP_AVAILABLE:
 
 
 # ---------------------------------------------------------------------------
+# Cross-session memory tools
+# ---------------------------------------------------------------------------
+
+if _FASTMCP_AVAILABLE:
+    @mcp.tool()
+    def credence_memory_snapshot(session_id: str, project_id: str) -> dict:
+        """
+        Save all unverified constraints from session_id as persistent project memory.
+
+        Call this at the END of a Claude Code session to preserve epistemic state
+        across session boundaries. Any constraint that was stated but never verified
+        during the session will be remembered for future sessions on the same project.
+
+        Unlike regular memory systems (Mem0, Zep), Credence memory carries epistemic
+        provenance: it remembers not just WHAT you told Claude, but WHETHER it was verified.
+
+        Args:
+            session_id: The current session ID (used to identify which constraints to save).
+            project_id: A stable project identifier (e.g. "my-api-project", "payment-service").
+                        All sessions for the same codebase should use the same project_id.
+
+        Returns:
+            saved_count: Number of unverified constraints saved to project memory.
+            items: List of saved constraints with their content and confidence levels.
+            message: Human-readable summary.
+
+        Example:
+            At end of session where you discussed an unconfirmed rate limit:
+            → credence_memory_snapshot("session-abc", "payment-service")
+            → "Saved 2 unverified constraints to project 'payment-service'"
+        """
+        from .memory import CredenceMemory
+        mem = CredenceMemory(_get_registry())
+        snap = mem.snapshot(session_id=session_id, project=project_id)
+        return {
+            "project_id":  snap.project_id,
+            "session_id":  snap.session_id,
+            "saved_count": snap.saved_count,
+            "items": [
+                {
+                    "constraint_id": item.get("constraint_id"),
+                    "content":       item.get("content"),
+                    "zone":          item.get("zone"),
+                    "j_score":       item.get("j_score"),
+                }
+                for item in snap.items
+            ],
+            "message": snap.summary(),
+        }
+
+    @mcp.tool()
+    def credence_memory_recall(
+        project_id: str,
+        new_session_id: str,
+        context_hint: str = "",
+    ) -> dict:
+        """
+        Load project memories into a new session at session start.
+
+        Call this at the START of a new Claude Code session before any other
+        credence_chat calls. It injects all previously unverified constraints
+        from the project into the new session's registry so the Truth Buffer
+        and Consistency Enforcer work from turn 1.
+
+        This is the key capability that no other memory system provides:
+        the new session starts KNOWING what it doesn't know.
+
+        Args:
+            project_id:     Project identifier matching what was used in credence_memory_snapshot.
+            new_session_id: ID for the new session (e.g. a fresh UUID).
+            context_hint:   Optional keyword string to filter relevant memories.
+                            E.g. "rate limit authentication" to load only auth-related memories.
+                            Leave empty to load all project memories.
+
+        Returns:
+            injected_count: Number of constraints injected into the new session.
+            system_block:   Ready-to-use system prompt prefix — prepend to your session's
+                            system prompt so Claude starts aware of pending uncertainties.
+            items:          List of injected constraints.
+            message:        Human-readable summary.
+
+        Example:
+            At start of new session on the same project:
+            → credence_memory_recall("payment-service", "session-xyz")
+            → system_block includes: "⚠ [LOW] rate limit ~50 req/min — UNVERIFIED"
+            → Claude now knows to hedge when discussing rate limits from turn 1
+        """
+        from .memory import CredenceMemory
+        mem = CredenceMemory(_get_registry())
+        recall = mem.recall_and_inject(
+            project=project_id,
+            new_session_id=new_session_id,
+            context_hint=context_hint,
+        )
+        return {
+            "project_id":      recall.project_id,
+            "new_session_id":  recall.new_session_id,
+            "injected_count":  recall.injected_count,
+            "system_block":    recall.system_block,
+            "items": [
+                {
+                    "constraint_id": item.get("constraint_id"),
+                    "content":       item.get("content"),
+                    "zone":          item.get("zone"),
+                    "j_score":       item.get("j_score"),
+                    "session_id":    item.get("session_id"),
+                }
+                for item in recall.items
+            ],
+            "is_empty": recall.is_empty(),
+            "message":  (
+                f"Loaded {recall.injected_count} unverified constraint(s) from project '{project_id}' "
+                f"into session '{new_session_id}'."
+                if not recall.is_empty()
+                else f"No unverified constraints found for project '{project_id}'."
+            ),
+        }
+
+    @mcp.tool()
+    def credence_memory_status(project_id: str) -> dict:
+        """
+        Show epistemic debt for a project — all unverified constraints across all sessions.
+
+        Use this to audit what assumptions are still pending verification for a project.
+        'Epistemic debt' = number of unverified constraints still outstanding.
+        High epistemic debt means future sessions will carry more uncertainty overhead.
+
+        Args:
+            project_id: Project identifier to query.
+
+        Returns:
+            epistemic_debt: Total unverified + disputed constraints.
+            verified_count: Constraints that have been confirmed.
+            unverified: List of pending uncertain constraints.
+        """
+        from .memory import CredenceMemory
+        mem = CredenceMemory(_get_registry())
+        status = mem.project_status(project_id)
+        return status
+
+
+# ---------------------------------------------------------------------------
 # MCP Resources — epistemic:// URI scheme
 #
 # Resources expose the epistemic ledger as passive context any MCP-compatible

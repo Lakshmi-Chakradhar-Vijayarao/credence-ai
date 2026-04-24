@@ -7,3 +7,9 @@ dist/
 build/
 .venv/
 venv/
+
+# Rust build artifacts
+credence_gate/target/
+credence_gate/epistemic_registry.db
+credence_gate/epistemic_registry.db.bak
+/tmp/credence_test*.db

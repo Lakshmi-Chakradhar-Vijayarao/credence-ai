@@ -1498,6 +1498,102 @@ except Exception as e:
     traceback.print_exc()
 
 # ─────────────────────────────────────────────────────────────────────────────
+print("\n── S24: Cross-session memory ─────────────────────────────────────────────")
+# ─────────────────────────────────────────────────────────────────────────────
+
+try:
+    from credence.registry import CredenceRegistry as _Reg
+    from credence.memory import CredenceMemory as _Mem, MemorySnapshot, MemoryRecall
+
+    _reg24 = _Reg(":memory:")
+    _mem24 = _Mem(_reg24)
+
+    # S24-A: snapshot returns 0 items when session has no constraints
+    snap_empty = _mem24.snapshot("empty-session", project="proj-x")
+    check("S24-A snapshot empty session returns 0 items",
+          snap_empty.saved_count == 0, f"got {snap_empty.saved_count}")
+
+    # S24-B: snapshot captures registered unverified constraints
+    _reg24.register("rate limit is 50 req/min — unconfirmed", "s1",
+                    j_score=0.28, zone="LOW")
+    _reg24.register("token expiry is 3600s — tentative", "s1",
+                    j_score=0.24, zone="LOW")
+    snap = _mem24.snapshot("s1", project="proj-x")
+    check("S24-B snapshot captures 2 unverified constraints",
+          snap.saved_count == 2, f"got {snap.saved_count}")
+
+    # S24-C: snapshot result has project_id and session_id set
+    check("S24-C snapshot has correct project_id",
+          snap.project_id == "proj-x", f"got {snap.project_id}")
+    check("S24-C snapshot has correct session_id",
+          snap.session_id == "s1", f"got {snap.session_id}")
+
+    # S24-D: recall_project_memories returns the 2 constraints
+    memories = _reg24.recall_project_memories("proj-x")
+    check("S24-D recall_project_memories returns 2 items",
+          len(memories) == 2, f"got {len(memories)}")
+
+    # S24-E: inject_memories_into_session copies constraints to new session
+    injected = _reg24.inject_memories_into_session("proj-x", "s2")
+    check("S24-E inject_memories returns 2 constraint_ids",
+          len(injected) == 2, f"got {len(injected)}")
+
+    # S24-F: new session can query injected constraints via list_uncertain
+    uncertain_s2 = _reg24.list_uncertain("s2")
+    check("S24-F new session has 2 unverified constraints",
+          len(uncertain_s2) == 2, f"got {len(uncertain_s2)}")
+
+    # S24-G: injected constraints have source='cross_session_memory'
+    sources = {c.get("source") for c in uncertain_s2}
+    check("S24-G injected constraints have correct source",
+          "cross_session_memory" in sources, f"sources: {sources}")
+
+    # S24-H: recall_and_inject returns a MemoryRecall with system_block
+    recall = _mem24.recall_and_inject(project="proj-x", new_session_id="s3")
+    check("S24-H recall_and_inject returns MemoryRecall",
+          isinstance(recall, MemoryRecall), f"got {type(recall)}")
+    check("S24-H system_block is non-empty",
+          len(recall.system_block) > 0, f"system_block empty")
+    check("S24-H system_block contains project name",
+          "proj-x" in recall.system_block, f"no project name in block")
+
+    # S24-I: project_status reports correct epistemic_debt
+    status = _mem24.project_status("proj-x")
+    check("S24-I project_status has epistemic_debt > 0",
+          status["epistemic_debt"] > 0, f"debt={status.get('epistemic_debt')}")
+    check("S24-I project_status has correct total_memories",
+          status["total_memories"] > 0, f"total={status.get('total_memories')}")
+
+    # S24-J: verified constraint is NOT included in memory recall
+    # Verify the original s1 constraint and confirm count decreases
+    _before_count = len(_reg24.recall_project_memories("proj-x"))
+    _orig_cids = [m["constraint_id"] for m in _reg24.recall_project_memories("proj-x")]
+    if _orig_cids:
+        _reg24.verify(_orig_cids[0], "confirmed: 50 req/min from official docs")
+    memories_after = _reg24.recall_project_memories("proj-x")
+    check("S24-J verified constraint excluded from project memories",
+          len(memories_after) < _before_count,
+          f"count unchanged: {len(memories_after)} == {_before_count}")
+
+    # S24-K: MemorySnapshot.summary() produces readable output
+    summary_str = snap.summary()
+    check("S24-K snapshot summary mentions saved count",
+          "2" in summary_str or "Snapshotted" in summary_str, f"summary: {summary_str[:80]}")
+
+    # S24-L: snapshot idempotent — calling twice doesn't double-count
+    snap2 = _mem24.snapshot("s1", project="proj-x")
+    memories2 = _reg24.recall_project_memories("proj-x")
+    check("S24-L snapshot idempotent — no duplicates",
+          len(memories2) == len(memories_after), f"got {len(memories2)} vs {len(memories_after)}")
+
+except Exception as e:
+    import traceback
+    for name in ["S24-A","S24-B","S24-C","S24-D","S24-E","S24-F","S24-G",
+                 "S24-H","S24-I","S24-J","S24-K","S24-L"]:
+        check(name, False, f"exception: {e}")
+    traceback.print_exc()
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Results
 # ─────────────────────────────────────────────────────────────────────────────
 

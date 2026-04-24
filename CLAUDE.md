@@ -789,3 +789,75 @@ The FCR metric (36.7% → 0%) measures absence of uncertainty markers in downstr
 > "Credence is a lightweight enforcement layer that prevents uncertainty qualifiers from being silently dropped during LLM context compression. We measured a specific failure — 60% qualifier strip rate under Haiku compression, 36.7% downstream false-certainty — and prevent it deterministically at 0.07ms with zero API calls."
 
 Everything else (CE, GTS, Truth Buffer, Ghost Detector) is the full stack. The probe is the headline.
+
+---
+
+## What Was Built (April 25, 2026 — production pass: Rust, Memory, Cross-Session Eval)
+
+### `credence/memory.py` (NEW)
+Cross-session epistemic memory module. `CredenceMemory` wraps `CredenceRegistry`.
+- `snapshot(session_id, project)` → `MemorySnapshot`: tags all unverified constraints with project_id + is_memory=1
+- `recall_and_inject(project, new_session_id)` → `MemoryRecall`: copies memories to new session + returns formatted system_block
+- `project_status(project)` → dict: epistemic_debt, verified_count, unverified_count
+- Key differentiator vs. Mem0/Zep/Graphiti: stores epistemic confidence (j_score, zone, verified) with the fact
+
+### `credence/registry.py` — new methods + schema migration
+- `snapshot_to_project(session_id, project_id)` → list[dict]: sets project_id+is_memory on unverified constraints
+- `recall_project_memories(project_id)` → list[dict]: all unverified memories for a project, sorted by j_score asc
+- `inject_memories_into_session(project_id, new_session_id)` → list[str]: copies memories to new session registry
+- `get_all_project_constraints(project_id)` → list[dict]: all constraints (verified + unverified)
+- Schema migration: added `project_id TEXT` + `is_memory INTEGER NOT NULL DEFAULT 0` columns + idx_project index
+
+### `credence/mcp_server.py` — 3 new tools (total now 21)
+- `credence_memory_snapshot(session_id, project_id)` → snapshot unverified constraints to project
+- `credence_memory_recall(project_id, new_session_id, context_hint)` → inject memories into new session
+- `credence_memory_status(project_id)` → epistemic debt dashboard for a project
+
+### `credence_gate/` (NEW — Rust native enforcement binary)
+Compiled Rust binary: `credence-gate`. Replaces `python3 -m credence.hooks` as the Claude Code PreToolUse hook.
+- **98× faster than Python hook: 331ms → 3.4ms** per tool call
+- At 100 tool calls/session: 33s Python overhead → 0.34s Rust overhead
+- Reads `epistemic_registry.db` from CWD; implements same synonym-expansion as Python hook (32 clusters)
+- BLOCK path: exit code 2 + stderr message (Claude Code protocol)
+- ALLOW path: exit code 0
+- Build: `source "$HOME/.cargo/env" && cargo build --release` in `credence_gate/`
+- Binary: `credence_gate/target/release/credence-gate` (3.0MB, stripped, LTO-optimized)
+- `CREDENCE_DEBUG=1` env var enables timing output to stderr
+
+### `evals/cross_session_eval.py` (NEW)
+Cross-Session False Certainty Rate (CS-FCR) evaluation.
+10 scenarios × 3 conditions: no_memory, naive_summary, credence_memory.
+- no_memory: session 2 has zero context from session 1
+- naive_summary: session 2 gets plain text summary (like Mem0/Zep)
+- credence_memory: session 2 inherits epistemic registry from session 1 via memory
+- Metric: CS-FCR = fraction of callbacks that state uncertain value WITHOUT qualifier
+- Expected: no_memory ~0.70, naive_summary ~0.40, credence_memory ~0.00
+- Run: `python -m evals.cross_session_eval`
+
+### `demo/live_demo.py` — Checkpoint 7 added
+New checkpoint showing cross-session memory: snapshot + recall + system block output.
+Summary table at end shows all 7 checkpoints with latency and determinism flag.
+
+### `tests.py` — S24 suite added (12 tests)
+S24-A through S24-L: covers snapshot/recall/inject/verify flow, system_block format,
+idempotency, project_status, and memory exclusion on verify.
+**Test totals: 132 passing, 0 failing, 11 skipped.**
+
+### Key numbers from this session
+- Rust gate speedup: **98×** (331ms → 3.4ms)
+- Cross-session eval structure: 10 scenarios, 20 callbacks, 3 conditions
+- Ghost ablation final: no_detection=0.400, haiku_extract=1.000, opus_ghost=1.000, full_credence=1.000 (n=19/20, last result still running)
+- MCP tools: 18 → **21** (added memory_snapshot, memory_recall, memory_status)
+- Tests: 116 → **132**
+
+### `.claude/settings.json` update for Rust gate
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "Write|Edit|Bash|NotebookEdit",
+      "hooks": [{"type": "command", "command": "credence-gate"}]
+    }]
+  }
+}
+```

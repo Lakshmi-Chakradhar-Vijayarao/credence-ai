@@ -109,6 +109,18 @@ class CredenceRegistry:
             self._conn.execute(
                 "ALTER TABLE constraints ADD COLUMN contradicted_by TEXT"
             )
+        if "project_id" not in cols:
+            self._conn.execute(
+                "ALTER TABLE constraints ADD COLUMN project_id TEXT"
+            )
+        if "is_memory" not in cols:
+            self._conn.execute(
+                "ALTER TABLE constraints ADD COLUMN is_memory INTEGER NOT NULL DEFAULT 0"
+            )
+        # Create project index if it doesn't exist
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_project ON constraints(project_id)"
+        )
 
     # ------------------------------------------------------------------
     # Core CRUD
@@ -717,6 +729,94 @@ class CredenceRegistry:
             and not w.isdigit()
             and w not in _STOPWORDS
         }
+
+    # ------------------------------------------------------------------
+    # Cross-session memory
+    # ------------------------------------------------------------------
+
+    def snapshot_to_project(self, session_id: str, project_id: str) -> list[dict]:
+        """
+        Tag all unverified constraints from session_id as cross-session memories
+        for project_id. Returns list of constraints snapshotted.
+
+        Idempotent: calling twice won't duplicate — it just updates project_id + is_memory.
+        """
+        rows = self._conn.execute(
+            """
+            SELECT * FROM constraints
+            WHERE session_id=? AND (verified=0 OR validation_status='disputed')
+            """,
+            (session_id,),
+        ).fetchall()
+
+        saved = []
+        for row in rows:
+            self._conn.execute(
+                "UPDATE constraints SET project_id=?, is_memory=1, updated_at=? WHERE constraint_id=?",
+                (project_id, self._now(), row["constraint_id"]),
+            )
+            saved.append(dict(row))
+        self._conn.commit()
+        return saved
+
+    def recall_project_memories(self, project_id: str) -> list[dict]:
+        """
+        Return all unverified memory-tagged constraints for a project,
+        sorted by j_score ascending (least certain first — most important to re-inject).
+        """
+        rows = self._conn.execute(
+            """
+            SELECT * FROM constraints
+            WHERE project_id=? AND is_memory=1 AND (verified=0 OR validation_status='disputed')
+            ORDER BY j_score ASC
+            """,
+            (project_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def inject_memories_into_session(
+        self,
+        project_id: str,
+        new_session_id: str,
+    ) -> list[str]:
+        """
+        Copy project memories into new_session_id so the new session's Truth Buffer
+        picks them up immediately. Returns list of constraint_ids injected.
+
+        Uses INSERT OR IGNORE — safe to call multiple times.
+        """
+        memories = self.recall_project_memories(project_id)
+        injected = []
+        for m in memories:
+            new_cid = self._content_id(m["content"] + "::memory::" + new_session_id)
+            now = self._now()
+            self._conn.execute(
+                """
+                INSERT OR IGNORE INTO constraints
+                  (constraint_id, content, session_id, j_score, zone,
+                   verified, verified_value, registered_at_turn, source, expires_at,
+                   created_at, updated_at, project_id, is_memory)
+                VALUES (?, ?, ?, ?, ?, 0, NULL, 0, 'cross_session_memory', NULL, ?, ?, ?, 1)
+                """,
+                (new_cid, m["content"], new_session_id, m["j_score"], m["zone"],
+                 now, now, project_id),
+            )
+            if self._conn.execute(
+                "SELECT changes()"
+            ).fetchone()[0] > 0:
+                self.log_event(new_cid, "register", j_score=m["j_score"], zone=m["zone"],
+                               notes=f"cross_session_memory from project={project_id}")
+                injected.append(new_cid)
+        self._conn.commit()
+        return injected
+
+    def get_all_project_constraints(self, project_id: str) -> list[dict]:
+        """All constraints (verified + unverified) for a project, ordered by recency."""
+        rows = self._conn.execute(
+            "SELECT * FROM constraints WHERE project_id=? ORDER BY created_at DESC",
+            (project_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
 
     @staticmethod
     def _content_id(content: str) -> str:

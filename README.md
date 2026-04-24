@@ -80,7 +80,7 @@ These require different mechanisms. Keyword detection handles the first. Proacti
 
 ## How Credence Works
 
-Five layers. Three are fully deterministic — they do not ask Claude for permission.
+Seven layers across four pipeline stages. Four are fully deterministic — they do not ask Claude for permission.
 
 ```
 User says something uncertain
@@ -105,27 +105,47 @@ User says something uncertain
 ┌───────────────────────────────────────────┐
 │  LAYER 2 — Truth Buffer + Enforcer        │  PROBABILISTIC
 │  Injects all unverified constraints into  │  (Claude must comply)
-│  every system prompt. When query overlaps │
-│  a constraint (32 synonym clusters), upgrades
-│  from informational → imperative: "YOU MUST
-│  express uncertainty. Stating this as     │
-│  confirmed fact is an epistemic error."   │
+│  every system prompt. 32 synonym clusters │
+│  → imperative: "YOU MUST express          │
+│  uncertainty. Stating this as confirmed   │
+│  fact is an epistemic error."             │
 └───────────────────────────────────────────┘
                       │
     ▼ after generation
 ┌───────────────────────────────────────────┐
 │  LAYER 3 — Generation-Time Scanner (~0.08ms) │  DETERMINISTIC
-│  Two-pass regex scan of model output.    │
-│  Annotates code and prose with tier badge │
-│  ⚠⚠ HIGH RISK / ⚠ UNVERIFIED / CHECK    │
-│  based on decayed confidence. Zero API.  │
+│  Two-pass regex scan. Annotates code and  │
+│  prose with ⚠⚠ HIGH RISK / ⚠ UNVERIFIED  │
+│  based on decayed confidence. Zero API.   │
+└───────────────────────────────────────────┘
+                      │
+    ▼ at tool execution boundary
+┌───────────────────────────────────────────┐
+│  LAYER 4 — Native Gate (Rust, ~3.4ms)     │  DETERMINISTIC
+│  credence-gate: compiled PreToolUse hook   │
+│  98× faster than Python hook (331ms→3.4ms)│
+│  Blocks Write/Edit/Bash if arguments       │
+│  overlap an unverified constraint.         │
+│  Zero Python startup cost per tool call.  │
+└───────────────────────────────────────────┘
+                      │
+    ▼ at session boundary
+┌───────────────────────────────────────────┐
+│  LAYER 5 — Cross-Session Memory (<1ms)    │  DETERMINISTIC
+│  credence_memory_snapshot → saves what    │
+│  was unverified at session end.           │
+│  credence_memory_recall → injects prior   │
+│  uncertainty into new session's registry. │
+│  New session starts knowing what it       │
+│  doesn't know.                            │
 └───────────────────────────────────────────┘
 
-Total deterministic overhead: ~0.56ms. Zero API calls from Layers 1 and 3.
+Total deterministic overhead: ~0.56ms in-session + 3.4ms gate + <1ms memory.
+Zero API calls from Layers 1, 3, 4, 5.
 ```
 
-**Layers 1 and 3 are fully deterministic.** No API call. No model cooperation required.
-**Layer 2 depends on Claude following instructions.** Honest framing — enforcement is deterministic, guidance is not.
+**Layers 1, 3, 4, 5 are fully deterministic.** No API call. No model cooperation required.
+**Layers 2, Ghost Detector, and Contradiction Detector depend on Claude.** Honest framing: enforcement is deterministic, guidance is not.
 
 ---
 
@@ -190,10 +210,15 @@ Add to `.claude/settings.json`:
   "hooks": {
     "PreToolUse": [{
       "matcher": "Write|Edit|Bash|NotebookEdit",
-      "hooks": [{"type": "command", "command": "python3 -m credence.hooks"}]
+      "hooks": [{"type": "command", "command": "credence-gate"}]
     }]
   }
 }
+```
+
+> **Native gate:** `credence-gate` is a compiled Rust binary (3.0MB, no Python runtime). It replaces `python3 -m credence.hooks` with a **98× faster** enforcement path: 331ms → 3.4ms per tool call. In a 100-tool-call session, this saves 32 seconds of enforcement overhead. Build it: `cargo build --release` in `credence_gate/`.
+
+```json
 ```
 
 Add to your `CLAUDE.md`:
@@ -243,6 +268,34 @@ Tier escalates as confidence decays across turns: `j × 0.95^turns_elapsed`.
 
 ---
 
+## Cross-Session Memory: What No Other Tool Does
+
+Every memory tool stores what you told the AI. Credence Memory stores what the AI *wasn't sure about*.
+
+```
+Session 1 (Monday):  "The Stripe rate limit is ~50 req/min — I haven't confirmed with the vendor."
+                     → Registered as LOW confidence, j=0.28
+
+>>> credence_memory_snapshot("session-mon", project="payment-service")
+    Saved 2 unverified constraints to project 'payment-service'
+
+[Thursday — new session]
+
+>>> credence_memory_recall("payment-service", new_session_id="session-thu")
+    EPISTEMIC MEMORY — PROJECT 'payment-service':
+    ⚠ [LOW, conf=0.24] rate limit ~50 req/min — UNVERIFIED (from Monday's session)
+    ⚠ [LOW, conf=0.22] token expiry ~3600s — UNVERIFIED (from Monday's session)
+
+    Claude now starts session-thu knowing what it doesn't know.
+```
+
+**Mem0/Zep/Graphiti:** Store "rate limit = 50 req/min". Qualification lost. Session 2 states it as fact.
+**Credence Memory:** Stores the constraint WITH `j=0.28 zone=LOW verified=False`. Uncertainty travels.
+
+Epistemic provenance: no other memory system has it.
+
+---
+
 ## All Validated Results
 
 | Experiment | Credence | Baseline | Naive |
@@ -251,10 +304,12 @@ Tier escalates as confidence decays across turns: `j × 0.95^turns_elapsed`.
 | Compression faithfulness — LLMLingua (n=50) | FCR=**0%** | 0% | FCR=**70.0%** |
 | Null hypothesis (prompt instruction alone, n=30) | — | — | FCR=**6.7%** |
 | E6 long session recall (n=23 trials, Opus 4.7) | **100%** | 100% | 20% |
+| Ghost Detector Ablation (n=5 sessions, pure ghost) | BothRate=**1.000** | — | **0.400** |
 | Ghost Gauntlet (n=30 claims, Opus 4.7) | BothRate=**1.000** | — | 0.133 |
 | E7 3-hop chain (categorical) | **3/3 hops** | 3/3 | **0/3** |
 | Adversarial tests (5 offline tests) | **5/5 pass** | — | — |
-| Unit tests | **116/116 pass** | — | — |
+| Unit tests | **132/132 pass** | — | — |
+| Native gate latency | **3.4ms** | — | Python: 331ms |
 
 Reproduce any result:
 ```bash
@@ -263,7 +318,10 @@ python -m evals.null_hypothesis               # ~$1, n=30
 python -m evals.experiments --exp E6          # ~$0.50
 python -m evals.experiments --exp E7          # ~$0.20
 python -m evals.ghost_gauntlet                # ~$2
-python3 tests.py                              # free, offline
+python -m evals.ghost_detector_ablation       # ~$3
+python -m evals.cross_session_eval --dry-run  # structure validation (free)
+python -m evals.cross_session_eval            # cross-session FCR (~$3, n=10)
+python3 tests.py                              # free, offline, 132 tests
 python3 test_claims.py                        # free, offline
 ```
 
@@ -453,7 +511,11 @@ api/main.py             REST backend
 packages/credence-ts/   TypeScript SDK
 hooks_demo/             Claude Code hooks integration example
 
-tests.py                116 unit tests (S1–S23 suites)
+credence_gate/          Native Rust enforcement binary
+  src/main.rs           credence-gate: 98× faster PreToolUse hook (331ms→3.4ms)
+  Cargo.toml            Build: cargo build --release
+
+tests.py                132 unit tests (S1–S24 suites)
 test_claims.py          Submission claim validation
 quickstart.py           First-run demo
 etp-v1.json             Epistemic Transport Protocol schema

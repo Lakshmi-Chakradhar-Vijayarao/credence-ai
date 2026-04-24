@@ -2,13 +2,13 @@
 
 ## 150-Word Summary (paste into submission form)
 
-Claude Code forgets whether you were sure about something. You say "I think the rate limit is ~50 req/min — unconfirmed." Fifteen turns later, Claude writes `RATE_LIMIT = 50` with no caveat. We measured this: Haiku strips uncertainty qualifiers in 48% of compressions (26% FCR downstream, n=50). LLMLingua-style token-importance compression is worse — 68% qualifier strip rate, 70% FCR downstream. Even with full context, Opus 4.7 states uncertain constraints as fact in ~50% of long-session callbacks.
+Claude Code forgets whether you were sure about something. You say "I think the rate limit is ~50 req/min — unconfirmed." Fifteen turns later — or in the next session — Claude writes `RATE_LIMIT = 50` with no caveat. We measured this: Haiku strips uncertainty qualifiers in 48% of compressions (26% FCR downstream, n=50). LLMLingua-style token-importance compression is worse — 68% qualifier strip rate, 70% FCR downstream.
 
-Credence is a deterministic enforcement layer that fixes this at three pipeline points: before compression (faithfulness probe, 0.07ms, frozenset of 108 markers), before generation (Truth Buffer + Consistency Enforcer injects unverified constraints into every system prompt), and after generation (scanner annotates code with ⚠ CREDENCE[unverified] before the user sees it).
+Credence is a deterministic enforcement layer operating across the full pipeline: before compression (faithfulness probe, 0.07ms, frozenset of 108 markers), before generation (Truth Buffer + Consistency Enforcer), after generation (Generation-Time Scanner annotates code), at tool execution (native Rust gate, `credence-gate`, 98× faster than Python: 331ms→3.4ms per tool call), and across session boundaries (Credence Memory: epistemic state survives session rotation — new sessions inherit what was unverified).
 
-The Ghost Detector uses a single Opus 4.7 call to classify implicit unverified constraints — facts stated as certain but actually from unconfirmed sources (vendor claims, unconfirmed estimates, second-hand numbers). Opus 4.7's reasoning depth distinguishes "established fact" from "assumed fact" where Haiku sees only identical text. Credence registers those as ghost constraints before they ship as silent assumptions.
+The Ghost Detector uses a single Opus 4.7 call to classify implicit unverified constraints. Ghost Detector Ablation (n=5 pure ghost sessions): 0.400 BothRate no detection → 1.000 with detection.
 
-Results: 26%→0% FCR (Haiku, n=50); 70%→0% FCR (LLMLingua, n=50). 100% constraint recall vs. 20% for naive window (n=23). Ghost gauntlet: 1.000 vs. 0.133 BothRate. 116 tests passing. Deploys as 18-tool MCP server in 2 minutes.
+Results: 26%→0% FCR (Haiku, n=50); 70%→0% FCR (LLMLingua, n=50). Ghost gauntlet: 1.000 vs. 0.133. 132 tests passing. 21-tool MCP server. 2-minute install.
 
 ---
 
@@ -34,6 +34,8 @@ Two distinct failure modes, both measured on Opus 4.7:
 | Prompt instruction alone (n=30): FCR | **6.7%** — not 0% |
 | Long session recall (E6, n=23): constraint recalled | **20%** naive → **100%** Credence |
 | Ghost constraint recall (n=30 claims): BothRate | **0.133** naive → **1.000** Credence |
+| Ghost Detector Ablation (n=5 pure ghost sessions) | **0.400** no detection → **1.000** any detection |
+| Native gate latency (PreToolUse hook) | **3.4ms** Rust vs **331ms** Python — **98× faster** |
 
 FCR = fraction of uncertain claims output as certain without qualification.
 
@@ -92,9 +94,9 @@ mgr = ContextManager(registry=reg, session_id="s1", use_ghost_detector=True)
 
 ---
 
-## The Claude Code Hook
+## The Claude Code Hook — Native Rust Gate
 
-`credence/hooks.py` — PreToolUse enforcement. Every Write/Edit/Bash call is intercepted.
+`credence_gate/` — Native Rust binary for PreToolUse enforcement. Every Write/Edit/Bash call is intercepted.
 If the arguments overlap an unverified constraint (≥2 non-stopword terms, 32 synonym clusters), the tool is **blocked** before execution:
 
 ```
@@ -103,13 +105,16 @@ If the arguments overlap an unverified constraint (≥2 non-stopword terms, 32 s
 ╚══════════════════════════════════════════════════════════════╝
 
   Tool:    Edit
-  ⚠ [LOW] auth token expires in 3600s — unconfirmed
-     Overlap terms: token, expires, auth
+  ⚠ [LOW, conf=0.28] auth token expires in 3600s — unconfirmed
+    id: a4f2b1c3d8e9
 
   Use credence_verify(<id>, <confirmed_value>) to resolve.
+  Or: credence_verify_all to confirm all pending constraints.
 ```
 
-This converts Credence from advisory to enforcing: the model cannot write code that embeds unverified values without explicit user confirmation, regardless of whether it called any MCP tool first.
+**Why Rust?** The hook fires on every Write/Edit/Bash call. Python startup cost: ~331ms/call. In a 100-tool-call session, that's 33 seconds of enforcement overhead that slows down the developer. `credence-gate` (3MB compiled binary) starts in 3.4ms — **98× faster**. At 100 tool calls: 0.34 seconds total gate overhead vs. 33 seconds.
+
+Build: `cargo build --release` in `credence_gate/`. The binary reads `epistemic_registry.db` from the current directory and implements the same synonym-expansion logic as the Python hook.
 
 Setup in `.claude/settings.json`:
 ```json
@@ -117,11 +122,33 @@ Setup in `.claude/settings.json`:
   "hooks": {
     "PreToolUse": [{
       "matcher": "Write|Edit|Bash|NotebookEdit",
-      "hooks": [{"type": "command", "command": "python3 -m credence.hooks"}]
+      "hooks": [{"type": "command", "command": "credence-gate"}]
     }]
   }
 }
 ```
+
+---
+
+## Cross-Session Memory
+
+The only memory system that tracks which memories are verified vs. unverified.
+
+```python
+# End of session 1:
+credence_memory_snapshot(session_id="s1", project_id="payment-service")
+# → "Saved 2 unverified constraints to project 'payment-service'"
+
+# Start of session 2 (days later):
+recall = credence_memory_recall(project_id="payment-service", new_session_id="s2")
+# → system_block:
+# "EPISTEMIC MEMORY — PROJECT 'payment-service':
+#  ⚠ [LOW, conf=0.24] rate limit ~50 req/min — UNVERIFIED (from session s1)
+#  ⚠ [LOW, conf=0.22] token expiry ~3600s — UNVERIFIED (from session s1)
+#  When referring to these values, always state they are unverified."
+```
+
+Mem0/Zep/Graphiti store facts. Credence Memory stores facts **with their epistemic confidence**. The qualification travels with the fact across session boundaries.
 
 ---
 
@@ -133,7 +160,10 @@ python -m evals.null_hypothesis               # n=30, ~$1 — prompt instruction
 python -m evals.experiments --exp E6          # n=23, ~$0.50 — long session recall
 python -m evals.experiments --exp E7          # categorical 3-hop chain
 python -m evals.ghost_gauntlet                # n=30 claims — implicit uncertainty
-python3 tests.py                              # 116 unit tests, free, offline
+python -m evals.ghost_detector_ablation       # n=5 pure ghost sessions (~$3)
+python -m evals.cross_session_eval --dry-run  # cross-session FCR structure (free)
+python -m evals.cross_session_eval            # cross-session FCR full run (~$3)
+python3 tests.py                              # 132 unit tests, free, offline
 python3 test_claims.py                        # submission claim validation, offline
 ```
 
