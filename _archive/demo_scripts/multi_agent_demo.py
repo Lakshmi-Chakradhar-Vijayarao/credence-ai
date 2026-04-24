@@ -1,10 +1,10 @@
 """
 demo/multi_agent_demo.py
 ========================
-Runnable demonstration of CAMSEnvelope epistemic integrity across agent hops.
+Runnable demonstration of CredenceEnvelope epistemic integrity across agent hops.
 
 Shows the full chain:
-  1. Agent A generates a response with uncertainty → wraps in CAMSEnvelope
+  1. Agent A generates a response with uncertainty → wraps in CredenceEnvelope
   2. Envelope travels to Agent B → trust degrades with chain_depth
   3. Agent B inspects should_verify → adds verification note if needed
   4. Agent C receives propagated envelope → answers with appropriate caveat
@@ -22,8 +22,8 @@ import os, sys, textwrap
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from anthropic import Anthropic
-from cams.envelope import CAMSEnvelope
-from cams.confidence_proxy import ConfidenceProxy
+from credence.envelope import CredenceEnvelope
+from credence.confidence_proxy import ConfidenceProxy
 
 
 def _divider(title: str = "", width: int = 68) -> str:
@@ -70,7 +70,7 @@ def main():
     text_a = resp_a.content[0].text.strip()
     cr_a   = proxy.compute(text_a)
 
-    envelope = CAMSEnvelope.from_turn(
+    envelope = CredenceEnvelope.from_turn(
         response     = text_a,
         j_score      = cr_a.j_score,
         zone         = cr_a.zone,

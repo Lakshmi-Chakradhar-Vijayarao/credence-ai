@@ -32,8 +32,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from anthropic import Anthropic
-    from cams.context_manager import CAMSContextManager
-    from cams.confidence_proxy import ConfidenceProxy
+    from credence.context_manager import ContextManager
+    from credence.confidence_proxy import ConfidenceProxy
     _API_AVAILABLE = True
 except ImportError:
     _API_AVAILABLE = False
@@ -139,7 +139,7 @@ def run_naive(client: Anthropic, window: int = 6) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def run_cams_demo(client: Anthropic) -> list[dict]:
-    mgr     = CAMSContextManager(max_tokens=300)
+    mgr     = ContextManager(max_tokens=300)
     results = []
 
     print("\n" + "=" * 60)

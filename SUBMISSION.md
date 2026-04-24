@@ -4,11 +4,11 @@
 
 Claude Code forgets whether you were sure about something. You say "I think the rate limit is ~50 req/min — unconfirmed." Fifteen turns later — or in the next session — Claude writes `RATE_LIMIT = 50` with no caveat. We measured this: Haiku strips uncertainty qualifiers in 48% of compressions (26% FCR downstream, n=50). LLMLingua-style token-importance compression is worse — 68% qualifier strip rate, 70% FCR downstream.
 
-Credence is a deterministic enforcement layer operating across the full pipeline: before compression (faithfulness probe, 0.07ms, frozenset of 108 markers), before generation (Truth Buffer + Consistency Enforcer), after generation (Generation-Time Scanner annotates code), at tool execution (native Rust gate, `credence-gate`, 98× faster than Python: 331ms→3.4ms per tool call), and across session boundaries (Credence Memory: epistemic state survives session rotation — new sessions inherit what was unverified).
+Credence is a deterministic enforcement layer operating across the full pipeline: before compression (faithfulness probe, 0.07ms, frozenset of 113 markers, scans user turns only), before generation (Truth Buffer + Consistency Enforcer with 32 synonym clusters), after generation (Generation-Time Scanner annotates code with confidence tiers), at tool execution (native Rust gate, `credence-gate`, 98× faster than Python: 331ms→3.4ms per tool call), and across session boundaries (Credence Memory: epistemic state survives session rotation — new sessions inherit which facts were unverified).
 
-The Ghost Detector uses a single Opus 4.7 call to classify implicit unverified constraints. Ghost Detector Ablation (n=5 pure ghost sessions): 0.400 BothRate no detection → 1.000 with detection.
+The Ghost Detector uses a single Opus 4.7 call to classify implicit unverified constraints (no hedging markers present). Ghost Detector Ablation (n=5 pure ghost sessions): 0.400 BothRate no detection → 1.000 with detection.
 
-Results: 26%→0% FCR (Haiku, n=50); 70%→0% FCR (LLMLingua, n=50). Ghost gauntlet: 1.000 vs. 0.133. 132 tests passing. 21-tool MCP server. 2-minute install.
+Results: 26%→0% FCR (Haiku, n=50); 70%→0% FCR (LLMLingua, n=50). Ghost gauntlet: 1.000 vs. 0.133. Cross-session: 40% FCR (no memory) → 0% (Credence Memory, n=20). 132 tests passing. 21-tool MCP server. 2-minute install.
 
 ---
 
@@ -26,21 +26,23 @@ streamlit run demo/app.py      # interactive 4-tab demo
 
 Two distinct failure modes, both measured on Opus 4.7:
 
-| Scenario | Result |
-|---|---|
-| Haiku compression (n=50): qualifier survival | **52%** naive → **100%** with probe |
-| Haiku compression (n=50): FCR downstream | **26%** naive → **0%** with probe |
-| LLMLingua-2 (n=50): FCR downstream | **70%** → **0%** with probe |
-| Prompt instruction alone (n=30): FCR | **6.7%** — not 0% |
-| Long session recall (E6, n=23): constraint recalled | **20%** naive → **100%** Credence |
-| Ghost constraint recall (n=30 claims): BothRate | **0.133** naive → **1.000** Credence |
-| Ghost Detector Ablation (n=5 pure ghost sessions) | **0.400** no detection → **1.000** any detection |
-| Native gate latency (PreToolUse hook) | **3.4ms** Rust vs **331ms** Python — **98× faster** |
+| Scenario | Metric | Result |
+|---|---|---|
+| Haiku compression (n=50): qualifier survival | Preservation rate | **52%** naive → **100%** with probe |
+| Haiku compression (n=50): downstream false certainty | FCR | **26%** naive → **0%** with probe |
+| LLMLingua-2 (n=50): downstream false certainty | FCR | **70%** → **0%** with probe |
+| Prompt-only instruction (n=30): qualifier survival | Preservation rate | **93.3%** — not 100%; probe is deterministic |
+| Long session recall (E6 Negative Needle, n=23): constraint recalled | Correction recall | **19.6%** naive → **100%** Credence |
+| Ghost constraint recall (n=10 sessions, 30 claims): both value+qualifier | BothRate | **0.133** naive → **1.000** Credence |
+| Ghost Detector Ablation (n=5 pure ghost sessions) | BothRate | **0.400** no detection → **1.000** any detection |
+| Cross-Session Memory (n=10 scenarios, 20 callbacks): FCR | CS-FCR | **40%** no memory → **0%** Credence Memory |
+| Native gate latency (PreToolUse hook) | Latency | **3.4ms** Rust vs **331ms** Python — **98× faster** |
+| Test suite | Coverage | **132/132** passing, 11 skipped (offline only) |
 
-FCR = fraction of uncertain claims output as certain without qualification.
+FCR = fraction of uncertain claims stated without any qualifier. BothRate = fraction with value AND qualifier present.
 
 **The null hypothesis is tested:** Does adding "preserve uncertainty qualifiers" to the Haiku prompt fix this without any middleware?
-→ 93% qualifier survival (vs. 100% with probe). Prompt instructions are not deterministic. Run: `python -m evals.null_hypothesis`
+→ 93.3% qualifier survival (vs. 100% with probe). The probe is deterministic; the instruction is not. Run: `python -m evals.null_hypothesis`
 
 ---
 
@@ -132,7 +134,11 @@ Setup in `.claude/settings.json`:
 
 ## Cross-Session Memory
 
-The only memory system that tracks which memories are verified vs. unverified.
+The only memory system that tracks which memories are **verified vs. unverified**.
+
+**What real memory tools do:** Mem0, Zep, Graphiti extract flat facts — "Stripe rate limit: 100 req/min" — epistemic qualification stripped. When session 2 ingests this, the model states it as confirmed fact.
+
+**What Credence does:** Stores j_score + zone + verified=False WITH the fact. Session 2 inherits not just the value but the uncertainty.
 
 ```python
 # End of session 1:
@@ -141,14 +147,21 @@ credence_memory_snapshot(session_id="s1", project_id="payment-service")
 
 # Start of session 2 (days later):
 recall = credence_memory_recall(project_id="payment-service", new_session_id="s2")
-# → system_block:
+# → system_block injected into session 2:
 # "EPISTEMIC MEMORY — PROJECT 'payment-service':
 #  ⚠ [LOW, conf=0.24] rate limit ~50 req/min — UNVERIFIED (from session s1)
 #  ⚠ [LOW, conf=0.22] token expiry ~3600s — UNVERIFIED (from session s1)
 #  When referring to these values, always state they are unverified."
 ```
 
-Mem0/Zep/Graphiti store facts. Credence Memory stores facts **with their epistemic confidence**. The qualification travels with the fact across session boundaries.
+**Measured result (Cross-Session FCR, n=10 scenarios, 20 callbacks, claude-opus-4-7):**
+
+| Condition | CS-FCR | BothRate | Description |
+|---|---|---|---|
+| No memory | **40%** | 10% | Fresh session — model guesses/invents |
+| Credence Memory | **0%** | 65% | Registry enforces qualifier |
+
+CS-FCR = fraction of session-2 queries that state an uncertain value without any qualifier.
 
 ---
 
@@ -167,12 +180,14 @@ python3 tests.py                              # 132 unit tests, free, offline
 python3 test_claims.py                        # submission claim validation, offline
 ```
 
-Results already in repo:
-- `evals/compression_faithfulness_results.json` — primary evidence
-- `evals/null_hypothesis_results.json` — null hypothesis
-- `evals/experiment_results.json` — E1-E9
-- `evals/ghost_gauntlet_results.json` — ghost constraints
-- `evals/e6_repeated_results.json` — 23-trial E6
+Results already in repo (all verified, not cherry-picked):
+- `evals/compression_faithfulness_results.json` — **primary evidence** (n=50, headline numbers)
+- `evals/null_hypothesis_results.json` — prompt instruction baseline (n=30)
+- `evals/experiment_results.json` — E1/E4/E6/E7/E8 (single-trial, all Opus 4.7)
+- `evals/ghost_gauntlet_results.json` — implicit uncertainty (n=10 sessions)
+- `evals/ghost_detector_ablation_results.json` — Ghost Detector ablation (n=5)
+- `evals/e6_repeated_results.json` — E6 Negative Needle, 23-trial bootstrap CI
+- `evals/cross_session_results.json` — cross-session FCR (n=20 callbacks)
 
 ---
 

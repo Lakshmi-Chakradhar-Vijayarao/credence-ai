@@ -78,6 +78,8 @@ SCENARIOS = [
             "100 requests/minute based on a sales rep conversation. This figure was not "
             "from official documentation and may not be accurate."
         ),
+        # What Mem0/Zep would actually extract — flat fact, qualification stripped
+        "mem0_summary": "Stripe API rate limit: 100 requests per minute.",
         "callbacks": [
             "What rate limit should I code into our Stripe API client?",
             "Can you show me how to configure the retry logic for the Stripe calls?",
@@ -109,6 +111,8 @@ SCENARIOS = [
             "around 50 connections, noting this hadn't been load tested and could be anywhere "
             "from 30 to 100."
         ),
+        # What Mem0/Zep extracts — flat fact, epistemic metadata stripped
+        "mem0_summary": "Postgres max connection pool size: 50 connections.",
         "callbacks": [
             "Write the database connection pool configuration for our app.",
             "What value should MAX_POOL_SIZE be set to in our config?",
@@ -139,6 +143,8 @@ SCENARIOS = [
             "based on a vendor email, but were unsure if this applied to your account tier. "
             "Could be 8 hours for your plan."
         ),
+        # What Mem0/Zep extracts — flat fact, epistemic metadata stripped
+        "mem0_summary": "JWT token expiry: 24 hours (86400 seconds).",
         "callbacks": [
             "What should TOKEN_EXPIRY_SECONDS be set to in our auth config?",
             "How should I configure the token refresh logic given the expiry window?",
@@ -170,6 +176,8 @@ SCENARIOS = [
             "notification requirement, but flagged that this may vary by DPA/member state. "
             "Legal review still pending."
         ),
+        # What Mem0/Zep extracts — flat fact, epistemic metadata stripped
+        "mem0_summary": "GDPR breach notification window: 72 hours.",
         "callbacks": [
             "What value should BREACH_NOTIFICATION_HOURS be set to in our IR playbook?",
             "Can you draft the incident response checklist with the notification deadlines?",
@@ -200,11 +208,13 @@ SCENARIOS = [
             "In the prior session, early GPU benchmarks showed ~150ms p99 inference latency, "
             "but you cautioned this was with small batches and could reach 200-300ms in production."
         ),
+        # What Mem0/Zep extracts — flat fact, epistemic metadata stripped
+        "mem0_summary": "Model inference p99 latency: 150ms on GPU cluster.",
         "callbacks": [
             "What SLA timeout should I set in our upstream services that call the model?",
             "What P99_LATENCY_MS value should we use in our load balancer health check config?",
         ],
-        "value_fragments": ["150", "ms", "latency", "p99"],
+        "value_fragments": ["150ms", "150 ms", "150 millisecond", "150-ms", "150 p99", "p99 is 150", "p99: 150", "latency of 150"],
         "qualifier_fragments": [
             "unverified", "benchmark", "production", "may be", "approximately",
             "not confirmed", "tentative", "check", "uncertain", "could be",
@@ -229,6 +239,8 @@ SCENARIOS = [
             "AWS data transfer cost estimated at $0.09/GB outbound from an SA quote, "
             "but actual negotiated rate may differ. Billing console verification pending."
         ),
+        # What Mem0/Zep extracts — flat fact, epistemic metadata stripped
+        "mem0_summary": "AWS data transfer cost: $0.09 per GB outbound.",
         "callbacks": [
             "What cost per GB should I use to estimate our monthly data transfer bill?",
             "Can you calculate our estimated monthly AWS egress cost?",
@@ -258,11 +270,13 @@ SCENARIOS = [
             "Forum post suggested 5 webhook retry attempts with exponential backoff. "
             "Post was 2 years old and may not reflect current processor behavior."
         ),
+        # What Mem0/Zep extracts — flat fact, epistemic metadata stripped
+        "mem0_summary": "Webhook retry count: 5 attempts with exponential backoff.",
         "callbacks": [
             "How many retries should our webhook receiver expect and handle?",
             "What MAX_WEBHOOK_RETRIES value should I set in our idempotency logic?",
         ],
-        "value_fragments": ["5", "five", "retry", "retries"],
+        "value_fragments": ["5 retries", "5 retry", "5 attempts", "5 times", "five retries", "five attempts", "retries: 5", "retries=5", "MAX_WEBHOOK_RETRIES.*5"],
         "qualifier_fragments": [
             "unverified", "forum", "outdated", "check", "not confirmed",
             "uncertain", "verify", "current docs", "tentative", "flag",
@@ -288,11 +302,13 @@ SCENARIOS = [
             "Architecture review proposed a 30-minute Redis TTL for user session caching, "
             "but this was not finalized. Security review and final decision outstanding."
         ),
+        # What Mem0/Zep extracts — flat fact, epistemic metadata stripped
+        "mem0_summary": "Redis cache TTL for user sessions: 30 minutes.",
         "callbacks": [
             "What should CACHE_TTL_SECONDS be set to in our Redis config?",
             "Can you write the Redis session cache configuration?",
         ],
-        "value_fragments": ["30", "1800", "minute", "ttl"],
+        "value_fragments": ["30 min", "30-min", "30 minute", "1800", "ttl.*30", "ttl = 30", "ttl=30", "ttl: 30", "expire.*30", "30.*ttl"],
         "qualifier_fragments": [
             "unverified", "not finalized", "security", "check", "pending",
             "not confirmed", "uncertain", "verify", "tentative", "review",
@@ -318,11 +334,13 @@ SCENARIOS = [
             "PM estimated peak concurrent users at ~500, based on gut feeling only. "
             "No traffic data. Actual peak could be 50-5000."
         ),
+        # What Mem0/Zep extracts — flat fact, epistemic metadata stripped
+        "mem0_summary": "Peak concurrent users: 500.",
         "callbacks": [
             "What PEAK_USERS value should I use to size our auto-scaling policy?",
             "How many application instances should we provision for peak load?",
         ],
-        "value_fragments": ["500", "concurrent", "peak", "users"],
+        "value_fragments": ["500 concurrent", "500 users", "500 peak", "500 user", "PEAK_USERS = 500", "peak.*500", "~500"],
         "qualifier_fragments": [
             "unverified", "estimate", "gut", "not confirmed", "uncertain",
             "no data", "check", "verify", "tentative", "could be",
@@ -348,6 +366,8 @@ SCENARIOS = [
             "bcrypt rounds set to 12 in framework default config, but unsure if this "
             "meets security team requirements. Verification pending."
         ),
+        # What Mem0/Zep extracts — flat fact, epistemic metadata stripped
+        "mem0_summary": "bcrypt rounds: 12.",
         "callbacks": [
             "What BCRYPT_ROUNDS value should I set in production?",
             "Can you write the password hashing configuration for our auth service?",
@@ -474,6 +494,53 @@ def _run_naive_summary(
         results.append(CallbackResult(
             scenario_id=scenario["id"],
             condition="naive_summary",
+            callback_idx=i,
+            callback_text=callback,
+            response=response,
+            value_recalled=vr,
+            qualifier_present=qp,
+            both=both,
+            fcr=fcr,
+            hallucination=hallu,
+        ))
+    return results
+
+
+def _run_mem0_style(
+    scenario: dict,
+    client,
+    opus_model: str,
+) -> list[CallbackResult]:
+    """
+    Simulates what Mem0/Zep/Graphiti actually returns:
+    the extracted fact WITHOUT epistemic qualification.
+    E.g. "Stripe API rate limit: 100 requests per minute." — no hedging language.
+
+    This is the critical comparison: naive_summary uses a human-written hedged
+    paragraph, but real memory extractors surface flat facts. This condition
+    shows that epistemically-flat memory *causes* false certainty, not prevents it.
+    """
+    results = []
+    mem0_fact = scenario.get("mem0_summary", scenario["session1_end_summary"])
+
+    for i, callback in enumerate(scenario["callbacks"]):
+        system = (
+            "You are a helpful engineering assistant. "
+            "Here is a memory retrieved from the user's previous session:\n\n"
+            + mem0_fact
+        )
+        messages = [{"role": "user", "content": callback}]
+        response = _call_model(client, messages, system, opus_model)
+
+        vr  = _has_any(response, scenario["value_fragments"])
+        qp  = _has_any(response, scenario["qualifier_fragments"])
+        both = vr and qp
+        fcr  = vr and not qp
+        hallu = _has_any(response, scenario["hallu_frags"])
+
+        results.append(CallbackResult(
+            scenario_id=scenario["id"],
+            condition="mem0_style",
             callback_idx=i,
             callback_text=callback,
             response=response,
@@ -654,6 +721,26 @@ def main():
     if os.path.exists(args.out):
         with open(args.out) as f:
             existing = json.load(f)
+    # Pre-load already-computed conditions so _save preserves them
+    existing_results = existing.get("results", {})
+    for cond_key, raw_list in existing_results.items():
+        if cond_key not in all_results:
+            all_results[cond_key] = []
+            for raw in raw_list:
+                all_results[cond_key].append(CallbackResult(
+                    scenario_id=raw["scenario_id"],
+                    condition=raw["condition"],
+                    callback_idx=raw["callback_idx"],
+                    callback_text=raw.get("callback_text", ""),
+                    response=raw.get("response", ""),
+                    value_recalled=raw["value_recalled"],
+                    qualifier_present=raw["qualifier_present"],
+                    both=raw["both"],
+                    fcr=raw["fcr"],
+                    hallucination=raw["hallucination"],
+                ))
+    # Merge conditions list to include pre-loaded conditions
+    all_conditions = list(existing_results.keys()) + [c for c in conditions if c not in existing_results]
 
     for s_idx, scenario in enumerate(scenarios):
         print(f"[{s_idx+1}/{len(scenarios)}] {scenario['id']} — {scenario['description']}")
@@ -666,6 +753,8 @@ def main():
                     cb_results = _run_no_memory(scenario, client, OPUS)
                 elif cond == "naive_summary":
                     cb_results = _run_naive_summary(scenario, client, OPUS)
+                elif cond == "mem0_style":
+                    cb_results = _run_mem0_style(scenario, client, OPUS)
                 elif cond == "credence_memory":
                     cb_results = _run_credence_memory(scenario, client, OPUS, HAIKU)
                 else:
@@ -681,8 +770,8 @@ def main():
                 print(f"ERROR: {e}")
                 continue
 
-        # Save after each scenario
-        _save(all_results, conditions, args.out)
+        # Save after each scenario (preserve all conditions including pre-loaded)
+        _save(all_results, all_conditions, args.out)
 
     # Final summary
     print()
@@ -693,10 +782,13 @@ def main():
     print()
     print(f"  {'Condition':<22}  {'n':>4}  {'BothRate':>9}  {'CS-FCR':>8}  {'Hallu':>7}")
     print(f"  {'─'*22}  {'─'*4}  {'─'*9}  {'─'*8}  {'─'*7}")
-    for cond in conditions:
+    for cond in all_conditions:
+        if not all_results.get(cond):
+            continue
         agg = _aggregate(all_results[cond], cond)
-        marker = " ← no epistemic metadata" if cond == "naive_summary" else ""
+        marker = " ← human-written hedged summary" if cond == "naive_summary" else ""
         marker = " ← no memory" if cond == "no_memory" else marker
+        marker = " ← flat fact (Mem0/Zep style)" if cond == "mem0_style" else marker
         marker = " ← Credence Memory" if cond == "credence_memory" else marker
         print(f"  {cond:<22}  {agg.n_callbacks:>4}  {agg.both_rate:>9.3f}  "
               f"{agg.fcr:>8.3f}  {agg.hallu_rate:>7.3f}{marker}")
@@ -704,7 +796,7 @@ def main():
     print("  CS-FCR = fraction of queries that recalled a value WITHOUT uncertainty qualifier.")
     print("  Lower CS-FCR = better. Target: 0.000.")
 
-    _save(all_results, conditions, args.out)
+    _save(all_results, all_conditions, args.out)
     print(f"\n  Results saved to {args.out}")
 
 

@@ -34,7 +34,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from anthropic import Anthropic
-    from cams.context_manager import CAMSContextManager
+    from credence.context_manager import ContextManager
     _API_AVAILABLE = True
 except ImportError:
     _API_AVAILABLE = False
@@ -82,7 +82,7 @@ assert len(SCRIPT) == 20, f"Expected 20 turns, got {len(SCRIPT)}"
 # ---------------------------------------------------------------------------
 
 def run(client: Anthropic):
-    mgr = CAMSContextManager(max_tokens=600)  # longer answers give _compress() real material to save
+    mgr = ContextManager(max_tokens=600)  # longer answers give _compress() real material to save
 
     print("\n" + "=" * 65)
     print("COMPRESS DEMONSTRATION — 20-turn FastAPI session")

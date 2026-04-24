@@ -34,7 +34,7 @@ from dataclasses import dataclass, asdict
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from cams.context_manager import CAMSContextManager
+from credence.context_manager import ContextManager
 
 
 # ---------------------------------------------------------------------------
@@ -151,7 +151,7 @@ class NoveltyEvalResult:
 
 def _run_sequence(responses: list[str], name: str, seq_type: str,
                   pivot_turn: int = -1) -> NoveltyEvalResult:
-    mgr = CAMSContextManager.__new__(CAMSContextManager)
+    mgr = ContextManager.__new__(ContextManager)
     mgr._content_vocab        = set()
     mgr._recent_vocab_window  = []
 

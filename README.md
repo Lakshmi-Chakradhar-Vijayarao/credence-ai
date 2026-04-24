@@ -44,12 +44,13 @@ Compressed by Haiku or LLMLingua. Queried by Opus.
 
 | Condition | Qualifier survival | False certainty downstream |
 |---|---|---|
-| Naive Haiku | 52.0% | **26.0%** |
-| LLMLingua-2 simulated | 32.0% | **70.0%** |
-| + "preserve qualifiers" instruction (n=30) | 93.3% | 6.7% |
-| Credence (faithfulness probe) | **100%** | **0%** |
+| Naive Haiku (n=50) | 52.0% | **26.0%** |
+| LLMLingua-2 simulated (n=50) | 32.0% | **70.0%** |
+| Haiku + "preserve qualifiers" instruction (n=30) | **93.3%** | n/a¹ |
+| Credence (faithfulness probe, n=50) | **100%** (blocks) | **0%** |
 
-Prompt instructions get you to 93%. Deterministic enforcement gets you to 100%.
+¹ Null hypothesis tests qualifier survival through compression, not downstream FCR.
+Prompt instructions get you to 93.3% qualifier survival. The probe is **deterministic** — 100% block rate, zero API calls.
 LLMLingua-style token-importance compression causes 2.7× more false certainty than naive Haiku.
 Run: `python -m evals.compression_faithfulness --n 50` or `python -m evals.null_hypothesis`
 
@@ -96,7 +97,7 @@ User says something uncertain
     ▼ before compression
 ┌───────────────────────────────────────────┐
 │  LAYER 1 — Faithfulness Probe  (~0.07ms)  │  DETERMINISTIC
-│  frozenset of 108 uncertainty markers      │
+│  frozenset of 113 uncertainty markers      │
 │  Scans user turns only (avoids echo bias)  │
 │  Uncertainty found → block Haiku → KEEP   │
 └───────────────────────────────────────────┘
@@ -151,7 +152,7 @@ Zero API calls from Layers 1, 3, 4, 5.
 
 ## The Opus 4.7 Insight: Ghost Constraints
 
-The faithfulness probe catches explicit hedges: *"I think"*, *"approximately"*, *"probably"* — 108 markers, all canonical.
+The faithfulness probe catches explicit hedges: *"I think"*, *"approximately"*, *"probably"* — 113 markers, all canonical.
 
 But what about this:
 > *"The Stripe rate limit is 50 req/min."*
@@ -300,16 +301,18 @@ Epistemic provenance: no other memory system has it.
 
 | Experiment | Credence | Baseline | Naive |
 |---|---|---|---|
-| Compression faithfulness — Haiku (n=50) | FCR=**0%** | 0% | FCR=**26.0%** |
-| Compression faithfulness — LLMLingua (n=50) | FCR=**0%** | 0% | FCR=**70.0%** |
-| Null hypothesis (prompt instruction alone, n=30) | — | — | FCR=**6.7%** |
-| E6 long session recall (n=23 trials, Opus 4.7) | **100%** | 100% | 20% |
-| Ghost Detector Ablation (n=5 sessions, pure ghost) | BothRate=**1.000** | — | **0.400** |
-| Ghost Gauntlet (n=30 claims, Opus 4.7) | BothRate=**1.000** | — | 0.133 |
-| E7 3-hop chain (categorical) | **3/3 hops** | 3/3 | **0/3** |
-| Adversarial tests (5 offline tests) | **5/5 pass** | — | — |
-| Unit tests | **132/132 pass** | — | — |
-| Native gate latency | **3.4ms** | — | Python: 331ms |
+| Compression faithfulness — Haiku (n=50) | FCR=**0%** | 0% | FCR=**26%** |
+| Compression faithfulness — LLMLingua (n=50) | FCR=**0%** | 0% | FCR=**70%** |
+| Null hypothesis: prompt instruction qualifier survival (n=30) | **100%** (probe) | — | 93.3% (not deterministic) |
+| E6 Negative Needle: constraint recall (n=23 trials, Opus 4.7) | **100%** | 100% | 19.6% |
+| E7 Multi-Hop Chain: 3-step dependency (categorical) | **3/3 hops** | 3/3 | **0/3** |
+| E8 Debugging Session: uncertain hypothesis recall | **0.944** | 1.000 | 0.522 |
+| Ghost Detector Ablation (n=5 pure ghost sessions) | BothRate=**1.000** | — | **0.400** (no detection) |
+| Ghost Gauntlet: implicit uncertain claims (n=10 sessions) | BothRate=**1.000** | — | 0.133 |
+| Cross-Session Memory FCR (n=20 callbacks, Opus 4.7) | CS-FCR=**0%** | — | **40%** (no memory) |
+| Native gate latency (PreToolUse hook) | **3.4ms** (Rust) | — | 331ms (Python) |
+| Adversarial tests (5 offline, deterministic) | **5/5 pass** | — | — |
+| Unit tests (offline, free) | **132/132 pass** | — | — |
 
 Reproduce any result:
 ```bash

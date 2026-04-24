@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from anthropic import Anthropic
-    from cams.context_manager import CAMSContextManager
+    from credence.context_manager import ContextManager
     _API_AVAILABLE = True
 except ImportError:
     _API_AVAILABLE = False
@@ -211,7 +211,7 @@ def _check_reference(answer: str, keywords: list[str]) -> bool:
 
 def run_session_cams(session: dict) -> dict:
     """Run one session through CAMS. Returns result dict."""
-    mgr   = CAMSContextManager(max_tokens=300)
+    mgr   = ContextManager(max_tokens=300)
     turns = []
 
     all_msgs = [session["constraint"]] + session["filler"] + [session["test"]]

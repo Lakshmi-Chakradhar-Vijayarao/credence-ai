@@ -1,18 +1,18 @@
 """
 evals/multi_agent_experiment.py
 ================================
-Live 3-agent pipeline test for CAMSEnvelope epistemic integrity.
+Live 3-agent pipeline test for CredenceEnvelope epistemic integrity.
 
 This is the critical missing evidence for the v1.1 architectural claim:
 "J-score travels with information across agent boundaries, and downstream
 agents can use trust_score / should_verify to make better decisions."
 
-Without this experiment, CAMSEnvelope and its trust_score formula are
+Without this experiment, CredenceEnvelope and its trust_score formula are
 correct in theory (A5 passes) but unproven in practice.
 
 Pipeline architecture:
   Agent A (Researcher) → generates response with uncertainty
-                       → wraps in CAMSEnvelope (chain_depth=0)
+                       → wraps in CredenceEnvelope (chain_depth=0)
   Agent B (Aggregator) → receives envelope
                        → inspects trust_score / should_verify
                        → CAMS path: adds verification note if should_verify
@@ -28,7 +28,7 @@ Three scenarios:
   S3  Trusted chain       — HIGH-J fact, chain_depth=3, still trusted (no verify)
 
 Conditions per scenario:
-  with_envelope  — Agent B uses CAMSEnvelope to decide trust
+  with_envelope  — Agent B uses CredenceEnvelope to decide trust
   without_envelope — Agent B passes raw text directly (naive)
 
 Metric:
@@ -50,8 +50,8 @@ from typing import Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from anthropic import Anthropic
-from cams.envelope import CAMSEnvelope
-from cams.confidence_proxy import ConfidenceProxy
+from credence.envelope import CredenceEnvelope
+from credence.confidence_proxy import ConfidenceProxy
 
 _MODEL = "claude-opus-4-7"
 _HAIKU = "claude-haiku-4-5-20251001"
@@ -212,7 +212,7 @@ def run_scenario(scenario_id: str) -> list[AgentHopResult]:
     zone    = cr.zone
 
     # Build fresh envelope from Agent A's output
-    envelope = CAMSEnvelope.from_turn(
+    envelope = CredenceEnvelope.from_turn(
         response     = agent_a_response,
         j_score      = j_score,
         zone         = zone,

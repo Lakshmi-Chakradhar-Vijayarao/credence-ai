@@ -1,5 +1,5 @@
 """
-tests.py — Unit and component tests for Credence (107 tests, S1–S22 suites).
+tests.py — Unit and component tests for Credence (132 passing, S1–S24 suites).
 
 Tests every identified risk from the codebase audit:
   - Null/empty inputs to all public methods

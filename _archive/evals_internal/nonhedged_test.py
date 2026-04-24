@@ -24,7 +24,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from cams.confidence_proxy import ConfidenceProxy
+from credence.confidence_proxy import ConfidenceProxy
 
 proxy = ConfidenceProxy()
 
