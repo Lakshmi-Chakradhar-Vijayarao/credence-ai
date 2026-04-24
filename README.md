@@ -28,7 +28,7 @@ python demo/live_demo.py      # trace one uncertain claim through the full pipel
 
 With API key:
 ```bash
-python -m evals.compression_faithfulness   # reproduce the headline result (~$1, n=30)
+python -m evals.compression_faithfulness   # reproduce the headline result (~$2, n=50)
 python -m evals.experiments --exp E7       # the 3-hop chain proof
 streamlit run demo/app.py                  # full interactive demo
 ```
@@ -39,17 +39,19 @@ streamlit run demo/app.py                  # full interactive demo
 
 We ran two studies. Both conditions are Opus 4.7 — no different models, no shortcuts.
 
-**Study 1 — Compression (n=30):** 30 conversations with one uncertain constraint each.
-Compressed by Haiku. Queried by Opus.
+**Study 1 — Compression (n=50):** 50 conversations with one uncertain constraint each.
+Compressed by Haiku or LLMLingua. Queried by Opus.
 
 | Condition | Qualifier survival | False certainty downstream |
 |---|---|---|
-| Naive Haiku | 40.0% | **36.7%** |
-| + "preserve qualifiers" instruction | 93.3% | 6.7% |
+| Naive Haiku | 52.0% | **26.0%** |
+| LLMLingua-2 simulated | 32.0% | **70.0%** |
+| + "preserve qualifiers" instruction (n=30) | 93.3% | 6.7% |
 | Credence (faithfulness probe) | **100%** | **0%** |
 
 Prompt instructions get you to 93%. Deterministic enforcement gets you to 100%.
-The gap matters in production. Run: `python -m evals.null_hypothesis`
+LLMLingua-style token-importance compression causes 2.7× more false certainty than naive Haiku.
+Run: `python -m evals.compression_faithfulness --n 50` or `python -m evals.null_hypothesis`
 
 **Study 2 — Long session (n=23 trials, all Opus 4.7):** 12-turn session. Uncertain
 constraints at T3-T4. 8 HIGH-J filler turns. Callback at T13-T14.
@@ -68,7 +70,7 @@ Run: `python -m evals.experiments --exp E6`
 
 Two distinct failure modes require two different mitigations:
 
-**1. Compression loss.** Haiku doesn't understand epistemic metadata. "I think the rate limit is ~50 req/min — unconfirmed" and "the rate limit is 50 req/min" are semantically equivalent summaries to a compression model. The qualifier is collateral loss in 60% of compressions (measured, n=30).
+**1. Compression loss.** Haiku doesn't understand epistemic metadata. "I think the rate limit is ~50 req/min — unconfirmed" and "the rate limit is 50 req/min" are semantically equivalent summaries to a compression model. The qualifier is collateral loss in 48% of Haiku compressions and 68% of LLMLingua compressions (measured, n=50).
 
 **2. Reasoning loss.** Even with the qualifier present in context, Opus 4.7 states uncertain constraints as confirmed facts in ~50% of long-session callbacks. The text was there. Epistemic attention was not. Context presence ≠ epistemic attention.
 
@@ -136,19 +138,19 @@ But what about this:
 
 No hedging. Stated as fact. Actually from a sales call, never confirmed. The faithfulness probe sees nothing. This is a **ghost constraint**.
 
-**The key discovery: Opus 4.7 reveals uncertainty through behavioral variance, not just language.**
+**The insight: Opus 4.7 can reason about provenance, not just text patterns.**
 
-Ask Opus 4.7 the same question three times. If it gives different answers, it doesn't know. If it gives consistent answers, it knows. This is a direct observable of Opus 4.7's epistemic state at the API surface — no internal access required.
+A single structured Opus 4.7 call asks: *"Is this an established verified fact — or an implicit unverified assumption? A vendor-stated limit accepted as fact? An estimate assumed to be confirmed? Second-hand information stated without qualification?"*
+
+Haiku cannot make this distinction reliably. The difference between "established fact" and "vendor claim stated as fact" requires semantic reasoning about the *origin and reliability* of a constraint — not pattern matching on hedging words. Opus 4.7's reasoning depth is what separates a ghost constraint from a known fact.
+
+High-precision design: only registers claims Opus rates ≥0.70 confidence as ghost constraints (precision over recall — false positives degrade trust in the registry).
 
 ```python
-# Ghost Detector: N=3 independent completions → NLI clustering → Shannon entropy
-# High variance = model is uncertain = register as ghost constraint
-# Based on Kuhn et al. 2023 (Semantic Entropy) applied to implicit knowledge gaps
-
 mgr = ContextManager(
     registry=reg,
     session_id="payment-v2",
-    use_ghost_detector=True,   # Opus 4.7 behavioral entropy
+    use_ghost_detector=True,   # single Opus 4.7 call for epistemic classification
 )
 ```
 
@@ -245,17 +247,18 @@ Tier escalates as confidence decays across turns: `j × 0.95^turns_elapsed`.
 
 | Experiment | Credence | Baseline | Naive |
 |---|---|---|---|
-| Compression faithfulness (n=30) | FCR=**0%** | 0% | FCR=**36.7%** |
+| Compression faithfulness — Haiku (n=50) | FCR=**0%** | 0% | FCR=**26.0%** |
+| Compression faithfulness — LLMLingua (n=50) | FCR=**0%** | 0% | FCR=**70.0%** |
 | Null hypothesis (prompt instruction alone, n=30) | — | — | FCR=**6.7%** |
 | E6 long session recall (n=23 trials, Opus 4.7) | **100%** | 100% | 20% |
 | Ghost Gauntlet (n=30 claims, Opus 4.7) | BothRate=**1.000** | — | 0.133 |
 | E7 3-hop chain (categorical) | **3/3 hops** | 3/3 | **0/3** |
 | Adversarial tests (5 offline tests) | **5/5 pass** | — | — |
-| Unit tests | **107/107 pass** | — | — |
+| Unit tests | **116/116 pass** | — | — |
 
 Reproduce any result:
 ```bash
-python -m evals.compression_faithfulness      # ~$1, n=30
+python -m evals.compression_faithfulness      # ~$2, n=50
 python -m evals.null_hypothesis               # ~$1, n=30
 python -m evals.experiments --exp E6          # ~$0.50
 python -m evals.experiments --exp E7          # ~$0.20
@@ -401,11 +404,11 @@ npm install credence-ai                # TypeScript SDK
 
 ```bash
 # Offline (free, no API key)
-python3 tests.py                                    # 107 unit tests
+python3 tests.py                                    # 116 unit tests
 python3 test_claims.py                              # validate submission claims
 
 # Core experiments (~$3 total)
-python -m evals.compression_faithfulness            # headline: 36.7% → 0% FCR
+python -m evals.compression_faithfulness            # headline: 26% (Haiku) / 70% (LLMLingua) → 0% FCR
 python -m evals.null_hypothesis                     # null hypothesis: 93% with instruction only
 python -m evals.experiments --exp E6                # long session recall
 python -m evals.experiments --exp E7                # 3-hop chain
@@ -429,13 +432,13 @@ credence/                Core package
   confidence_proxy.py     J-score computation (zero API)
   mcp_server.py           FastMCP server (18 tools)
   hooks.py                Claude Code PreToolUse enforcement hook
-  semantic_entropy.py     SE probe — behavioral entropy (Opus 4.7)
+  semantic_entropy.py     SE probe — behavioral entropy (Haiku, N=3, compression routing)
   behavioral_signal.py    Tier 2 behavioral consistency
   envelope.py             Multi-agent provenance wrapper
   adapters/               OpenAI, Gemini, Ollama adapters
 
 evals/                  All experiments
-  compression_faithfulness.py   Primary evidence (n=30)
+  compression_faithfulness.py   Primary evidence (n=50)
   null_hypothesis.py            Prompt instruction baseline
   experiments.py                E1–E9 ablation suite
   ghost_gauntlet.py             Implicit constraint benchmark
@@ -450,7 +453,7 @@ api/main.py             REST backend
 packages/credence-ts/   TypeScript SDK
 hooks_demo/             Claude Code hooks integration example
 
-tests.py                107 unit tests (S1–S22 suites)
+tests.py                116 unit tests (S1–S23 suites)
 test_claims.py          Submission claim validation
 quickstart.py           First-run demo
 etp-v1.json             Epistemic Transport Protocol schema

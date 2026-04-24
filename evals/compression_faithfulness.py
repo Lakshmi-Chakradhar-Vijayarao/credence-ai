@@ -287,6 +287,147 @@ SCENARIOS = [
         "commission rate",
         "What commission rate should we apply to referral payouts?",
     ),
+    # --- Scenarios 31–50: additional coverage ---
+    (
+        "I believe the CDN cache TTL is 300 seconds for static assets, but "
+        "it might have been bumped to 3600 for images after the last perf "
+        "review. I haven't checked the CDN config directly.",
+        "CDN cache TTL",
+        "What TTL should we set for static assets in the CDN config?",
+    ),
+    (
+        "The gRPC max message size is roughly 4 MB based on the default, "
+        "but the platform team may have increased it for the data pipeline. "
+        "I'm not certain what the current limit is.",
+        "gRPC message size",
+        "What is the configured max gRPC message size for our service?",
+    ),
+    (
+        "The JWT signing key rotation happens approximately every 90 days, "
+        "but the security team said they might shorten it to 30 days after "
+        "the last audit. The current rotation schedule is unconfirmed.",
+        "key rotation interval",
+        "What is the JWT signing key rotation interval?",
+    ),
+    (
+        "The batch job processing window is probably 2 AM to 4 AM UTC, but "
+        "it might have shifted after the EU data residency change. I haven't "
+        "checked the scheduler config for the new region.",
+        "batch job window",
+        "What time window does the batch job run in?",
+    ),
+    (
+        "I think the S3 bucket versioning is enabled on the prod bucket, "
+        "but it may not be on the staging bucket. I'm not sure if they "
+        "are configured identically — I haven't verified recently.",
+        "S3 versioning",
+        "Is versioning enabled on the staging S3 bucket?",
+    ),
+    (
+        "The feature flag rollout is somewhere around 10% of users right now, "
+        "but it might have been increased to 25% last week. I haven't "
+        "confirmed the current percentage with the product team.",
+        "feature flag rollout",
+        "What percentage of users have the feature flag enabled?",
+    ),
+    (
+        "The GraphQL query depth limit is probably 10, but I've seen 15 "
+        "mentioned in an old PR. The current setting hasn't been documented "
+        "and I'm not certain which is active.",
+        "query depth limit",
+        "What is the maximum allowed GraphQL query depth?",
+    ),
+    (
+        "I believe the Elasticsearch index has 3 shards, but the ops team "
+        "re-indexed it last month and may have changed the shard count. "
+        "Current shard configuration is unverified.",
+        "shard count",
+        "How many shards does the Elasticsearch index have?",
+    ),
+    (
+        "The TLS certificate renewal threshold is somewhere around 30 days "
+        "before expiry, but it might be 60 days for our wildcard cert. "
+        "I haven't checked the cert manager configuration.",
+        "cert renewal threshold",
+        "When does the cert manager trigger TLS certificate renewal?",
+    ),
+    (
+        "The service-to-service auth timeout is either 5 or 10 seconds — "
+        "I've seen both in different parts of the codebase. The canonical "
+        "value isn't centralised and I'm not certain which takes precedence.",
+        "service auth timeout",
+        "What timeout applies to service-to-service authentication calls?",
+    ),
+    (
+        "The daily active user count is roughly 50,000, but that was from "
+        "last quarter's report. With the new markets we've launched, it "
+        "might be closer to 80,000 — I haven't seen the updated metric.",
+        "DAU",
+        "What is the current daily active user count we should plan capacity for?",
+    ),
+    (
+        "The data retention policy for user events is probably 2 years, "
+        "but legal mentioned a possible change to 1 year for GDPR compliance. "
+        "The updated policy hasn't been finalised.",
+        "data retention period",
+        "How long do we retain user event data?",
+    ),
+    (
+        "I think the read replica lag threshold for alerting is 500ms, "
+        "but it may have been tightened to 200ms after the last SLA review. "
+        "Current threshold is unconfirmed.",
+        "replica lag threshold",
+        "What replica lag threshold triggers an alert?",
+    ),
+    (
+        "The push notification delivery SLA is roughly 5 seconds for "
+        "high-priority messages, but I'm not sure if that applies to "
+        "both iOS and Android or just one. I haven't verified the contract.",
+        "push notification SLA",
+        "What is the delivery SLA for high-priority push notifications?",
+    ),
+    (
+        "The infra team said the new instance type gives us about 40% more "
+        "throughput, but that was a rough estimate from benchmarks. We "
+        "haven't confirmed it holds under production traffic patterns.",
+        "throughput improvement",
+        "What throughput improvement can we expect from the new instance type?",
+    ),
+    (
+        "I think the maximum webhook payload size is 1 MB, but I've seen "
+        "references to 512 KB in older docs. I haven't tested it against "
+        "the actual limit and shouldn't assume.",
+        "webhook payload limit",
+        "What is the maximum allowed webhook payload size?",
+    ),
+    (
+        "The canary deployment threshold is probably 5% of traffic, but "
+        "the SRE team may have lowered it to 1% after the last rollback. "
+        "Current canary configuration is unverified.",
+        "canary traffic percentage",
+        "What percentage of traffic goes to the canary deployment?",
+    ),
+    (
+        "I believe the health check interval is 30 seconds, but for the "
+        "latency-sensitive path it might be 10 seconds. I haven't "
+        "reviewed the load balancer config for the new cluster.",
+        "health check interval",
+        "What health check interval is configured on the load balancer?",
+    ),
+    (
+        "The message queue max size is approximately 10,000 messages, "
+        "but the platform team said they might have increased it to 50,000 "
+        "for the async pipeline. I haven't confirmed the current setting.",
+        "queue max size",
+        "What is the maximum queue depth before backpressure kicks in?",
+    ),
+    (
+        "The minimum password length requirement is either 8 or 12 characters "
+        "— the security team updated the policy but I'm not sure if the "
+        "change was deployed to the auth service yet.",
+        "password min length",
+        "What is the minimum password length we should enforce?",
+    ),
 ]
 
 # ---------------------------------------------------------------------------

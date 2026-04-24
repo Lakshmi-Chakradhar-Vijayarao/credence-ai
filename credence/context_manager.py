@@ -341,6 +341,8 @@ _UNCERTAINTY_MARKERS = frozenset({
     # Memory hedging — recalling without verification (live demo protection)
     "iirc", "afaik", "if i recall correctly", "from memory", "off the top of my head",
     "as best i recall", "i think i remember", "i'm pretty sure but",
+    # Uncertainty verbs — "I'm unsure", "not sure which", "unsure of"
+    "i'm unsure", "unsure", "not sure which", "unsure which", "unsure of",
     # Hearsay / second-hand claims
     "according to the rep", "per the ticket", "per the thread", "vendor claims",
     "sales rep said", "they told us", "our rep mentioned", "the rep said",
@@ -417,6 +419,7 @@ class TurnResult:
     enforcement_active: bool  = False  # True when Consistency Enforcer fired (query directly hit unverified constraint)
     scan_hits:         list   = field(default_factory=list)  # GTS: code literals annotated with unverified constraint tags
     ghost_detections:  int   = 0    # constraints detected by Opus ghost detector this turn
+    contradictions_detected: list = field(default_factory=list)  # [{constraint_id, prior_value, new_value, reasoning}]
 
     @property
     def envelope(self) -> dict:
@@ -653,6 +656,15 @@ class ContextManager:
         if self.use_ghost_detector and not user_uncertainty_detected:
             ghost_items = self._ghost_detect(user_message)
             ghost_count = len(ghost_items)
+
+        # Contradiction Detector: Opus-powered cross-turn conflict detection.
+        # When a new user message introduces a value that conflicts with a registered
+        # constraint, Opus reasons about which is more reliable and marks the conflict.
+        # Fires on any turn when registry is set and ghost detector is enabled —
+        # contradiction detection is always-on when the epistemic stack is active.
+        contradictions = []
+        if self.use_ghost_detector and self._registry is not None and self._session_id is not None:
+            contradictions = self._detect_contradiction(user_message)
 
         # Truth Buffer: count how many unverified constraints are injected this turn
         truth_buffer_count = 0
@@ -919,7 +931,8 @@ class ContextManager:
             "user_uncertainty_detected": user_uncertainty_detected,
             "se_score":          se_score,
             "se_uncertain":      se_uncertain,
-            "enforcement_active": enforcement_active,
+            "enforcement_active":   enforcement_active,
+            "contradictions":      len(contradictions),
             "scan_hits":         len(scan_hits),
             "ghost_detections":  ghost_count,
         })
@@ -956,8 +969,9 @@ class ContextManager:
             se_score          = se_score,
             se_uncertain      = se_uncertain,
             enforcement_active = enforcement_active,
-            scan_hits         = scan_hits,
-            ghost_detections  = ghost_count,
+            scan_hits                = scan_hits,
+            ghost_detections         = ghost_count,
+            contradictions_detected  = contradictions,
         )
 
     def reset(self):
@@ -1870,6 +1884,123 @@ class ContextManager:
                     ),
                 )
                 results.append(item)
+            return results
+        except Exception:
+            return []
+
+    # ------------------------------------------------------------------
+    # Contradiction Detector
+    # ------------------------------------------------------------------
+
+    def _detect_contradiction(self, user_message: str) -> list[dict]:
+        """
+        Opus-powered cross-turn contradiction detector.
+
+        When a user message introduces a numeric or named value that overlaps
+        topically with a registered constraint but carries a different value,
+        Opus 4.7 reasons about which is more reliable and marks the conflict.
+
+        Examples caught:
+          Prior:  "rate limit is around 50 req/min — unconfirmed"
+          New:    "actually, we tested it — rate limit is 200 req/min"
+          → Opus: contradiction. New (tested) more reliable. Prior disputed.
+
+          Prior:  "token expiry is 3600 seconds — tentative"
+          New:    "the vendor confirmed token expiry is 86400 seconds"
+          → Opus: contradiction. New (confirmed) supersedes prior. Prior disputed.
+
+        Returns list of contradiction dicts. Empty list on any error or no conflicts.
+        """
+        if self._registry is None or self._session_id is None:
+            return []
+        if not user_message.strip():
+            return []
+
+        # Extract numeric values from the user message (≥2 digits or named values)
+        nums_in_msg = set(re.findall(r'\b\d+(?:[,.]\d+)*(?:\s*(?:ms|s|sec|min|hour|hr|day|week|%|req|gb|mb|kb|k|m|b))?\b', user_message.lower()))
+        if not nums_in_msg and len(user_message) < 30:
+            return []  # Too short and no numbers — skip to save API cost
+
+        # Find registered constraints that overlap topically with the user message
+        try:
+            similar = self._registry.check_contradiction(user_message, self._session_id)
+        except Exception:
+            return []
+        if not similar:
+            return []
+
+        # Build a concise diff prompt for Opus
+        candidates = []
+        for c in similar[:4]:  # cap at 4 to keep prompt tight
+            candidates.append(
+                f'- Prior constraint (id={c["constraint_id"][:8]}): "{c["content"][:120]}"'
+            )
+        if not candidates:
+            return []
+
+        prompt = (
+            "You are an epistemic conflict detector. Determine whether the new message "
+            "contradicts any of the prior registered constraints listed below.\n\n"
+            "A contradiction means: the new message makes a specific factual claim "
+            "(a value, a limit, a deadline, a quantity) that directly conflicts with "
+            "a value in one of the prior constraints — not just a different topic.\n\n"
+            "For each genuine contradiction found, return:\n"
+            '{"constraint_id": "first 8 chars", "prior_value": "value from prior", '
+            '"new_value": "value from new message", "reasoning": "≤20 words: why this contradicts", '
+            '"reliability": "prior|new|unclear"}\n\n'
+            "Return a JSON array. Return [] if no genuine contradiction.\n\n"
+            f"Prior constraints:\n" + "\n".join(candidates) + "\n\n"
+            f"New message: {user_message[:600]}"
+        )
+
+        try:
+            resp = self.client.messages.create(
+                model     = self.main_model,  # Opus — reasoning about reliability required
+                messages  = [{"role": "user", "content": prompt}],
+                max_tokens = 400,
+                timeout    = 8.0,
+            )
+            raw = resp.content[0].text.strip() if resp.content else ""
+            start = raw.find("[")
+            end   = raw.rfind("]") + 1
+            if start < 0 or end <= start:
+                return []
+            items = json.loads(raw[start:end])
+            if not isinstance(items, list):
+                return []
+
+            results = []
+            for item in items:
+                cid_prefix = item.get("constraint_id", "")
+                # Find the full constraint_id from registry
+                full_cid = next(
+                    (c["constraint_id"] for c in similar
+                     if c["constraint_id"].startswith(cid_prefix)),
+                    None,
+                )
+                if not full_cid:
+                    continue
+                reliability = item.get("reliability", "unclear")
+                reasoning   = item.get("reasoning", "")[:120]
+                new_val     = str(item.get("new_value", ""))[:80]
+
+                # Mark in registry — prior constraint is now disputed
+                try:
+                    self._registry.mark_contradiction(full_cid, f"new_value={new_val}")
+                    self._registry.log_event(
+                        full_cid, "contradict",
+                        notes=f"new_val={new_val} reliability={reliability} {reasoning}"
+                    )
+                except Exception:
+                    pass
+
+                results.append({
+                    "constraint_id": full_cid,
+                    "prior_value":   item.get("prior_value", ""),
+                    "new_value":     new_val,
+                    "reasoning":     reasoning,
+                    "reliability":   reliability,
+                })
             return results
         except Exception:
             return []

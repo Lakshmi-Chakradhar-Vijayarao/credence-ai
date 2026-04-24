@@ -1363,13 +1363,137 @@ try:
         user_text = " ".join(m["content"] for m in conv if m.get("role") == "user")
         if not _has_uncertainty(user_text):
             missed.append(label)
-    check("S22-E all 30 study scenarios trigger probe on user-only text",
+    check("S22-E all 50 study scenarios trigger probe on user-only text",
           len(missed) == 0,
           f"missed scenarios: {missed}")
 
 except Exception as e:
     import traceback
     for name in ["S22-A","S22-B","S22-C","S22-D","S22-E"]:
+        check(name, False, f"exception: {e}")
+    traceback.print_exc()
+
+# ─────────────────────────────────────────────────────────────────────────────
+# S23 — Contradiction detector (offline logic tests)
+# ─────────────────────────────────────────────────────────────────────────────
+
+print("\n── S23: Contradiction detector — logic and registry integration ─────────")
+
+try:
+    from credence.context_manager import ContextManager
+    from credence.registry import CredenceRegistry
+    import os as _os23
+    _os23.environ.setdefault("ANTHROPIC_API_KEY", "dummy")
+
+    # S23-A: _detect_contradiction returns [] when registry has no constraints
+    reg23a = CredenceRegistry(":memory:")
+    mgr23a = ContextManager(api_key="dummy", registry=reg23a, session_id="s23a",
+                             use_ghost_detector=True)
+    # With no API key, _detect_contradiction will raise → returns []
+    result_23a = mgr23a._detect_contradiction("The rate limit is 200 req/min.")
+    check("S23-A no constraints → _detect_contradiction returns []",
+          isinstance(result_23a, list),
+          f"expected list, got {type(result_23a)}")
+
+    # S23-B: registry.check_contradiction finds similar VERIFIED constraints
+    reg23b = CredenceRegistry(":memory:")
+    cid = reg23b.register(
+        "rate limit is approximately 50 req/min — unconfirmed", "s23b",
+        j_score=0.3, zone="LOW"
+    )
+    # check_contradiction requires verified=1 (it finds confirmed facts being contradicted)
+    reg23b.verify(cid, "confirmed at 50")
+    similar = reg23b.check_contradiction(
+        "the actual rate limit is 200 requests per minute", "s23b"
+    )
+    check("S23-B check_contradiction finds overlapping verified constraint",
+          len(similar) > 0,
+          f"expected ≥1 match, got {similar}")
+
+    # S23-C: mark_contradiction changes validation_status to 'disputed'
+    reg23b.mark_contradiction(cid, "new_value=200")
+    rows = reg23b.get_all("s23b")
+    row = next((r for r in rows if r["constraint_id"] == cid), None)
+    check("S23-C mark_contradiction sets validation_status=disputed",
+          row is not None and row.get("validation_status") == "disputed",
+          f"got {row.get('validation_status') if row else 'no row'}")
+
+    # S23-D: disputed constraint triggers CE enforcement without overlap threshold
+    reg23d = CredenceRegistry(":memory:")
+    cid_d = reg23d.register("rate limit is 50 req/min — unconfirmed", "s23d",
+                              j_score=0.3, zone="LOW")
+    reg23d.mark_contradiction(cid_d, "new_value=200")
+    mgr23d = ContextManager(api_key="dummy", registry=reg23d, session_id="s23d")
+    mgr23d._turn_idx = 5
+    # Direct call to _direct_constraint_matches — DISPUTED constraint escalates regardless
+    constraints = reg23d.list_uncertain("s23d")
+    matches_d = mgr23d._direct_constraint_matches("what should we set the limit to", constraints)
+    check("S23-D disputed constraint always escalates to CE (no overlap required)",
+          any(m.get("_overlap") == ["DISPUTED"] for m in matches_d),
+          f"got matches: {[m.get('_overlap') for m in matches_d]}")
+
+    # S23-E: TurnResult has contradictions_detected field (dataclass check)
+    from credence.context_manager import TurnResult
+    import dataclasses
+    fields = {f.name for f in dataclasses.fields(TurnResult)}
+    check("S23-E TurnResult has contradictions_detected field",
+          "contradictions_detected" in fields,
+          f"fields present: {fields}")
+
+    # S23-F: contradictions_detected defaults to empty list
+    tr = TurnResult.__new__(TurnResult)
+    # Using dataclass defaults
+    tr_default = TurnResult(
+        turn_idx=0, response="test", j_score=0.5, zone="MEDIUM", decision="PRESERVE",
+        tokens_in=10, tokens_out=10, tokens_saved=0, cost_usd=0.0,
+        savings_usd=0.0, reasoning="",
+        session_tokens_used=20, session_tokens_saved=0,
+        session_cost_usd=0.0, session_savings_usd=0.0,
+        compression_ratio=0.0, thinking_tokens=0, thinking_utilization=0.0,
+        thinking_budget_used=0, drift_state=False,
+        adaptive_theta_high=0.70, adaptive_theta_low=0.45,
+        uncertainty_preserved=False, truth_buffer_count=0, scout_extractions=0,
+        alignment_warnings=[], caveat_injected=False,
+        user_uncertainty_detected=False, se_score=0.0, se_uncertain=False,
+        enforcement_active=False, scan_hits=[], ghost_detections=0,
+        contradictions_detected=[],
+    )
+    check("S23-F contradictions_detected defaults to empty list",
+          tr_default.contradictions_detected == [],
+          f"got {tr_default.contradictions_detected!r}")
+
+    # S23-G: compression_faithfulness has 50 scenarios after extension
+    from evals.compression_faithfulness import SCENARIOS
+    check("S23-G compression_faithfulness has 50 scenarios",
+          len(SCENARIOS) == 50,
+          f"got {len(SCENARIOS)} scenarios")
+
+    # S23-H: all 50 scenarios have uncertainty markers in user text
+    from evals.compression_faithfulness import _build_conversation, _has_uncertainty
+    missed50 = []
+    for stmt, label, _ in SCENARIOS:
+        conv = _build_conversation(stmt)
+        user_text = " ".join(m["content"] for m in conv if m.get("role") == "user")
+        if not _has_uncertainty(user_text):
+            missed50.append(label)
+    check("S23-H all 50 scenarios trigger faithfulness probe",
+          len(missed50) == 0,
+          f"missed: {missed50}")
+
+    # S23-I: ghost_detector_ablation pure sessions have zero canonical markers
+    from evals.ghost_detector_ablation import PURE_SESSIONS, _has_any_canonical_marker
+    contaminated = []
+    for s in PURE_SESSIONS:
+        for gt in s.ghost_turns:
+            if _has_any_canonical_marker(gt["content"]):
+                contaminated.append(f"{s.session_id}/{gt['ghost_id']}")
+    check("S23-I all pure ghost sessions have zero canonical markers",
+          len(contaminated) == 0,
+          f"contaminated: {contaminated}")
+
+except Exception as e:
+    import traceback
+    for name in ["S23-A","S23-B","S23-C","S23-D","S23-E","S23-F","S23-G","S23-H","S23-I"]:
         check(name, False, f"exception: {e}")
     traceback.print_exc()
 

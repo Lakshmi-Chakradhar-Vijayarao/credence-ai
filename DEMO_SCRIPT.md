@@ -70,9 +70,10 @@ CHECKPOINT 5 — GENERATION-TIME SCANNER
 **Screen:** Show the results table from `evals/compression_faithfulness_results.json` or paste table
 
 **Say:**
-> "I ran 30 realistic conversations through this. Each one had an uncertain constraint. Compressed by Haiku. Then queried Opus 4.7.
+> "I ran 50 conversations through this. Each one had an uncertain constraint. Compressed by Haiku or LLMLingua. Then queried Opus 4.7.
 >
-> Naive Haiku: 40% qualifier survival. 36.7% false certainty.
+> Naive Haiku: 52% qualifier survival. 26% false certainty.
+> LLMLingua-style token compression: 32% survival. 70% false certainty.
 > With Credence: 100% qualifier survival. 0% false certainty.
 >
 > I also tested the obvious alternative: just add 'preserve uncertainty qualifiers' to the Haiku prompt. That gets you to 93%. Not 100%. Prompt instructions aren't deterministic. The deterministic probe is necessary."
@@ -88,11 +89,11 @@ CHECKPOINT 5 — GENERATION-TIME SCANNER
 >
 > 'The Stripe rate limit is 50 req/min.' Stated as fact. Actually from a sales call. Never confirmed.
 >
-> The faithfulness probe sees nothing. There are no markers to catch.
+> The faithfulness probe sees nothing. No markers to catch.
 >
-> Here's the key insight about Opus 4.7: it reveals uncertainty through behavioral variance, not just through language. Ask it the same question three times. If it gives you different answers each time, it doesn't know. If it's consistent, it knows.
+> Here's where Opus 4.7 comes in. The Ghost Detector makes a single structured call to Opus 4.7: classify this claim — is it an established verified fact, or an implicit unverified assumption? A vendor-stated limit? An estimate nobody confirmed?
 >
-> Credence uses this signal — semantic entropy from Kuhn et al. 2023, applied to API surfaces. I call these ghost constraints.
+> Haiku can't make this distinction. The text looks identical either way. Opus 4.7's reasoning depth is what separates a ghost constraint from a known fact.
 >
 > Ghost gauntlet: 10 sessions, 30 total claims, all Opus 4.7. Credence: 1.000 BothRate. Naive window: 0.133."
 
@@ -132,7 +133,7 @@ CHECKPOINT 5 — GENERATION-TIME SCANNER
 **Say:**
 > "Install is 2 commands and 6 lines of JSON in your settings file. 18 MCP tools, the enforcement hook, full registry. That's it.
 >
-> The system is fully open source. Every experiment in the repo is reproducible. `python3 tests.py` runs 107 tests offline in 3 seconds.
+> The system is fully open source. Every experiment in the repo is reproducible. `python3 tests.py` runs 116 tests offline in 3 seconds.
 >
 > The broader idea: uncertain information should carry its epistemic weight through the entire pipeline — through compression, through generation, through agent handoffs. Credence is a working implementation of that principle, built specifically for Claude Code.
 >
@@ -156,5 +157,5 @@ CHECKPOINT 5 — GENERATION-TIME SCANNER
 - "Deterministic enforcement" (not "AI-powered" — that's the point)
 - "Half a millisecond, zero API calls" (the latency number is a standout)
 - "36.7% → 0%" (pause after this)
-- "Ask it the same question three times" (simple explanation of SE probe)
+- "Single structured Opus 4.7 call — classify this claim" (explain ghost detector simply)
 - "The model cannot write code that embeds unverified values" (on the hook block)

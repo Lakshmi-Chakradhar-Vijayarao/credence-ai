@@ -271,6 +271,16 @@ class CredenceRegistry:
         self.log_event(constraint_id, "verify", notes=f"confirmed_value={verified_value[:100]}")
         return self._row_to_dict(row)
 
+    def mark_contradiction(self, constraint_id: str, reason: str) -> None:
+        """
+        Public API: mark a constraint as DISPUTED because a newer message contradicts it.
+
+        Called by the Contradiction Detector in context_manager._detect_contradiction()
+        when Opus 4.7 identifies a conflicting value in a new user message. Demotes
+        the constraint to disputed=True so it re-enters the enforcement pipeline.
+        """
+        self._dispute_constraint(constraint_id, reason, reason)
+
     def _dispute_constraint(
         self, constraint_id: str, reason: str, new_values_str: str
     ) -> None:
