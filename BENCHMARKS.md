@@ -18,21 +18,21 @@ All results measured fresh. All conditions use Claude Opus 4.7 unless noted. All
 
 | Condition | EQL Rate (EQLR) | False Certainty Rate (FCR) | 95% CI (FCR) |
 |---|---|---|---|
-| **Naive Haiku compression** | **46.0%** | **34.0%** | [21.2%, 48.8%] |
-| **LLMLingua-inspired compression** | **68.0%** | **76.0%** | [61.8%, 86.9%] |
+| **Naive Haiku compression** | **46.0%** | **6.0%** | [1.3%, 16.5%] |
+| **LLMLingua-inspired sim** | **68.0%** | **74.0%** | [59.7%, 85.4%] |
 | Haiku + prompt instruction ("preserve qualifiers") | 10.0% | n/a | — |
 | **Credence (faithfulness probe)** | **0%** | **0.0%** | [0.0%, 7.1%] |
 | Baseline (full context, no compression) | 0% | 0% | — |
 
-**Result**: Credence eliminates EQL and FCR deterministically. Naive Haiku: EQLR 46%, 1 in 3 queries answer with false certainty. LLMLingua-inspired: EQLR 68%, 3 in 4. Credence: EQLR 0%, FCR 0/50.
+**Result**: Credence eliminates EQL and FCR deterministically. Naive Haiku: EQLR 46%, 1 in 17 downstream answers express false certainty. LLMLingua-inspired sim: EQLR 68%, 3 in 4. Credence: EQLR 0%, FCR 0/50.
 
 **Why prompt instructions fail**: Adding "preserve uncertainty qualifiers" to the Haiku system prompt reduces EQLR to 10% — better, but not deterministic. The remaining 10% is model non-compliance. The faithfulness probe is binary enforcement: either uncertainty markers are present (BLOCK) or they aren't (ALLOW). 100% block rate, n=50.
 
-**Probe mechanism**: 184-term frozenset scan on user turns only. p50=0.011ms. Zero API calls. 100% block rate (50/50 uncertain segments blocked). 0% false positive rate (200 non-uncertain phrases, offline).
+**Probe mechanism**: 198-term frozenset scan on user turns only. p50=0.011ms. Zero API calls. 100% block rate (50/50 uncertain segments blocked). 0% false positive rate (200 non-uncertain phrases, offline).
 
 **What "Credence FCR=0%" means mechanistically**: When the probe fires, Haiku is NOT called — compression is skipped entirely and the downstream model receives the original uncompressed conversation text. This is identical to the baseline condition for these 50 scenarios. The correct framing: the probe achieves 0% FCR by *preventing* the lossy compression event, not by compressing while preserving qualifiers. The contrast with "Haiku + prompt instruction" is meaningful: that condition still calls Haiku (attempts to compress while preserving) and achieves only 90% qualifier survival. The probe eliminates the risk at the source.
 
-**FCR scoring note**: `downstream_certain` is scored as the *absence* of any marker from the same 108-term vocabulary used by the probe. A response with "I think" or "it's approximately" scores FCR=0 (correct). A response with "The rate limit is 50 req/min" (no qualifier) scores FCR=1 (harm). The same vocabulary is intentionally shared — these are the canonical English uncertainty expressions.
+**FCR scoring note (v2)**: `downstream_certain` is scored as the *absence* of any marker from the 198-term vocabulary used by the probe. A response with "I think" or "it's approximately" or "pending verification" scores FCR=0 (correct). A response with "The rate limit is 50 req/min" (no qualifier) scores FCR=1 (harm). Vocabulary v2 adds 14 impersonal hedging phrases ("pending verification", "unresolved", "cannot definitively", etc.) and markdown stripping that were absent from v1. Original v1 scorer reported naive FCR=34.0% — this was inflated because 14/17 "certain" responses contained out-of-vocabulary hedging language. Corrected v2 naive FCR=6.0% (3/50 genuinely unqualified answers). LLMLingua FCR is robust to the correction (74% vs. 76%) because aggressive compression removes the epistemic signal entirely, leaving the model no hedge to echo.
 
 **Reproduce**: `python -m evals.compression_faithfulness --n 50`
 
@@ -192,8 +192,8 @@ The gate runs before every Write/Edit/Bash/NotebookEdit tool call. At 100 tool c
 
 | Experiment | Credence | Naive/Baseline | Gap |
 |---|---|---|---|
-| FCR — Haiku (n=50) | **0%** [0%, 7.1%] | 34.0% [21.2%, 48.8%] | −34pp |
-| FCR — LLMLingua (n=50) | **0%** [0%, 7.1%] | 76.0% [61.8%, 86.9%] | −76pp |
+| FCR — Haiku (n=50) | **0%** [0%, 7.1%] | 6.0% [1.3%, 16.5%] | −6pp |
+| FCR — LLMLingua sim (n=50) | **0%** [0%, 7.1%] | 74.0% [59.7%, 85.4%] | −74pp |
 | Ghost BothRate (n=10 sessions) | **1.000** | 0.200 (naive) | +0.800 |
 | E6 correction recall (n=23) | **100%** | 19.6% (naive) | +80.4pp |
 | E7 chain complete (categorical) | **3/3** | 0/3 (naive) | +3 hops |

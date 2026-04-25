@@ -2,7 +2,7 @@
 
 ## The Thesis
 
-We define **Epistemic Qualifier Loss (EQL)**: the loss of user-stated uncertainty markers during context window summarization, causing downstream models to treat explicitly uncertain claims as confirmed facts. The **EQL Rate (EQLR)** measures how often this happens: 46% under Haiku compression, 68% under LLMLingua-style scoring (n=50). The downstream False Certainty Rate (FCR) — how often the answering model states the uncertain value without any qualifier — is 34% and 76% respectively. One in three queries after Haiku compression. Three in four after LLMLingua. Both drop to 0% with Credence.
+We define **Epistemic Qualifier Loss (EQL)**: the loss of user-stated uncertainty markers during context window summarization, causing downstream models to treat explicitly uncertain claims as confirmed facts. The **EQL Rate (EQLR)** measures how often this happens: 46% under Haiku compression, 68% under LLMLingua-style scoring (n=50). The downstream False Certainty Rate (FCR) — how often the answering model states the uncertain value without any qualifier — is 6% and 74% respectively (corrected scorer v2, 198 markers). LLMLingua: 3 in 4 after compression. Both drop to 0% with Credence.
 
 This failure has a name now. It didn't before. Practitioners at Factory.ai, SwirlAI, and others have described it for years as "semantic drift" or "false certainty from compression" — without a number, without a causal mechanism, without a fix. The academic literature on compression (LLMLingua-2, SnapKV, StreamingLLM) defines faithfulness as lexical or task-level fidelity and never measures whether uncertainty qualifiers survive. The epistemic uncertainty literature (Semantic Entropy, UProp, R-Tuning) addresses model confidence calibration and never touches the compression pipeline. EQL lives at the intersection nobody studied.
 
@@ -16,7 +16,7 @@ Memory systems (MemGPT/Letta, Mem0, Zep) persist facts across sessions but strip
 
 Five checkpoints, each encoding a distinct architectural principle:
 
-- **CP1 — Faithfulness Probe (0.07ms, zero API calls):** The probe is deterministic, not probabilistic. A 167-marker frozenset scan on user turns only. FCR 34.0% → 0% (n=50, 95% CI [0%, 7.1%]). *Principle: enforcement that requires a model call is not enforcement — it is a suggestion.*
+- **CP1 — Faithfulness Probe (0.011ms, zero API calls):** The probe is deterministic, not probabilistic. A 198-marker frozenset scan on user turns only. EQLR 46% → 0%; FCR 74% → 0% (LLMLingua sim, n=50, 95% CI [0%, 7.1%]). *Principle: enforcement that requires a model call is not enforcement — it is a suggestion.*
 
 - **CP2 — Truth Buffer + Consistency Enforcer:** Injects all unverified constraints into the system prompt every turn, with imperative prohibition when the user's query keyword-overlaps a registered constraint (32 domain synonym clusters, 0% FP rate). *Principle: the model should never have to remember an uncertain constraint; inject it explicitly at generation time.*
 
@@ -24,7 +24,7 @@ Five checkpoints, each encoding a distinct architectural principle:
 
 - **CP4 — Rust Gate (3.4ms, 98× faster than Python, 0% FP rate):** Native PreToolUse hook. Blocks Write/Edit/Bash when tool arguments overlap unverified constraints. *Principle: irreversible actions are where epistemic errors become real costs — gate the action, not the text.*
 
-- **CP5 — Epistemic Memory:** Cross-session constraint registry with certainty trajectories and confidence decay. CS-FCR 50% (no memory) → 0% (Credence Memory), n=16 callbacks. *Principle: epistemic state is session-persistent by nature, not by accident of context window size.*
+- **CP5 — Epistemic Memory:** Cross-session constraint registry with certainty trajectories and confidence decay. CS-FCR 40% (no memory) → 0% (Credence Memory), n=20 callbacks. *Principle: epistemic state is session-persistent by nature, not by accident of context window size.*
 
 ---
 

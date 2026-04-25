@@ -389,6 +389,16 @@ _UNCERTAINTY_MARKERS = frozenset({
     # Modal-past uncertainty — "it might have been changed" is unverified
     "might have been", "may have been", "could have been",
     "might have changed", "may have changed",
+    # Impersonal/third-person hedging — typical in assistant responses and summaries
+    # These were absent from the original list but are canonical English uncertainty
+    # expressions (found by auditing FCR-scored downstream answers that were actually hedged)
+    "pending verification", "requiring verification", "requires verification",
+    "not fully confirmed", "not been confirmed", "not been finalized",
+    "not yet finalized", "not yet been finalized",
+    "cannot definitively", "not definitively",
+    "unresolved", "still pending",
+    "ambiguity",
+    "needs confirmation",
     # NOTE: removed "hypothesis/hypotheses" (fires on confirmed reasoning),
     # "awaiting" (administrative, not epistemic),
     # "pending decision" (workflow, not epistemic),
@@ -2261,7 +2271,10 @@ class ContextManager:
     def _has_uncertainty(self, text: str) -> bool:
         """Returns True if text contains markers that signal user-flagged uncertainty."""
         import re as _re
-        lower = text.lower()
+        # Strip markdown bold/italic markers before substring matching so that
+        # "**not** been confirmed" matches "not been confirmed"
+        clean = _re.sub(r'\*{1,2}|_{1,2}', '', text)
+        lower = clean.lower()
         # Standard uncertainty markers
         if any(m in lower for m in _UNCERTAINTY_MARKERS):
             return True

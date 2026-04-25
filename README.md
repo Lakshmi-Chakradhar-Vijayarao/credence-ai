@@ -50,14 +50,15 @@ Compressed by Haiku or LLMLingua-inspired scorer. Queried by Opus 4.7.
 
 | Condition | EQL Rate (EQLR) | False Certainty Rate (FCR) | 95% CI (FCR) |
 |---|---|---|---|
-| Naive Haiku (n=50) | **46.0%** | **34.0%** | [21.2%, 48.8%] |
-| LLMLingua-2 simulated (n=50) | **68.0%** | **76.0%** | [61.8%, 86.9%] |
+| Naive Haiku (n=50) | **46.0%** | **6.0%** | [1.3%, 16.5%] |
+| LLMLingua-inspired sim (n=50) | **68.0%** | **74.0%** | [59.7%, 85.4%] |
 | Haiku + "preserve qualifiers" instruction (n=30) | 10.0% | n/a¹ | — |
 | Credence (faithfulness probe, n=50) | **0%** | **0%** | [0%, 7.1%] |
 
 ¹ Null hypothesis tests qualifier survival through compression, not downstream FCR.
 Prompt instructions get you to 90.0% qualifier survival. The probe is **deterministic** — 100% block rate, zero API calls.
-LLMLingua-style importance scoring causes **2.2× more false certainty** than naive Haiku (76.0% vs 34.0%).
+LLMLingua-style importance scoring causes **12× more false certainty** than naive Haiku (74.0% vs 6.0%).
+FCR uses corrected scorer v2 (198 markers, markdown-stripped). Original v1 naive FCR was 34.0%; audit found 14/17 "certain" responses used hedging outside the v1 vocabulary.
 Run: `python -m evals.compression_faithfulness` or `python -m evals.null_hypothesis`
 
 **Study 2 — Long session (n=23 trials, all Opus 4.7):** 12-turn session. Uncertain
@@ -82,7 +83,7 @@ User states uncertain claim: "I think rate limit is ~50 — unconfirmed"
                 ↓
   Qualifier stripped from summary           ← EQLR measures this (46% Haiku, 68% LLMLingua)
                 ↓
-  Downstream model answers with certainty   ← FCR measures this (34% Haiku, 76% LLMLingua)
+  Downstream model answers with certainty   ← FCR measures this (6% Haiku, 74% LLMLingua sim)
                 ↓
   RATE_LIMIT = 50 ships to production       ← Real cost
 ```
@@ -95,7 +96,7 @@ User states uncertain claim: "I think rate limit is ~50 — unconfirmed"
 
 **Two distinct failure modes require two different mitigations:**
 
-**1. Compression EQL.** Haiku treats *"I think the rate limit is ~50 req/min — unconfirmed"* and *"the rate limit is 50 req/min"* as semantically equivalent summaries. The qualifier is collateral loss — EQLR 46% under Haiku, 68% under LLMLingua. FCR downstream: 34% and 76%.
+**1. Compression EQL.** Haiku treats *"I think the rate limit is ~50 req/min — unconfirmed"* and *"the rate limit is 50 req/min"* as semantically equivalent summaries. The qualifier is collateral loss — EQLR 46% under Haiku, 68% under LLMLingua. FCR downstream: 6% (Haiku) and 74% (LLMLingua sim).
 
 **2. Reasoning EQL.** Even with the qualifier in full context, Opus 4.7 ignores epistemic weight in ~50% of long-session callbacks. Context presence ≠ epistemic attention.
 
@@ -177,7 +178,7 @@ Zero API calls from Layers 1, 3, 4, 5.
 
 ## The Opus 4.7 Insight: Ghost Constraints
 
-The faithfulness probe catches explicit hedges: *"I think"*, *"approximately"*, *"probably"* — 184 markers: canonical hedges, past-tense variants, vendor/source language, production-untested assertions.
+The faithfulness probe catches explicit hedges: *"I think"*, *"approximately"*, *"probably"*, *"pending verification"* — 198 markers: canonical hedges, past-tense variants, impersonal hedging, vendor/source language, production-untested assertions.
 
 But what about this:
 > *"The Stripe rate limit is 50 req/min."*
@@ -333,8 +334,8 @@ Epistemic provenance: no other memory system has it.
 
 | Experiment | Credence | Baseline | Naive |
 |---|---|---|---|
-| Compression faithfulness — Haiku (n=50) | FCR=**0%** (CI: 0–7.1%) | 0% | FCR=**34.0%** (CI: 21.2–48.8%) |
-| Compression faithfulness — LLMLingua (n=50) | FCR=**0%** (CI: 0–7.1%) | — | FCR=**76.0%** (CI: 61.8–86.9%) |
+| Compression faithfulness — Haiku (n=50) | FCR=**0%** (CI: 0–7.1%) | 0% | FCR=**6.0%** (CI: 1.3–16.5%) |
+| Compression faithfulness — LLMLingua sim (n=50) | FCR=**0%** (CI: 0–7.1%) | — | FCR=**74.0%** (CI: 59.7–85.4%) |
 | Null hypothesis: prompt instruction qualifier survival (n=30) | **100%** (probe) | — | 87.5% (not deterministic) |
 | E6 Negative Needle: constraint recall (n=23 trials, Opus 4.7) | **100%** | 100% | 19.6% |
 | E7 Multi-Hop Chain: 3-step dependency (categorical) | **3/3 hops** | 3/3 | **0/3** |
@@ -395,7 +396,7 @@ Three research areas surround this problem. None of them intersect at the enforc
 - **GTS numeric collision:** A common numeric value like `50` registered as a constraint will annotate every `= 50` assignment in generated code, including unrelated ones. Over-annotation is safer than under-annotation, but it is real noise. Use specific multi-digit values to minimise this.
 - **Short sessions (<16 turns):** Compression never fires. Credence's compression routing adds no value; use the registry directly.
 - **FCR definition:** FCR = absence of uncertainty markers in the downstream response, not necessarily a false fact. The harm is real in both interpretations.
-- **LLMLingua result:** The 76.0% FCR figure uses a hand-coded LLMLingua-inspired simulation (sentence-length importance scoring drops short qualifier sentences), not the actual LLMLingua-2 library. The core mechanism is accurate to LLMLingua's design. The high FCR reflects LLMLingua's aggressive importance-based dropping of short qualifier sentences.
+- **LLMLingua result:** The 74.0% FCR figure uses a hand-coded LLMLingua-inspired simulation (sentence-length importance scoring drops short qualifier sentences), not the actual LLMLingua-2 library. The core mechanism is accurate to LLMLingua's design. The high FCR (robust to scorer correction) reflects LLMLingua's aggressive importance-based dropping of short qualifier sentences.
 
 ---
 
@@ -526,7 +527,7 @@ python3 tests.py                                    # 116 unit tests
 python3 test_claims.py                              # validate submission claims
 
 # Core experiments (~$3 total)
-python -m evals.compression_faithfulness            # headline: 34.0% (Haiku) / 76.0% (LLMLingua) → 0% FCR
+python -m evals.compression_faithfulness            # headline: 6.0% (Haiku) / 74.0% (LLMLingua sim) → 0% FCR
 python -m evals.null_hypothesis                     # null hypothesis: 93% with instruction only
 python -m evals.experiments --exp E6                # long session recall
 python -m evals.experiments --exp E7                # 3-hop chain

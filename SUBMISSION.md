@@ -4,9 +4,9 @@
 
 **We define Epistemic Qualifier Loss (EQL)** — the loss of user-stated uncertainty markers during context window summarization, causing downstream models to treat explicitly uncertain claims as confirmed facts. When a user says *"I think the rate limit is ~50 req/min — unconfirmed"* and Haiku compresses it to *"rate limit: 50 req/min,"* the model writes `RATE_LIMIT = 50` to production code with zero warning. This is not hallucination. The value survived. The doubt was erased.
 
-We measured it: **EQL Rate (EQLR) 46%** under Haiku compression; **68%** under a simulated LLMLingua-style importance scorer. Downstream False Certainty Rate: **34%** and **76%** respectively (n=50, Clopper-Pearson CIs). No prior paper names or measures this failure mode. Practitioners have described it for years with no number.
+We measured it: **EQL Rate (EQLR) 46%** under Haiku compression; **68%** under a simulated LLMLingua-style importance scorer. Downstream False Certainty Rate (corrected scorer v2): **6%** and **74%** respectively (n=50, Clopper-Pearson CIs). No prior paper names or measures this failure mode. Practitioners have described it for years with no number.
 
-**Credence eliminates EQL at five deterministic checkpoints** — pre-compression probe (0.011ms, 184 markers, 0% FP), Truth Buffer, Consistency Enforcer, Generation-Time Scanner, Rust PreToolUse gate (3.4ms, 98× faster than Python). EQLR 46%→0%. FCR 34%→0%. Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions). 178 tests. 22-tool MCP server. 2-minute Claude Code install.
+**Credence eliminates EQL at five deterministic checkpoints** — pre-compression probe (0.011ms, 198 markers, 0% FP), Truth Buffer, Consistency Enforcer, Generation-Time Scanner, Rust PreToolUse gate (3.4ms, 98× faster than Python). EQLR 46%→0%. FCR 74%→0% (LLMLingua sim). Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions). 178 tests. 22-tool MCP server. 2-minute Claude Code install.
 
 ---
 
@@ -29,9 +29,9 @@ All numbers measured fresh with `ANTHROPIC_API_KEY` and verified reproducible.
 | Experiment | Metric | Credence | Naive/Baseline | Notes |
 |---|---|---|---|---|
 | EQL Study — Haiku (n=50) | EQL Rate (EQLR) | **0%** (CI: 0–7.1%) | 46.0% (CI: 31.8–60.7%) | **Primary EQL evidence** |
-| EQL Study — Haiku (n=50) | False Certainty Rate (FCR) | **0%** (CI: 0–7.1%) | 34.0% (CI: 21.2–48.8%) | Downstream harm from EQL |
+| EQL Study — Haiku (n=50) | False Certainty Rate (FCR) | **0%** (CI: 0–7.1%) | 6.0% (CI: 1.3–16.5%) | Downstream harm from EQL |
 | EQL Study — LLMLingua-inspired sim (n=50) | EQL Rate (EQLR) | **0%** | 68.0% | 1.5× worse EQL than Haiku |
-| EQL Study — LLMLingua-inspired sim (n=50) | False Certainty Rate (FCR) | **0%** (CI: 0–7.1%) | 76.0% (CI: 61.8–86.9%) | 2.2× worse FCR than Haiku |
+| EQL Study — LLMLingua-inspired sim (n=50) | False Certainty Rate (FCR) | **0%** (CI: 0–7.1%) | 74.0% (CI: 59.7–85.4%) | 12× worse FCR than Haiku |
 | Prompt-only instruction (n=30 scenarios) | Qualifier survival | — | **90.0%** vs 100% with probe | Null hypothesis: instructions are not deterministic |
 | E6 Negative Needle (single trial, all Opus 4.7) | Correction recall | **2/2** | naive: 0/2 | Categorical — probe preserved constraints through 8 filler turns |
 | E7 Multi-Hop Chain (single trial) | Hops recalled | **3/3** chain complete | naive: 1/3 chain broken | Dependency chain destroyed by naive window |
@@ -76,7 +76,7 @@ User: "I think rate limit is ~50 req/min — unconfirmed"
              ↓
   Summary: "rate limit: 50 req/min"   ← EQLR measures this loss (46% Haiku, 68% LLMLingua)
              ↓
-  Opus: "The rate limit is 50 req/min" ← FCR measures this outcome (34% / 76%)
+  Opus: "The rate limit is 50 req/min" ← FCR measures this outcome (6% naive / 74% LLMLingua sim)
              ↓
   RATE_LIMIT = 50 ships to production
 ```
@@ -97,7 +97,7 @@ Total deterministic enforcement overhead: **~0.56ms. Zero API calls from enforce
 
 | Checkpoint | Mechanism | Type | Latency | Invariant Enforcement |
 |---|---|---|---|---|
-| **Compression** | Faithfulness Probe + Uncertainty-Weighted Prompt | Deterministic | 0.07ms | Blocks Haiku before it strips qualifiers — 184 markers, user-turns-only; registered constraints quoted verbatim in compression prompt |
+| **Compression** | Faithfulness Probe + Uncertainty-Weighted Prompt | Deterministic | 0.07ms | Blocks Haiku before it strips qualifiers — 198 markers, user-turns-only; registered constraints quoted verbatim in compression prompt |
 | **Generation** | Truth Buffer + Consistency Enforcer | Deterministic injection + imperative block | ~0ms | ALL unverified constraints injected every turn; direct match → imperative prohibition |
 | **Code output** | Generation-Time Scanner | Deterministic | 0.08ms | Annotates numeric AND string literals (`"RS256"`, `"/api/v2"`, `us-east-1`) with confidence tier |
 | **Tool execution** | credence-gate (Rust) | Deterministic | 3.4ms | Blocks Write/Edit/Bash before execution if arguments overlap unverified constraint |
@@ -266,7 +266,7 @@ A context safety layer for Claude Code sessions that prevents uncertain constrai
 - Not a guarantee (Layer 2 depends on Claude following instructions)
 - Not a replacement for human verification (it flags; the user confirms)
 
-**FCR definition:** FCR = fraction of responses that *lack any uncertainty qualifier* about the compressed constraint. This is a proxy for the harmful outcome (user acts on unverified value as if confirmed). A stricter definition — "explicitly asserted as confirmed fact" — shows 0% for all conditions in the null_hypothesis study (n=30), suggesting Opus 4.7 rarely makes explicit confident false assertions even with qualifiers stripped. The primary harm is qualifier absence causing user over-confidence, not explicit fabrication.
+**FCR definition:** FCR = fraction of responses that *lack any uncertainty qualifier* about the compressed constraint. This is a proxy for the harmful outcome (user acts on unverified value as if confirmed). Scorer v1 (184 markers) reported naive FCR=34% — an adversarial audit found that 14/17 "certain" responses actually contained hedging language outside the vocabulary ("pending verification", "not definitively", "unresolved", etc.). Scorer v2 (198 markers + markdown stripping) corrects this to 6% naive FCR. LLMLingua sim FCR is robust to the correction (74%) because aggressive compression eliminates the epistemic signal, leaving the downstream model no qualifier to echo.
 
 **Probe condition mechanics**: When the faithfulness probe blocks compression (all 50 scenarios in the n=50 study), the downstream model receives the original uncompressed conversation text — the same input as the baseline condition. FCR=0% for the probe condition follows directly from this: the probe prevents the lossy compression event entirely. The contrast that matters is against "Haiku + prompt instruction" (EQLR 10%), which *does* attempt compression with an instruction to preserve qualifiers but achieves only 90% qualifier survival. The probe's approach is to block compression at the source rather than attempt to compress while preserving.
 

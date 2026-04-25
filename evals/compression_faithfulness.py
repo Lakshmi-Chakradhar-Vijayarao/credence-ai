@@ -490,7 +490,10 @@ def _call(client, model: str, messages: list[dict],
 
 def _has_uncertainty(text: str) -> bool:
     """Check whether text contains any uncertainty marker."""
-    lower = text.lower()
+    import re as _re
+    # Strip markdown bold/italic markers so "**not** been confirmed" matches "not been confirmed"
+    clean = _re.sub(r'\*{1,2}|_{1,2}', '', text)
+    lower = clean.lower()
     return any(m in lower for m in _UNCERTAINTY_MARKERS)
 
 
