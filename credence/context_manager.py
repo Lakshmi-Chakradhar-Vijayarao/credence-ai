@@ -380,6 +380,15 @@ _UNCERTAINTY_MARKERS = frozenset({
     # Conditional epistemic — depends on unresolved state
     "assuming that", "assuming this is correct", "if that's right",
     "if that's correct", "if i'm reading this right", "if the config is right",
+    # Past-tense and contracted forms — same epistemic meaning, different tense
+    # ("weren't sure about X" is identical uncertainty to "not sure about X")
+    "wasn't sure", "weren't sure", "wasn't certain", "weren't certain",
+    "hadn't verified", "hadn't confirmed", "hadn't checked",
+    "didn't confirm", "didn't verify", "didn't check",
+    "wasn't confirmed", "wasn't verified",
+    # Modal-past uncertainty — "it might have been changed" is unverified
+    "might have been", "may have been", "could have been",
+    "might have changed", "may have changed",
     # NOTE: removed "hypothesis/hypotheses" (fires on confirmed reasoning),
     # "awaiting" (administrative, not epistemic),
     # "pending decision" (workflow, not epistemic),

@@ -121,7 +121,7 @@ User says something uncertain
     ▼ before compression
 ┌───────────────────────────────────────────┐
 │  LAYER 1 — Faithfulness Probe  (~0.07ms)  │  DETERMINISTIC
-│  frozenset of 167 uncertainty markers      │
+│  frozenset of 184 uncertainty markers      │
 │  Scans user turns only (avoids echo bias)  │
 │  Uncertainty found → block Haiku → KEEP   │
 └───────────────────────────────────────────┘
@@ -177,7 +177,7 @@ Zero API calls from Layers 1, 3, 4, 5.
 
 ## The Opus 4.7 Insight: Ghost Constraints
 
-The faithfulness probe catches explicit hedges: *"I think"*, *"approximately"*, *"probably"* — 167 markers: canonical hedges, vendor/source language, production-untested assertions.
+The faithfulness probe catches explicit hedges: *"I think"*, *"approximately"*, *"probably"* — 184 markers: canonical hedges, past-tense variants, vendor/source language, production-untested assertions.
 
 But what about this:
 > *"The Stripe rate limit is 50 req/min."*

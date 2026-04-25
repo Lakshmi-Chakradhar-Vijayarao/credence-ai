@@ -28,7 +28,7 @@ All results measured fresh. All conditions use Claude Opus 4.7 unless noted. All
 
 **Why prompt instructions fail**: Adding "preserve uncertainty qualifiers" to the Haiku system prompt reduces EQLR to 10% — better, but not deterministic. The remaining 10% is model non-compliance. The faithfulness probe is binary enforcement: either uncertainty markers are present (BLOCK) or they aren't (ALLOW). 100% block rate, n=50.
 
-**Probe mechanism**: 167-term frozenset scan on user turns only. p50=0.011ms. Zero API calls. 100% block rate (50/50 uncertain segments blocked). 0% false positive rate (200 non-uncertain phrases, offline).
+**Probe mechanism**: 184-term frozenset scan on user turns only. p50=0.011ms. Zero API calls. 100% block rate (50/50 uncertain segments blocked). 0% false positive rate (200 non-uncertain phrases, offline).
 
 **What "Credence FCR=0%" means mechanistically**: When the probe fires, Haiku is NOT called — compression is skipped entirely and the downstream model receives the original uncompressed conversation text. This is identical to the baseline condition for these 50 scenarios. The correct framing: the probe achieves 0% FCR by *preventing* the lossy compression event, not by compressing while preserving qualifiers. The contrast with "Haiku + prompt instruction" is meaningful: that condition still calls Haiku (attempts to compress while preserving) and achieves only 90% qualifier survival. The probe eliminates the risk at the source.
 
@@ -90,17 +90,17 @@ n=23 independent trials. All conditions: Opus 4.7.
 
 ---
 
-## 5. Cross-Session Epistemic Memory (n=16 callbacks)
+## 5. Cross-Session Epistemic Memory (n=20 callbacks)
 
 **Question**: Does Credence preserve epistemic qualifiers across session boundaries, where other memory systems (Mem0, Zep) strip them at write time?
 
 | Condition | CS-FCR | BothRate |
 |---|---|---|
-| No memory (fresh session) | **50%** | 25% |
+| No memory (fresh session) | **40%** | 30% |
 | Naive summary (human-written) | 0% | 100% |
-| **Credence Memory** | **0%** | 87.5% |
+| **Credence Memory** | **0%** | 80% |
 
-CS-FCR = Cross-Session False Certainty Rate. n=10 scenarios, n=16 callbacks.
+CS-FCR = Cross-Session False Certainty Rate. n=10 scenarios, n=20 callbacks.
 
 **Key distinction**: Naive summary achieves 0% CS-FCR because it was hand-written to preserve qualifiers — this is what an expert human does manually. Real memory tools (Mem0, Zep, Graphiti) store facts as flat strings, stripping qualifiers. Credence automates the epistemic-preserving behavior.
 
@@ -133,7 +133,7 @@ All offline, zero API calls, 1.8s total runtime.
 | Probe latency p50 | **0.011ms** (7× better than 0.07ms claim) | 1,000 |
 | Probe latency p99 | **0.017ms** | 1,000 |
 | Probe false positive rate | **0%** | 200 non-uncertain phrases |
-| Probe recall | **100%** | 200 uncertain phrases (167 markers covered) |
+| Probe recall | **100%** | 200 uncertain phrases (167 of 184 markers stress-tested; 17 past-tense/modal variants added after) |
 | J-score gap: confident vs. hedged | **0.344** (0.859 vs. 0.514) | 200 |
 | GTS code annotation precision | **100%** | 50 code blocks |
 | GTS false positive rate | **0%** | 50 unrelated code blocks |
@@ -193,7 +193,7 @@ The gate runs before every Write/Edit/Bash/NotebookEdit tool call. At 100 tool c
 | Ghost BothRate (n=10 sessions) | **1.000** | 0.200 (naive) | +0.800 |
 | E6 correction recall (n=23) | **100%** | 19.6% (naive) | +80.4pp |
 | E7 chain complete (categorical) | **3/3** | 0/3 (naive) | +3 hops |
-| Cross-session CS-FCR (n=16) | **0%** | 50% (no memory) | −50pp |
+| Cross-session CS-FCR (n=20) | **0%** | 40% (no memory) | −40pp |
 | Probe FP rate (n=200) | **0%** | — | — |
 | Probe recall (n=200) | **100%** | — | — |
 | Probe latency | **0.011ms p50** | — | 7× under claim |

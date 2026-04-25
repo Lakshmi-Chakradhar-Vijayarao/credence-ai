@@ -4,9 +4,9 @@
 
 **We define Epistemic Qualifier Loss (EQL)** — the loss of user-stated uncertainty markers during context window summarization, causing downstream models to treat explicitly uncertain claims as confirmed facts. When a user says *"I think the rate limit is ~50 req/min — unconfirmed"* and Haiku compresses it to *"rate limit: 50 req/min,"* the model writes `RATE_LIMIT = 50` to production code with zero warning. This is not hallucination. The value survived. The doubt was erased.
 
-We measured it: **EQL Rate (EQLR) 46%** under Haiku compression; **68%** under LLMLingua-style scoring. Downstream False Certainty Rate: **34%** and **76%** respectively (n=50, Clopper-Pearson CIs). No prior paper names or measures this failure mode. Practitioners have described it for years with no number.
+We measured it: **EQL Rate (EQLR) 46%** under Haiku compression; **68%** under a simulated LLMLingua-style importance scorer. Downstream False Certainty Rate: **34%** and **76%** respectively (n=50, Clopper-Pearson CIs). No prior paper names or measures this failure mode. Practitioners have described it for years with no number.
 
-**Credence eliminates EQL at five deterministic checkpoints** — pre-compression probe (0.011ms, 167 markers, 0% FP), Truth Buffer, Consistency Enforcer, Generation-Time Scanner, Rust PreToolUse gate (3.4ms, 98× faster than Python). EQLR 46%→0%. FCR 34%→0%. Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions). 178 tests. 22-tool MCP server. 2-minute Claude Code install.
+**Credence eliminates EQL at five deterministic checkpoints** — pre-compression probe (0.011ms, 184 markers, 0% FP), Truth Buffer, Consistency Enforcer, Generation-Time Scanner, Rust PreToolUse gate (3.4ms, 98× faster than Python). EQLR 46%→0%. FCR 34%→0%. Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions). 178 tests. 22-tool MCP server. 2-minute Claude Code install.
 
 ---
 
@@ -30,20 +30,20 @@ All numbers measured fresh with `ANTHROPIC_API_KEY` and verified reproducible.
 |---|---|---|---|---|
 | EQL Study — Haiku (n=50) | EQL Rate (EQLR) | **0%** (CI: 0–7.1%) | 46.0% (CI: 31.8–60.7%) | **Primary EQL evidence** |
 | EQL Study — Haiku (n=50) | False Certainty Rate (FCR) | **0%** (CI: 0–7.1%) | 34.0% (CI: 21.2–48.8%) | Downstream harm from EQL |
-| EQL Study — LLMLingua (n=50) | EQL Rate (EQLR) | **0%** | 68.0% | 1.5× worse EQL than Haiku |
-| EQL Study — LLMLingua (n=50) | False Certainty Rate (FCR) | **0%** (CI: 0–7.1%) | 76.0% (CI: 61.8–86.9%) | 2.2× worse FCR than Haiku |
+| EQL Study — LLMLingua-inspired sim (n=50) | EQL Rate (EQLR) | **0%** | 68.0% | 1.5× worse EQL than Haiku |
+| EQL Study — LLMLingua-inspired sim (n=50) | False Certainty Rate (FCR) | **0%** (CI: 0–7.1%) | 76.0% (CI: 61.8–86.9%) | 2.2× worse FCR than Haiku |
 | Prompt-only instruction (n=30 scenarios) | Qualifier survival | — | **90.0%** vs 100% with probe | Null hypothesis: instructions are not deterministic |
 | E6 Negative Needle (single trial, all Opus 4.7) | Correction recall | **2/2** | naive: 0/2 | Categorical — probe preserved constraints through 8 filler turns |
 | E7 Multi-Hop Chain (single trial) | Hops recalled | **3/3** chain complete | naive: 1/3 chain broken | Dependency chain destroyed by naive window |
 | E8 Real Debugging (single trial) | Mean recall | **0.944** | naive: 0.522 | Credence 1.8× better recall on real session |
 | Ghost Gauntlet (n=10 sessions × 3 conditions) | BothRate | **1.000** (credence_v1/credence_eg2) | naive_window: 0.200 | Implicit uncertain claims: value + qualifier preserved |
-| Cross-Session Memory (n=16 callbacks) | CS-FCR | **0%** | no memory: 50% | Epistemic state survives session boundary |
+| Cross-Session Memory (n=20 callbacks) | CS-FCR | **0%** | no memory: 40% | Epistemic state survives session boundary |
 | Native gate latency (PreToolUse hook) | Latency | **3.4ms** (Rust) | 331ms (Python) | 98× faster |
 | Precision eval — CE FP rate | False positive rate | **0%** | — | Offline, reproducible |
 | Precision eval — GTS string FP rate | False positive rate | **0%** | — | Offline, reproducible |
 | Precision eval — probe FP rate | False positive rate | **0%** | — | Offline, reproducible |
 | Stress test — probe precision (n=200) | FP rate | **0%** | — | 200 non-uncertain phrases, offline |
-| Stress test — probe recall (n=200) | Recall | **100%** | — | 167 markers, 200 uncertain phrases |
+| Stress test — probe recall (n=200) | Recall | **100%** | — | 167 markers tested offline; 17 past-tense/modal variants added subsequently |
 | Stress test — J separation (n=200) | Score gap | **0.344** | — | Confident 0.859 vs hedged 0.514 |
 | Stress test — GTS (n=50) | Precision + recall | **100% / 0% FP** | — | Code block annotation, offline |
 | Stress test — probe latency (n=1000) | p50 / p99 | **0.011ms / 0.017ms** | — | 7× better than 0.07ms claim |
@@ -97,7 +97,7 @@ Total deterministic enforcement overhead: **~0.56ms. Zero API calls from enforce
 
 | Checkpoint | Mechanism | Type | Latency | Invariant Enforcement |
 |---|---|---|---|---|
-| **Compression** | Faithfulness Probe + Uncertainty-Weighted Prompt | Deterministic | 0.07ms | Blocks Haiku before it strips qualifiers — 167 markers, user-turns-only; registered constraints quoted verbatim in compression prompt |
+| **Compression** | Faithfulness Probe + Uncertainty-Weighted Prompt | Deterministic | 0.07ms | Blocks Haiku before it strips qualifiers — 184 markers, user-turns-only; registered constraints quoted verbatim in compression prompt |
 | **Generation** | Truth Buffer + Consistency Enforcer | Deterministic injection + imperative block | ~0ms | ALL unverified constraints injected every turn; direct match → imperative prohibition |
 | **Code output** | Generation-Time Scanner | Deterministic | 0.08ms | Annotates numeric AND string literals (`"RS256"`, `"/api/v2"`, `us-east-1`) with confidence tier |
 | **Tool execution** | credence-gate (Rust) | Deterministic | 3.4ms | Blocks Write/Edit/Bash before execution if arguments overlap unverified constraint |
@@ -189,13 +189,13 @@ recall = credence_memory_recall(project_id="payment-service", new_session_id="s2
 #  When referring to these values, always state they are unverified."
 ```
 
-**Measured result (Cross-Session FCR, n=16 callbacks, 8 scenarios × 2 sessions, claude-opus-4-7):**
+**Measured result (Cross-Session FCR, n=20 callbacks, 10 scenarios × 2 sessions, claude-opus-4-7):**
 
 | Condition | CS-FCR | BothRate | Description |
 |---|---|---|---|
-| No memory | **50%** | 25% | Fresh session — model guesses or invents values |
+| No memory | **40%** | 30% | Fresh session — model guesses or invents values |
 | Naive summary (oracle) | **0%** | 100% | Human-written summary with qualifiers intact — upper bound |
-| Credence Memory | **0%** | 87.5% | Registry enforces qualifier automatically |
+| Credence Memory | **0%** | 80% | Registry enforces qualifier automatically |
 
 CS-FCR = fraction of session-2 queries that state an uncertain value without any qualifier.
 
@@ -227,7 +227,7 @@ Results already in repo (all verified, not cherry-picked):
 - `evals/ghost_gauntlet_results.json` — ghost gauntlet n=10 sessions × 3 conditions (primary)
 - `evals/ghost_detector_ablation_results.json` — Ghost Detector ablation (n=5, mechanism isolation)
 - `evals/e6_repeated_results.json` — E6 Negative Needle, 23-trial bootstrap CI
-- `evals/cross_session_results.json` — cross-session FCR (n=16 callbacks, 8 scenarios)
+- `evals/cross_session_results.json` — cross-session FCR (n=20 callbacks, 10 scenarios)
 
 ---
 

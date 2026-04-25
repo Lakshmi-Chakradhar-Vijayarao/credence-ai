@@ -13,7 +13,7 @@ We measure EQL under two compression regimes (n=50): Haiku summarization produce
 
 We introduce Credence, a context safety layer that prevents EQL through five deterministic checkpoints: (1) a **faithfulness probe** blocking compression when uncertainty markers are present (167 terms, 0.011ms, zero API calls), (2) a **Truth Buffer** injecting unverified constraints into every system prompt, (3) a **Consistency Enforcer** with domain synonym expansion (32 clusters), (4) a **Generation-Time Scanner** annotating code and prose with confidence tiers, and (5) a **Rust PreToolUse gate** (3.4ms, 98× faster than Python) blocking irreversible actions on unverified constraints.
 
-Results: EQLR 46%→0%, FCR 34%→0% (Haiku, n=50). Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions). Cross-session FCR: 50%→0% (n=16 callbacks). 178 unit tests, 0% false positive rate across all deterministic layers. Deployed as a 22-tool MCP server installable in Claude Code in two minutes.
+Results: EQLR 46%→0%, FCR 34%→0% (Haiku, n=50). Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions). Cross-session FCR: 40%→0% (n=20 callbacks). 178 unit tests, 0% false positive rate across all deterministic layers. Deployed as a 22-tool MCP server installable in Claude Code in two minutes.
 
 ---
 
@@ -70,7 +70,7 @@ This paper:
 1. Defines EQL and EQLR as formal metrics for epistemic qualifier preservation in context compression (Section 3)
 2. Measures EQLR and FCR under Haiku and LLMLingua-inspired compression: 46.0%/68.0% EQLR, 34.0%/76.0% FCR (n=50)
 3. Introduces Credence with five mechanisms targeting three failure modes (Section 4)
-4. Validates Credence on E6 negative needle (all Opus 4.7), ghost constraint gauntlet (n=10), and cross-session memory (n=16 callbacks)
+4. Validates Credence on E6 negative needle (all Opus 4.7), ghost constraint gauntlet (n=10), and cross-session memory (n=20 callbacks)
 5. Positions Credence against related work in Section 7
 
 ---
@@ -147,7 +147,7 @@ One rule drives the entire system:
 
 ### 4.1 Faithfulness Probe
 
-Before any Haiku summarization call, Credence scans the compressible segment for **167 uncertainty markers** drawn from a frozenset we term `_UNCERTAINTY_MARKERS`, scanning **user turns only** (not assistant echoes — a critical design decision that ensures the 100% block rate is earned by user-stated uncertainty, not assistant-generated paraphrase):
+Before any Haiku summarization call, Credence scans the compressible segment for **184 uncertainty markers** drawn from a frozenset we term `_UNCERTAINTY_MARKERS`, scanning **user turns only** (not assistant echoes — a critical design decision that ensures the 100% block rate is earned by user-stated uncertainty, not assistant-generated paraphrase):
 
 ```python
 _UNCERTAINTY_MARKERS = frozenset({
@@ -480,9 +480,9 @@ This is the missing reliability layer in AI infrastructure. Not hallucination de
 
 ## 9. Conclusion
 
-We identify epistemic qualifier loss as a systematic, measurable failure mode in LLM context compression: standard Haiku summarization strips uncertainty markers in 46.0% of compressions, causing downstream false certainty in 34.0% of cases (FCR, n=50, 95% CI [21.2%, 48.8%]). LLMLingua-simulated importance-based compression causes 76.0% FCR — 2.2× worse. Credence eliminates this failure through a faithfulness probe (167 markers, 0.07ms, zero API calls), J-selective routing, Truth Buffer injection, Consistency Enforcer, Generation-Time Scanner, and a Rust PreToolUse gate (3.4ms, 98× faster than Python).
+We identify epistemic qualifier loss as a systematic, measurable failure mode in LLM context compression: standard Haiku summarization strips uncertainty markers in 46.0% of compressions, causing downstream false certainty in 34.0% of cases (FCR, n=50, 95% CI [21.2%, 48.8%]). LLMLingua-simulated importance-based compression causes 76.0% FCR — 2.2× worse. Credence eliminates this failure through a faithfulness probe (184 markers, 0.07ms, zero API calls), J-selective routing, Truth Buffer injection, Consistency Enforcer, Generation-Time Scanner, and a Rust PreToolUse gate (3.4ms, 98× faster than Python).
 
-The core validation demonstrates 100% qualifier survival (n=50, 95% CI [92.9%, 100%]) and 0% FCR (n=50, 95% CI [0%, 7.1%]) under Credence, versus 34.0%–76.0% FCR under naive/LLMLingua compression. Cross-session FCR: 50% no memory → 0% Credence Memory (n=16 callbacks). Ghost constraint BothRate: 0.200 (naive window) → 1.000 Credence (n=10 sessions × 3 conditions, ghost_gauntlet). Test coverage: 178 passing unit tests (S1–S26), 11 skipped (offline-only). Precision eval: CE FP rate 0%, GTS string FP rate 0%, probe FP rate 0%.
+The core validation demonstrates 100% qualifier survival (n=50, 95% CI [92.9%, 100%]) and 0% FCR (n=50, 95% CI [0%, 7.1%]) under Credence, versus 34.0%–76.0% FCR under naive/LLMLingua compression. Cross-session FCR: 40% no memory → 0% Credence Memory (n=20 callbacks). Ghost constraint BothRate: 0.200 (naive window) → 1.000 Credence (n=10 sessions × 3 conditions, ghost_gauntlet). Test coverage: 178 passing unit tests (S1–S26), 11 skipped (offline-only). Precision eval: CE FP rate 0%, GTS string FP rate 0%, probe FP rate 0%.
 
 Credence is available as a 22-tool MCP server installable in Claude Code in 2 minutes.
 
