@@ -2,17 +2,11 @@
 
 ## 150-Word Summary (paste into submission form)
 
-**The problem:** When AI agents compress long conversations, uncertainty qualifiers are silently dropped. "I think the rate limit is ~50 req/min — unconfirmed" becomes "rate limit: 50 req/min." The model writes `RATE_LIMIT = 50` to production code. We measured this: **34.0% False Certainty Rate (FCR)** under Haiku compression (n=50); **76.0% FCR** under LLMLingua-inspired importance scoring (n=50, 2.2× worse).
+**We define Epistemic Qualifier Loss (EQL)** — the loss of user-stated uncertainty markers during context window summarization, causing downstream models to treat explicitly uncertain claims as confirmed facts. When a user says *"I think the rate limit is ~50 req/min — unconfirmed"* and Haiku compresses it to *"rate limit: 50 req/min,"* the model writes `RATE_LIMIT = 50` to production code with zero warning. This is not hallucination. The value survived. The doubt was erased.
 
-**The fix:** Credence enforces one invariant — *uncertain constraints keep their epistemic status through every operation* — at five deterministic checkpoints:
+We measured it: **EQL Rate (EQLR) 46%** under Haiku compression; **68%** under LLMLingua-style scoring. Downstream False Certainty Rate: **34%** and **76%** respectively (n=50, Clopper-Pearson CIs). No prior paper names or measures this failure mode. Practitioners have described it for years with no number.
 
-- **Pre-compression:** Faithfulness probe (167 markers, 0.07ms, zero API). FCR 76.0%→0% (LLMLingua worst-case); 34.0%→0% (Haiku).
-- **Pre-generation:** Truth Buffer injects all unverified constraints every turn. Consistency Enforcer: imperative block on direct query overlap (32 synonym clusters).
-- **Code output:** Generation-Time Scanner annotates `RATE_LIMIT = 50`, `ALGORITHM = "RS256"`, `BASE_URL = "/api/v2"` with confidence tiers.
-- **Tool execution:** Rust gate, 3.4ms, 98× faster than Python — blocks writes with unverified values.
-- **Agent handoff:** PipelineMonitor extracts uncertain claims from Agent A, injects epistemic handoff block into Agent B.
-
-**Cross-session:** CredenceMemory stores j_score + verified=False with facts. CS-FCR: 50%→0% (n=16 callbacks). Ghost Gauntlet: BothRate 0.200→1.000 (n=10 sessions × 3 conditions). Precision: 0% FP on CE, GTS, probe. 178 tests. 22-tool MCP server. 2-minute install. Prior work comparison in SUBMISSION.md — no existing system defines or eliminates FCR.
+**Credence eliminates EQL at five deterministic checkpoints** — pre-compression probe (0.011ms, 167 markers, 0% FP), Truth Buffer, Consistency Enforcer, Generation-Time Scanner, Rust PreToolUse gate (3.4ms, 98× faster than Python). EQLR 46%→0%. FCR 34%→0%. Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions). 178 tests. 22-tool MCP server. 2-minute Claude Code install.
 
 ---
 
@@ -34,9 +28,10 @@ All numbers measured fresh with `ANTHROPIC_API_KEY` and verified reproducible.
 
 | Experiment | Metric | Credence | Naive/Baseline | Notes |
 |---|---|---|---|---|
-| Compression faithfulness — Haiku (n=50) | Qualifier survival | **100%** (CI: 92.9–100%) | 54.0% (CI: 39.3–68.2%) | Primary evidence |
-| Compression faithfulness — Haiku (n=50) | FCR downstream | **0%** (CI: 0–7.1%) | 34.0% (CI: 21.2–48.8%) | Primary evidence |
-| Compression faithfulness — LLMLingua (n=50) | FCR downstream | **0%** (CI: 0–7.1%) | 76.0% (CI: 61.8–86.9%) | 2.2× worse than Haiku |
+| EQL Study — Haiku (n=50) | EQL Rate (EQLR) | **0%** (CI: 0–7.1%) | 46.0% (CI: 31.8–60.7%) | **Primary EQL evidence** |
+| EQL Study — Haiku (n=50) | False Certainty Rate (FCR) | **0%** (CI: 0–7.1%) | 34.0% (CI: 21.2–48.8%) | Downstream harm from EQL |
+| EQL Study — LLMLingua (n=50) | EQL Rate (EQLR) | **0%** | 68.0% | 1.5× worse EQL than Haiku |
+| EQL Study — LLMLingua (n=50) | False Certainty Rate (FCR) | **0%** (CI: 0–7.1%) | 76.0% (CI: 61.8–86.9%) | 2.2× worse FCR than Haiku |
 | Prompt-only instruction (n=30 scenarios) | Qualifier survival | — | **90.0%** vs 100% with probe | Null hypothesis: instructions are not deterministic |
 | E6 Negative Needle (single trial, all Opus 4.7) | Correction recall | **2/2** | naive: 0/2 | Categorical — probe preserved constraints through 8 filler turns |
 | E7 Multi-Hop Chain (single trial) | Hops recalled | **3/3** chain complete | naive: 1/3 chain broken | Dependency chain destroyed by naive window |
@@ -54,7 +49,10 @@ All numbers measured fresh with `ANTHROPIC_API_KEY` and verified reproducible.
 | Stress test — probe latency (n=1000) | p50 / p99 | **0.011ms / 0.017ms** | — | 7× better than 0.07ms claim |
 | Test suite | Coverage | **178/178 pass** | — | 11 skipped (offline-only), S1–S26 |
 
-FCR = fraction of uncertain claims stated without any qualifier. BothRate = fraction with value AND qualifier present.
+**EQL (Epistemic Qualifier Loss)** = the event of a user-stated uncertainty marker being dropped during context compression.
+**EQLR** = the fraction of hedged claims that lose their qualifier after compression (the EQL rate).
+**FCR** = the fraction of downstream responses that state uncertain values without any qualifier (the harm caused by EQL).
+**BothRate** = fraction of ghost-constraint callbacks with both value AND qualifier recalled.
 
 **The null hypothesis is tested:** Does adding "preserve uncertainty qualifiers" to the Haiku prompt fix this without any middleware?
 → 90.0% qualifier survival (vs. 100% with probe). The probe is deterministic; the instruction is not. Run: `python -m evals.null_hypothesis`
@@ -69,11 +67,25 @@ This is not a prompt instruction. It is a mechanical guarantee enforced at four 
 
 ---
 
-## Why This Happens
+## Why This Happens — The EQL Causal Chain
 
-**1. Compression strips qualifiers.** "I think the rate limit is ~50 req/min — unconfirmed" and "the rate limit is 50 req/min" are semantically equivalent to a compression model. Epistemic metadata is collateral loss.
+```
+User: "I think rate limit is ~50 req/min — unconfirmed"
+             ↓
+  [Context summarization fires]       ← EQL event
+             ↓
+  Summary: "rate limit: 50 req/min"   ← EQLR measures this loss (46% Haiku, 68% LLMLingua)
+             ↓
+  Opus: "The rate limit is 50 req/min" ← FCR measures this outcome (34% / 76%)
+             ↓
+  RATE_LIMIT = 50 ships to production
+```
 
-**2. Context presence ≠ epistemic attention.** Even with the qualifier present in full context, Opus 4.7 treats uncertain constraints as resolved facts in ~50% of long-session callbacks. The text was there. Attention to its epistemic weight was not.
+EQL is **not** hallucination (the value 50 is correct). EQL is **not** RLHF sycophancy (the model wasn't trained to strip qualifiers — the compression model ate them). EQL is **not** model overconfidence (the model's weights are fine — the pipeline corrupted the epistemic state).
+
+**1. Compression EQL.** To a compression model, *"I think the rate limit is ~50 req/min — unconfirmed"* and *"the rate limit is 50 req/min"* have identical informational cores. Epistemic metadata is collateral loss. EQLR: 46% Haiku, 68% LLMLingua.
+
+**2. Reasoning EQL.** Even with the qualifier present in full context, Opus 4.7 treats uncertain constraints as resolved facts in ~50% of long-session callbacks. The text was there. Epistemic attention was not. Context presence ≠ epistemic attention.
 
 **3. Code silently embeds unverified values.** `RATE_LIMIT = 50` ships to production with no caveat. Same for `ALGORITHM = "RS256"`, `BASE_URL = "/api/v2"`, `AWS_REGION = "us-east-1"` — string assignments are as dangerous as numeric ones.
 

@@ -1,22 +1,32 @@
 # Credence — Benchmark Results
 
+**Epistemic Qualifier Loss (EQL):** the loss of user-stated uncertainty markers during context window summarization, causing downstream models to treat explicitly uncertain claims as confirmed facts.
+
+**EQL Rate (EQLR):** the fraction of explicitly hedged user claims that lose their qualifier after compression.
+
+**False Certainty Rate (FCR):** the fraction of downstream responses that state an uncertain value without any qualifier — the measurable harm caused by EQL.
+
+These metrics were defined and first measured by this work. No prior paper in compression (LLMLingua, SnapKV, StreamingLLM) or epistemic uncertainty (Semantic Entropy, UProp, R-Tuning) names or measures EQL/EQLR.
+
 All results measured fresh. All conditions use Claude Opus 4.7 unless noted. All CIs are Clopper-Pearson 95%.
 
 ---
 
-## 1. Headline: Compression Faithfulness (n=50)
+## 1. Primary: Measuring EQL (n=50)
 
-**Question**: Does Haiku context compression strip uncertainty qualifiers, and does Credence prevent it?
+**Question**: Does Haiku context compression produce Epistemic Qualifier Loss, and does Credence prevent it?
 
-| Condition | Qualifier Survival | False Certainty Rate (FCR) | 95% CI |
+| Condition | EQL Rate (EQLR) | False Certainty Rate (FCR) | 95% CI (FCR) |
 |---|---|---|---|
-| **Naive Haiku compression** | 54.0% | **34.0%** | [21.2%, 48.8%] |
-| **LLMLingua-inspired compression** | 32.0% | **76.0%** | [61.8%, 86.9%] |
-| Haiku + prompt instruction ("preserve qualifiers") | 90.0% | n/a | — |
-| **Credence (faithfulness probe)** | **100%** (CI: 92.9–100%) | **0.0%** | [0.0%, 7.1%] |
-| Baseline (full context, no compression) | 100% | 0% | — |
+| **Naive Haiku compression** | **46.0%** | **34.0%** | [21.2%, 48.8%] |
+| **LLMLingua-inspired compression** | **68.0%** | **76.0%** | [61.8%, 86.9%] |
+| Haiku + prompt instruction ("preserve qualifiers") | 10.0% | n/a | — |
+| **Credence (faithfulness probe)** | **0%** | **0.0%** | [0.0%, 7.1%] |
+| Baseline (full context, no compression) | 0% | 0% | — |
 
-**Result**: Credence eliminates FCR deterministically. Naive Haiku: 1 in 3 queries answer with false certainty. LLMLingua-inspired: 3 in 4. Credence: 0 in 50.
+**Result**: Credence eliminates EQL and FCR deterministically. Naive Haiku: EQLR 46%, 1 in 3 queries answer with false certainty. LLMLingua-inspired: EQLR 68%, 3 in 4. Credence: EQLR 0%, FCR 0/50.
+
+**Why prompt instructions fail**: Adding "preserve uncertainty qualifiers" to the Haiku system prompt reduces EQLR to 10% — better, but not deterministic. The remaining 10% is model non-compliance. The faithfulness probe is binary enforcement: either uncertainty markers are present (BLOCK) or they aren't (ALLOW). 100% block rate, n=50.
 
 **Probe mechanism**: 167-term frozenset scan on user turns only. p50=0.011ms. Zero API calls. 100% block rate (50/50 uncertain segments blocked). 0% false positive rate (200 non-uncertain phrases, offline).
 

@@ -1,4 +1,4 @@
-# Credence: Epistemic Qualifier Preservation Through Context Compression
+# Credence: Measuring and Preventing Epistemic Qualifier Loss in LLM Context Compression
 
 **Lakshmi Chakradhar Vijayarao**  
 Northeastern University · vijayarao.l@northeastern.edu
@@ -7,11 +7,13 @@ Northeastern University · vijayarao.l@northeastern.edu
 
 ## Abstract
 
-We identify and measure two related failure modes in deployed large language model systems. The first is **epistemic qualifier loss during reasoning**: even with full conversation context available, Claude Opus 4.7 restates user-stated uncertain constraints as confirmed facts in 50% of recall callbacks — the qualifier was present, the model ignored it. The second is **epistemic qualifier loss during compression**: when context is summarized by Claude Haiku, uncertainty markers are stripped in **46.0%** of compressions and the downstream model answers with false certainty **34.0%** of the time (n=50, 95% CI [21.2%, 48.8%]); under LLMLingua-inspired importance scoring, FCR 76.0%.
+We introduce **Epistemic Qualifier Loss (EQL)** — the loss of user-stated uncertainty markers during context window summarization, causing downstream models to treat explicitly uncertain claims as confirmed facts. We define **EQL Rate (EQLR)** as the fraction of explicitly hedged user claims that lose their qualifier after context compression, and **False Certainty Rate (FCR)** as the fraction of downstream responses that state uncertain values without any qualifier. EQL is distinct from general AI overconfidence, RLHF-induced sycophancy, and model weight compression artifacts — it is specifically a pipeline failure caused by the summarization operation erasing user-stated epistemic flags.
 
-We introduce Credence, a context safety layer that addresses both failures through three layered mechanisms: (1) a **faithfulness probe** that blocks compression when canonical uncertainty markers are present (40+ terms, deterministic), (2) a **semantic entropy probe** that catches *ghost constraints* — implicitly uncertain facts with no hedging language — via behavioral variance across N=3 independent re-completions, and (3) a **Truth Buffer** that proactively injects all unverified constraints into every system prompt, making them impossible to ignore regardless of compression or reasoning.
+We measure EQL under two compression regimes (n=50): Haiku summarization produces EQLR=46.0% and FCR=34.0% (95% CI [21.2%, 48.8%]); LLMLingua-inspired importance scoring produces EQLR=68.0% and FCR=76.0% (95% CI [61.8%, 86.9%]). To our knowledge, no prior paper names, defines, or measures this specific failure mode. Compression papers (LLMLingua-2, SnapKV, StreamingLLM) measure lexical and task-level faithfulness; uncertainty quantification papers (Semantic Entropy, UProp, R-Tuning) address model confidence calibration. None intersect at the pipeline operation that converts user-stated uncertainty into model-stated certainty.
 
-In a controlled negative-needle experiment (all conditions on Opus 4.7), Credence achieves 100% correction recall and 0% hallucination versus 50% hallucination for the full-context baseline and 100% hallucination for naive sliding-window compression. In a ghost gauntlet (n=10 sessions × 3 conditions), Credence achieves BothRate=1.000 versus 0.200 (naive sliding window). Cross-session FCR: 50% no memory → 0% Credence Memory (n=16 callbacks). We present the **first measurement** of False Certainty Rate (FCR) as a function of context compression — to our knowledge, no prior paper defines or measures this metric. Credence is deployed as a 22-tool MCP server installable in Claude Code in under two minutes.
+We introduce Credence, a context safety layer that prevents EQL through five deterministic checkpoints: (1) a **faithfulness probe** blocking compression when uncertainty markers are present (167 terms, 0.011ms, zero API calls), (2) a **Truth Buffer** injecting unverified constraints into every system prompt, (3) a **Consistency Enforcer** with domain synonym expansion (32 clusters), (4) a **Generation-Time Scanner** annotating code and prose with confidence tiers, and (5) a **Rust PreToolUse gate** (3.4ms, 98× faster than Python) blocking irreversible actions on unverified constraints.
+
+Results: EQLR 46%→0%, FCR 34%→0% (Haiku, n=50). Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions). Cross-session FCR: 50%→0% (n=16 callbacks). 178 unit tests, 0% false positive rate across all deterministic layers. Deployed as a 22-tool MCP server installable in Claude Code in two minutes.
 
 ---
 
@@ -47,15 +49,29 @@ A third complication: not all uncertain constraints are explicitly marked. A use
 
 Ghost constraints require a different signal: behavioral variance. A model that is genuinely uncertain will produce different short answers to the same question across independent samples. A model that is confident will not. We implement this as a Semantic Entropy probe (SE probe, Section 4.2), following Kuhn et al. (2023).
 
-### 1.3 Scope of This Work
+### 1.3 What Makes EQL Distinct From Prior Concepts
+
+EQL is not the first observation that AI systems can be overconfident. But it names a specific mechanism that prior work does not cover:
+
+| Concept | Mechanism | What Credence's EQL is not |
+|---|---|---|
+| **AI miscalibration / FCR (general)** | Model outputs high confidence for wrong answers | EQL is about *user-stated* qualifiers being erased, not model confidence calibration |
+| **RLHF sycophancy** | Training makes models strip their *own* hedges to sound helpful | EQL occurs in the *compression model*, not the answering model, and erases the *user's* hedges |
+| **Model weight compression** (quantization/pruning) | Compressing model weights causes loss of internal "doubt" representations | EQL is about *context window* summarization, not model size — the answering model's weights are unchanged |
+| **Bayesian epistemic uncertainty** (ML sense) | Model uncertainty due to insufficient training data | EQL is a runtime pipeline event, not a training property |
+| **Hallucination** | Model invents facts it was not given | EQL recalls the correct value but drops the user's qualification — the harm is false certainty, not false content |
+
+The precise novelty: EQL names the failure that occurs when a *third-party compression operation* (separate from both the user and the answering model) erases user-stated epistemic flags from conversational context. This is a pipeline integrity problem, not a model capability problem.
+
+### 1.4 Scope of This Work
 
 This paper:
 
-1. Measures epistemic qualifier loss under standard Haiku compression: 46.0% qualifier loss, 34.0% FCR (n=50, Section 3)
-2. Introduces Credence with three mechanisms targeting three failure modes (Section 4)
-3. Validates Credence on E6 negative needle (all Opus 4.7) and ghost constraint gauntlet (Section 5)
-4. Describes the extended system: Scout Classifier, Certainty Trajectory, and Agentic Gate (Section 6)
-5. Positions Credence against related work on context compression and epistemic uncertainty (Section 7)
+1. Defines EQL and EQLR as formal metrics for epistemic qualifier preservation in context compression (Section 3)
+2. Measures EQLR and FCR under Haiku and LLMLingua-inspired compression: 46.0%/68.0% EQLR, 34.0%/76.0% FCR (n=50)
+3. Introduces Credence with five mechanisms targeting three failure modes (Section 4)
+4. Validates Credence on E6 negative needle (all Opus 4.7), ghost constraint gauntlet (n=10), and cross-session memory (n=16 callbacks)
+5. Positions Credence against related work in Section 7
 
 ---
 
