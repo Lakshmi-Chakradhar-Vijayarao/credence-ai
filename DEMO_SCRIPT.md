@@ -101,7 +101,7 @@ CHECKPOINT 5 — GENERATION-TIME SCANNER
 
 ## [2:00–2:30] — The Claude Code Hook (most visual moment)
 
-**Screen:** Show the hook blocking a Write call in terminal — or show `hooks_demo/`
+**Screen:** Show the hook blocking a Write call in terminal — or run `python demo/live_demo.py`
 
 **Say:**
 > "The last piece. What if Claude tries to write the unverified value into code before you've verified it?

@@ -30,6 +30,10 @@ All results measured fresh. All conditions use Claude Opus 4.7 unless noted. All
 
 **Probe mechanism**: 167-term frozenset scan on user turns only. p50=0.011ms. Zero API calls. 100% block rate (50/50 uncertain segments blocked). 0% false positive rate (200 non-uncertain phrases, offline).
 
+**What "Credence FCR=0%" means mechanistically**: When the probe fires, Haiku is NOT called — compression is skipped entirely and the downstream model receives the original uncompressed conversation text. This is identical to the baseline condition for these 50 scenarios. The correct framing: the probe achieves 0% FCR by *preventing* the lossy compression event, not by compressing while preserving qualifiers. The contrast with "Haiku + prompt instruction" is meaningful: that condition still calls Haiku (attempts to compress while preserving) and achieves only 90% qualifier survival. The probe eliminates the risk at the source.
+
+**FCR scoring note**: `downstream_certain` is scored as the *absence* of any marker from the same 108-term vocabulary used by the probe. A response with "I think" or "it's approximately" scores FCR=0 (correct). A response with "The rate limit is 50 req/min" (no qualifier) scores FCR=1 (harm). The same vocabulary is intentionally shared — these are the canonical English uncertainty expressions.
+
 **Reproduce**: `python -m evals.compression_faithfulness --n 50`
 
 ---

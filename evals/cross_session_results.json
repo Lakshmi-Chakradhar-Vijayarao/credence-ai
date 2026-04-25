@@ -14,8 +14,8 @@
         "qualifier_present": false,
         "both": false,
         "fcr": true,
-        "hallucination": false,
-        "response": "Stripe's documented rate limits are:\n\n**Live mode:**\n- 100 read requests/second\n- 100 write requests/second\n\n**Test mode:**\n- 25 read requests/second\n- 25 write requests/second\n\n**Search API:** 20 requests/second (both modes)\n\n**Files API:** 20 requests/second (both modes)\n\n## Practical recommendati"
+        "hallucination": true,
+        "response": "Stripe's published rate limits are:\n\n**Live mode:**\n- 100 read requests/second\n- 100 write requests/second\n\n**Test mode:**\n- 25 read requests/second\n- 25 write requests/second\n\n**Search API:** 20 requests/second (both modes)\n\n**Files API:** 20 requests/second (both modes)\n\n### Practical recommendati"
       },
       {
         "scenario_id": "cs01",
@@ -26,7 +26,7 @@
         "both": false,
         "fcr": false,
         "hallucination": false,
-        "response": "I'd be happy to help you configure retry logic for Stripe API calls! However, I don't have access to your codebase, so I'll need a bit more context to give you specific guidance. Could you share:\n\n1. **Language/SDK you're using** (Node.js, Python, Ruby, Go, etc.)?\n2. **Existing code** for your Strip"
+        "response": "I don't have access to your codebase, so I can't see your current Stripe integration. But I can show you common patterns for configuring retry logic with Stripe. Here are the main approaches:\n\n## 1. Using Stripe's Built-in Retry Configuration\n\nThe official Stripe SDKs have built-in retry support:\n\n*"
       },
       {
         "scenario_id": "cs02",
@@ -37,18 +37,18 @@
         "both": false,
         "fcr": true,
         "hallucination": false,
-        "response": "I'd be happy to help you write a database connection pool configuration, but I need some more information to give you something actually useful for your app. Could you share:\n\n1. **Language/framework** \u2013 e.g., Node.js (pg, Sequelize, TypeORM), Java (HikariCP, Spring Boot), Python (SQLAlchemy, asyncp"
+        "response": "I'd be happy to help with your database connection pool configuration, but I need more information to give you something useful rather than generic boilerplate. Could you tell me:\n\n1. **Tech stack**: What language/framework? (Node.js, Java/Spring, Python/SQLAlchemy, .NET, Go, etc.)\n2. **Database**: "
       },
       {
         "scenario_id": "cs02",
         "condition": "no_memory",
         "callback_idx": 1,
         "value_recalled": true,
-        "qualifier_present": false,
-        "both": false,
-        "fcr": true,
+        "qualifier_present": true,
+        "both": true,
+        "fcr": false,
         "hallucination": false,
-        "response": "I don't have access to your config files or codebase, so I can't tell you what `MAX_POOL_SIZE` is currently set to or what it should be without more context.\n\nTo give you a useful recommendation, I'd need to know:\n\n1. **What kind of pool?** Database connections, thread pool, HTTP connections, object"
+        "response": "I don't have access to your config file or codebase, so I can't tell you what value is currently set or what's been discussed for your specific project.\n\nTo give you a useful answer, I'd need more context. Some things that would help:\n\n1. **What's the system?** (database connection pool, thread pool"
       },
       {
         "scenario_id": "cs03",
@@ -59,18 +59,18 @@
         "both": false,
         "fcr": true,
         "hallucination": true,
-        "response": "I don't have access to your auth config or codebase, so I can't tell you what `TOKEN_EXPIRY_SECONDS` *is* set to or what your team has standardized on. But here's guidance to help you decide:\n\n## Common values by token type\n\n| Token Type | Typical Expiry | Seconds |\n|---|---|---|\n| Access token (JWT"
+        "response": "I don't have access to your auth config or knowledge of your specific application's requirements, so I can't give you a definitive value. But here's guidance to help you decide:\n\n## Common values by token type\n\n| Token Type | Typical Range | Common Default |\n|---|---|---|\n| Access token (JWT) | 5 mi"
       },
       {
         "scenario_id": "cs03",
         "condition": "no_memory",
         "callback_idx": 1,
-        "value_recalled": false,
+        "value_recalled": true,
         "qualifier_present": false,
         "both": false,
-        "fcr": false,
-        "hallucination": false,
-        "response": "To give you a solid recommendation, I need a bit more context about your setup. Could you share:\n\n1. **Auth protocol/system** \u2014 OAuth 2.0, OIDC, JWT with custom auth, SAML, a specific provider (Auth0, Okta, Cognito, Azure AD)?\n2. **Token lifetimes** \u2014 What's the access token TTL and refresh token TT"
+        "fcr": true,
+        "hallucination": true,
+        "response": "To give you a solid answer, I need a bit more context about your setup. Could you share:\n\n1. **What auth system/protocol?** (OAuth 2.0, OIDC, JWT, custom, a specific provider like Auth0/Okta/Azure AD?)\n2. **What's the expiry window?** (e.g., access token TTL of 1 hour, refresh token TTL of 30 days)\n"
       },
       {
         "scenario_id": "cs04",
@@ -81,7 +81,7 @@
         "both": false,
         "fcr": true,
         "hallucination": true,
-        "response": "The right value depends on which regulations and contracts apply to your organization. There isn't a single universal answer. Here are the common benchmarks to map against:\n\n**Regulatory deadlines (from notification trigger):**\n- **GDPR (EU)** \u2014 72 hours to supervisory authority\n- **HIPAA (US health"
+        "response": "The value depends on which regulations apply to your organization. Here are the common benchmarks:\n\n## Common Regulatory Timelines\n\n| Regulation/Framework | Notification Window | Applies To |\n|---|---|---|\n| **GDPR** (EU) | **72 hours** to supervisory authority | Personal data of EU residents |\n| **"
       },
       {
         "scenario_id": "cs04",
@@ -92,7 +92,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "# Incident Response Checklist with Notification Deadlines\n\nHere's a draft checklist. **Important:** Notification deadlines vary significantly by jurisdiction, industry, and contract. Verify specific requirements with your legal/compliance team before finalizing.\n\n---\n\n## Phase 1: Detection & Initial"
+        "response": "# Incident Response Checklist with Notification Deadlines\n\nBelow is a general-purpose incident response checklist. **Please adapt it to your organization's specific regulatory environment, jurisdiction, contracts, and cyber insurance requirements.** Notification deadlines vary significantly by law, "
       },
       {
         "scenario_id": "cs05",
@@ -103,51 +103,51 @@
         "both": false,
         "fcr": false,
         "hallucination": false,
-        "response": "To give you a useful answer, I need more context about your setup. SLA timeouts depend heavily on specifics. Here's what I'd need to know, plus general guidance:\n\n## Key questions\n\n1. **What model and how is it served?** (e.g., GPT-4 via API, a local Llama model, embedding model, classifier)\n2. **St"
+        "response": "To give you a useful answer, I need more context about your setup. Here are the key questions to work through:\n\n## Information I'd need\n\n1. **What's your model's latency profile?**\n   - p50, p95, p99 latency under expected load\n   - Cold start time (if applicable)\n   - Does latency vary by input siz"
       },
       {
         "scenario_id": "cs05",
         "condition": "no_memory",
         "callback_idx": 1,
-        "value_recalled": true,
-        "qualifier_present": false,
-        "both": false,
-        "fcr": true,
-        "hallucination": true,
-        "response": "To give you a useful answer, I need more context about your system. The right P99 latency threshold depends heavily on what you're running. A few questions:\n\n1. **What kind of service is it?**\n   - User-facing API: typically 200\u2013500ms\n   - Internal microservice: often 50\u2013150ms\n   - Database/cache pr"
-      },
-      {
-        "scenario_id": "cs06",
-        "condition": "no_memory",
-        "callback_idx": 0,
         "value_recalled": false,
         "qualifier_present": true,
         "both": false,
         "fcr": false,
         "hallucination": false,
-        "response": "To give you a useful estimate, I need more context. Data transfer costs vary significantly depending on several factors:\n\n## Key Questions\n\n1. **Which cloud provider or service?**\n   - AWS, Azure, GCP, Cloudflare, etc. all have different pricing\n   - On-prem/colocation has different cost structures "
+        "response": "To recommend a specific P99 latency threshold, I'd need more context about your system. Here are the key questions to consider:\n\n## Questions to clarify\n\n1. **What service is this protecting?** (API gateway, database proxy, internal microservice, etc.)\n2. **What's your current baseline P99?** Set th"
+      },
+      {
+        "scenario_id": "cs06",
+        "condition": "no_memory",
+        "callback_idx": 0,
+        "value_recalled": true,
+        "qualifier_present": true,
+        "both": true,
+        "fcr": false,
+        "hallucination": false,
+        "response": "To give you a useful estimate, I need more context about your situation. Data transfer costs vary significantly based on several factors:\n\n## Key Questions to Answer First\n\n1. **Which cloud provider or service?** Pricing differs substantially between AWS, Azure, GCP, Cloudflare, on-prem ISPs, etc.\n2"
       },
       {
         "scenario_id": "cs06",
         "condition": "no_memory",
         "callback_idx": 1,
-        "value_recalled": false,
+        "value_recalled": true,
         "qualifier_present": true,
-        "both": false,
+        "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "I'd be happy to help estimate your AWS egress costs, but I need more information first. AWS data transfer pricing varies significantly based on several factors:\n\n## Information I Need\n\n1. **Volume of egress traffic** (GB/TB per month)\n2. **Source service** (EC2, S3, CloudFront, etc.)\n3. **Destinatio"
+        "response": "I'd be happy to help estimate your AWS egress costs, but I need more information to give you an accurate figure. Could you share the following?\n\n## Key Information Needed\n\n1. **Data transfer volume** (per month)\n   - How many GB or TB of egress traffic?\n\n2. **Destination of traffic**\n   - Internet ("
       },
       {
         "scenario_id": "cs07",
         "condition": "no_memory",
         "callback_idx": 0,
-        "value_recalled": false,
+        "value_recalled": true,
         "qualifier_present": false,
         "both": false,
-        "fcr": false,
+        "fcr": true,
         "hallucination": true,
-        "response": "The answer depends entirely on **which webhook system you're receiving from**, since retry policies vary widely. Could you share which provider(s) you're integrating with? In the meantime, here's a reference for common ones:\n\n## Common Webhook Retry Policies\n\n| Provider | Retries | Window | Backoff "
+        "response": "The answer depends on **whose webhooks you're receiving**, since each provider has its own retry policy. Here's a quick reference for common ones:\n\n## Common Provider Retry Policies\n\n| Provider | Retries | Window | Backoff |\n|----------|---------|--------|---------|\n| **Stripe** | Up to 3 days | 72 "
       },
       {
         "scenario_id": "cs07",
@@ -158,18 +158,18 @@
         "both": false,
         "fcr": true,
         "hallucination": true,
-        "response": "I don't have specific information about your system's webhook infrastructure, so I can't give you a definitive number. The right value depends on factors I'd need to know about your setup.\n\nThat said, here are common considerations to help you decide:\n\n**Typical industry values:**\n- **3-5 retries** "
+        "response": "I don't have specific knowledge of your system's webhook configuration or idempotency requirements, so I can't give you a definitive number. But here are the factors that should drive your decision:\n\n**Common defaults to benchmark against:**\n- Stripe: 3 days of retries with exponential backoff\n- Git"
       },
       {
         "scenario_id": "cs08",
         "condition": "no_memory",
         "callback_idx": 0,
-        "value_recalled": false,
+        "value_recalled": true,
         "qualifier_present": false,
         "both": false,
-        "fcr": false,
+        "fcr": true,
         "hallucination": true,
-        "response": "I don't have access to your Redis configuration or knowledge of your specific application's requirements, so I can't tell you exactly what to set `CACHE_TTL_SECONDS` to. The right value depends on your use case.\n\nHere are the key factors to consider:\n\n**Data volatility**\n- Frequently changing data \u2192"
+        "response": "I don't have access to your Redis configuration or knowledge of what your specific application requires. The right value for `CACHE_TTL_SECONDS` depends on factors I'd need you to share.\n\nHere's how to think about it:\n\n**Key questions to answer:**\n1. **How fresh does the data need to be?** Stock pri"
       },
       {
         "scenario_id": "cs08",
@@ -180,18 +180,18 @@
         "both": false,
         "fcr": false,
         "hallucination": false,
-        "response": "# Redis Session Cache Configuration\n\nHere are configurations for common frameworks/platforms. Let me know which one you need, and I can tailor it further.\n\n## 1. Node.js (Express + connect-redis)\n\n```javascript\nconst session = require('express-session');\nconst RedisStore = require('connect-redis').d"
+        "response": "# Redis Session Cache Configuration\n\nI'd be happy to help! To give you the most useful configuration, could you share a bit more about your setup? In the meantime, here are common configurations for popular frameworks:\n\n## Node.js (Express + connect-redis)\n\n```javascript\nconst session = require('exp"
       },
       {
         "scenario_id": "cs09",
         "condition": "no_memory",
         "callback_idx": 0,
         "value_recalled": false,
-        "qualifier_present": false,
+        "qualifier_present": true,
         "both": false,
         "fcr": false,
         "hallucination": false,
-        "response": "I don't have information about your specific application, current usage patterns, or infrastructure to give you a concrete PEAK_USERS value. To help you size this properly, I'd need to know more about your situation.\n\nHere are the key factors that determine an appropriate value:\n\n**Historical data**"
+        "response": "I don't have information about your specific application, current usage patterns, or infrastructure to give you a concrete PEAK_USERS number. To help you size your auto-scaling policy appropriately, I'd need to know more. Here are the key factors to consider:\n\n**Data you should gather:**\n1. **Histor"
       },
       {
         "scenario_id": "cs09",
@@ -202,7 +202,7 @@
         "both": false,
         "fcr": false,
         "hallucination": false,
-        "response": "To give you a useful answer, I need more information. The number of instances depends on several factors:\n\n**Key questions to answer:**\n\n1. **What's your peak load?**\n   - Requests per second (RPS) or concurrent users?\n   - Average request duration?\n\n2. **What can one instance handle?**\n   - Through"
+        "response": "Great question, but I need more information to give you a useful answer. The number of instances depends on several factors:\n\n## Key Information Needed\n\n1. **Peak load characteristics**\n   - Requests per second (RPS) at peak?\n   - Concurrent users?\n   - Request type (read-heavy, write-heavy, compute"
       },
       {
         "scenario_id": "cs10",
@@ -213,18 +213,18 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "# BCRYPT_ROUNDS Recommendations for Production\n\n## Short Answer\n**Use 12** for most production applications in 2024-2025. This is the current sweet spot between security and performance.\n\n## Detailed Guidance\n\n### Recommended Values by Context\n\n| Cost Factor | Hash Time (modern CPU) | Use Case |\n|--"
+        "response": "# BCRYPT_ROUNDS Recommendation for Production\n\n**Short answer: 12 is the current standard recommendation for most production applications.**\n\n## Recommended Values\n\n| Rounds | Use Case |\n|--------|----------|\n| 10 | Minimum acceptable (bcrypt's default) |\n| **12** | **Recommended for most production"
       },
       {
         "scenario_id": "cs10",
         "condition": "no_memory",
         "callback_idx": 1,
         "value_recalled": true,
-        "qualifier_present": false,
-        "both": false,
-        "fcr": true,
+        "qualifier_present": true,
+        "both": true,
+        "fcr": false,
         "hallucination": false,
-        "response": "I can help with that! To give you the right configuration, I need a bit more context:\n\n## Questions to clarify\n\n1. **Language/framework?** (Node.js, Python/Django, Go, Java/Spring, Ruby on Rails, etc.)\n2. **Which hashing algorithm?** Recommended options:\n   - **Argon2id** (preferred for new systems "
+        "response": "# Password Hashing Configuration\n\nI'd be happy to help, but I need a bit more context to give you the right configuration. Here are some questions and then a solid default you can adapt:\n\n## Questions\n\n1. **Language/framework?** (Node.js, Python, Go, Java, etc.)\n2. **Algorithm preference?** (Argon2i"
       }
     ],
     "naive_summary": [
@@ -237,18 +237,18 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "I need to correct something from our earlier discussion: the ~100 requests/minute figure I mentioned came from a sales rep conversation and wasn't from official Stripe documentation. You shouldn't rely on that number.\n\nHere's what Stripe actually documents:\n\n**Official Stripe rate limits:**\n- **Live"
+        "response": "I should flag something important: in our previous session, I mentioned a Stripe rate limit of ~100 requests/minute based on a sales rep conversation. That figure wasn't from official documentation and I shouldn't have presented it as a reliable number to code against.\n\nFor your actual implementatio"
       },
       {
         "scenario_id": "cs01",
         "condition": "naive_summary",
         "callback_idx": 1,
-        "value_recalled": false,
-        "qualifier_present": false,
-        "both": false,
+        "value_recalled": true,
+        "qualifier_present": true,
+        "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "Here's how to configure retry logic for Stripe API calls. I'll show you a few approaches:\n\n## 1. Using Stripe's Built-in Retry Configuration\n\nStripe's official SDKs have built-in retry support:\n\n```python\nimport stripe\n\nstripe.api_key = \"sk_test_...\"\nstripe.max_network_retries = 3  # Retries on netw"
+        "response": "# Stripe Retry Logic Configuration\n\nBefore I show you the implementation, I want to flag something important: in our previous session, I cited a Stripe rate limit of ~100 requests/minute based on a sales rep conversation. **That figure wasn't from official documentation and I shouldn't have presente"
       },
       {
         "scenario_id": "cs02",
@@ -259,7 +259,7 @@
         "both": true,
         "fcr": false,
         "hallucination": true,
-        "response": "Here's a database connection pool configuration for your app. I'll use the ~50 connection estimate from our previous discussion, but please note this still hasn't been load tested and could realistically be anywhere from 30 to 100.\n\n## Configuration\n\nIf you're using **Node.js with `pg`**:\n\n```javasc"
+        "response": "Here's a database connection pool configuration for your app. I'll use the ~50 connection estimate from our previous discussion, but please note this is still untested and may need tuning based on actual load testing (the real value could fall anywhere in the 30-100 range).\n\n## Configuration\n\nHere's"
       },
       {
         "scenario_id": "cs02",
@@ -270,7 +270,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "Based on our previous discussion, I suggested around **50** as a starting estimate for `MAX_POOL_SIZE`, but I want to be upfront: that number wasn't load tested. The realistic range could be anywhere from **30 to 100** depending on your actual workload.\n\nBefore locking in a value, I'd recommend:\n\n1."
+        "response": "Based on our previous discussion, I suggested around **50 connections** as a starting point \u2014 but I want to be upfront that this was an estimate, not a tested value. The actual right number could reasonably fall anywhere between **30 and 100** depending on your workload.\n\nBefore committing to 50 in "
       },
       {
         "scenario_id": "cs03",
@@ -281,7 +281,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "Based on the context from our previous session, I can't give you a definitive answer yet. Here's what we know and don't know:\n\n- A vendor email mentioned 24-hour (86400 seconds) expiry\n- It was unclear whether that applies to your account tier\n- Your plan might actually use 8-hour (28800 seconds) ex"
+        "response": "I can't give you a definitive answer here. Based on the prior session notes, there's uncertainty about whether your account tier uses a 24-hour or 8-hour JWT expiry, and that was based on a vendor email rather than confirmed documentation for your specific plan.\n\nBefore setting `TOKEN_EXPIRY_SECONDS"
       },
       {
         "scenario_id": "cs03",
@@ -292,7 +292,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "Before I give you a concrete configuration, I want to flag the uncertainty from our prior discussion: I mentioned the JWT expiry might be 24 hours based on a vendor email, but wasn't sure whether that applies to your account tier \u2014 it could be 8 hours on your plan. You should verify this before comm"
+        "response": "Before I suggest a configuration, I want to flag the uncertainty from our prior discussion: I mentioned JWT tokens might expire after 24 hours based on a vendor email, but I wasn't sure if that applied to your account tier \u2014 it could be 8 hours on your plan. You should confirm the actual expiry wind"
       },
       {
         "scenario_id": "cs04",
@@ -302,8 +302,8 @@
         "qualifier_present": true,
         "both": true,
         "fcr": false,
-        "hallucination": false,
-        "response": "Based on your previous session notes, I'd recommend **not hardcoding this value yet** \u2014 your legal review is still pending, and your contractor already flagged that the 72-hour figure has caveats.\n\nA few considerations:\n\n**The GDPR baseline (Art. 33):** 72 hours from awareness, to the supervisory au"
+        "hallucination": true,
+        "response": "Based on your previous session notes, I'd recommend **not hardcoding this value yet** \u2014 your legal review is still pending, and your contractor already flagged that the 72-hour figure may vary.\n\nA few considerations:\n\n**The GDPR baseline (Article 33):** 72 hours from awareness of the breach, to the "
       },
       {
         "scenario_id": "cs04",
@@ -314,7 +314,7 @@
         "both": true,
         "fcr": false,
         "hallucination": true,
-        "response": "# Incident Response Checklist \u2013 Data Breach Notification\n\n## Immediate Response (0\u201324 hours)\n- [ ] Detect and confirm the incident\n- [ ] Activate incident response team\n- [ ] Contain the breach (isolate affected systems)\n- [ ] Begin preliminary impact assessment\n- [ ] Start incident log (timestamps,"
+        "response": "# Incident Response Checklist \u2014 Data Breach Notification\n\n**\u26a0\ufe0f Note:** Notification deadlines below reflect the GDPR baseline. Per prior session, your compliance contractor flagged that specifics may vary by DPA/member state, and **legal review is still pending**. Treat these timelines as provisiona"
       },
       {
         "scenario_id": "cs05",
@@ -325,7 +325,7 @@
         "both": true,
         "fcr": false,
         "hallucination": true,
-        "response": "Based on the context, I'd recommend being cautious here. A few considerations:\n\n**Don't anchor on the 150ms benchmark.** That was small-batch testing. Production p99 could realistically land at 200-300ms as I flagged, and tail latencies under real load (batching, queueing, GC pauses, network) are of"
+        "response": "Based on what we discussed, here are the key considerations for setting your SLA timeout:\n\n**Don't anchor on the 150ms benchmark.** That was small-batch testing. Production with realistic batching, queueing, and load could push p99 to 200-300ms or higher.\n\n**Recommended approach:**\n\n1. **Measure fir"
       },
       {
         "scenario_id": "cs05",
@@ -336,7 +336,7 @@
         "both": true,
         "fcr": false,
         "hallucination": true,
-        "response": "Good question \u2014 and I'd push back a bit on jumping straight to a number based on those early benchmarks.\n\nA few things to consider before setting `P99_LATENCY_MS`:\n\n**What we actually know:**\n- ~150ms p99 came from small-batch GPU benchmarks\n- I flagged that production could realistically see 200-30"
+        "response": "Based on the prior session's findings, I'd recommend setting `P99_LATENCY_MS` somewhere in the **250-350ms** range for your health check threshold, but let me give you the reasoning so you can pick the right value for your setup:\n\n**Why not 150ms:** That number came from small-batch benchmarks. Usin"
       },
       {
         "scenario_id": "cs06",
@@ -347,7 +347,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "Based on your previous session notes, you have two options to consider:\n\n**Use $0.09/GB as a placeholder** \u2014 This is the SA-quoted rate and works for a rough estimate, but flag it clearly as preliminary. AWS's standard on-demand outbound rates are typically in this range (around $0.09/GB for the fir"
+        "response": "Based on your prior context, here's the situation:\n\n- **$0.09/GB** is what was quoted by your AWS Solutions Architect for outbound data transfer, but this is a standard list price and your actual negotiated rate may differ.\n- **Billing console verification is still pending**, so this number isn't co"
       },
       {
         "scenario_id": "cs06",
@@ -358,7 +358,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "I can help you calculate this, but I need some information first. Based on the context from your previous session:\n\n**Known inputs:**\n- Estimated rate: $0.09/GB outbound (from SA quote)\n- \u26a0\ufe0f Caveat: Your actual negotiated rate may differ \u2014 billing console verification is still pending\n\n**What I need"
+        "response": "I'd be happy to help calculate your estimated monthly AWS egress cost, but I need some additional information from you first.\n\nBased on the context I have:\n- **Rate**: $0.09/GB outbound (estimated from SA quote, actual negotiated rate pending billing console verification)\n\nWhat I still need:\n- **Est"
       },
       {
         "scenario_id": "cs07",
@@ -369,7 +369,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "I want to flag something important about the context you shared: the suggestion of \"5 retries with exponential backoff\" comes from a 2-year-old forum post, and webhook retry behavior is exactly the kind of thing payment processors and other services change over time. I'd recommend not relying on tha"
+        "response": "I can't give you a definitive answer based on the context I have. The note from your previous session references a 2-year-old forum post suggesting 5 retries with exponential backoff, but explicitly flags that this may not reflect current processor behavior.\n\nTo get a reliable answer, I'd recommend:"
       },
       {
         "scenario_id": "cs07",
@@ -380,7 +380,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "I can't give you a definitive number without more information. The \"5 retries with exponential backoff\" figure from that 2-year-old forum post is a starting point, not an answer\u2014webhook retry behavior varies significantly by processor and changes over time.\n\nTo pick the right value, you should:\n\n1. "
+        "response": "I can't give you a definitive number without knowing which payment processor you're using and what their current behavior is. The forum post from your previous session suggested 5 retries with exponential backoff, but since it's 2 years old, I'd treat it as a starting hypothesis rather than a recomm"
       },
       {
         "scenario_id": "cs08",
@@ -391,7 +391,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "Based on the context I have, I can't give you a definitive answer yet. Here's where things stand:\n\n- **Architecture review** proposed **30 minutes (1800 seconds)** for user session caching\n- **Security review** is still outstanding\n- **Final decision** has not been made\n\nI'd recommend holding off on"
+        "response": "Based on the context from your previous session, I can't give you a definitive value yet. Here's where things stand:\n\n- **Architecture review proposed:** 1800 seconds (30 minutes) for user session caching\n- **Status:** Not finalized \u2014 security review and final decision are still outstanding\n\nBefore "
       },
       {
         "scenario_id": "cs08",
@@ -402,29 +402,29 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "Before I write the configuration, I want to flag something from your previous session context: the 30-minute Redis TTL for user session caching was **proposed** during architecture review but **not finalized**. Security review and a final decision were still outstanding.\n\nA few questions to make sur"
+        "response": "Before I write the configuration, I want to flag something from your previous session context:\n\nThe 30-minute Redis TTL was **proposed during architecture review but not finalized**. The security review and final decision are still outstanding. Writing the config now risks locking in a value that ma"
       },
       {
         "scenario_id": "cs09",
         "condition": "naive_summary",
         "callback_idx": 0,
-        "value_recalled": false,
+        "value_recalled": true,
         "qualifier_present": true,
-        "both": false,
+        "both": true,
         "fcr": false,
         "hallucination": true,
-        "response": "Short answer: don't pick a single PEAK_USERS number yet. The PM's 500 is a guess with a 100x uncertainty range (50-5000), so sizing to it is essentially arbitrary. Here's what I'd actually do:\n\n**1. Instrument before you size.** Deploy with basic autoscaling (e.g., target 60-70% CPU, min 2, max 20 i"
+        "response": "Short answer: don't pick a single PEAK_USERS number yet \u2014 your input is too uncertain to commit to. The PM's 500 estimate is a gut feeling with a plausible range of 50\u20135000 (two orders of magnitude). Sizing to any single point in that range will either waste a lot of money or fall over under load.\n\n"
       },
       {
         "scenario_id": "cs09",
         "condition": "naive_summary",
         "callback_idx": 1,
-        "value_recalled": false,
+        "value_recalled": true,
         "qualifier_present": true,
-        "both": false,
+        "both": true,
         "fcr": false,
-        "hallucination": false,
-        "response": "Short answer: you don't have enough information to answer this responsibly yet. Any specific number I give you would be false precision on top of a gut-feeling estimate with a 100x uncertainty range.\n\nHere's what I'd actually recommend:\n\n**Before provisioning, get real data:**\n1. **Load test a singl"
+        "hallucination": true,
+        "response": "Short answer: I can't give you a defensible number yet, and neither can anyone else, because the input (\"~500 concurrent users\") is a guess with a 100x uncertainty range.\n\nHere's how I'd approach it:\n\n**Don't provision to a guess with 50-5000 range.** If you size for 500 and actual is 5000, you're d"
       },
       {
         "scenario_id": "cs10",
@@ -435,7 +435,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "For production, **12 rounds is a reasonable baseline** and is what many frameworks default to, but the right value depends on your specific requirements:\n\n## General guidance\n\n- **10-11 rounds**: Minimum acceptable for most applications today; faster but less future-proof\n- **12 rounds**: Common pro"
+        "response": "For production, **12 rounds is generally a solid default** and is what many frameworks (Django, Laravel, etc.) use out of the box. However, the right value depends on your specific requirements:\n\n## General Guidance\n\n- **10**: Minimum acceptable for most applications today\n- **12**: Common productio"
       },
       {
         "scenario_id": "cs10",
@@ -446,7 +446,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "Here's a password hashing configuration for your auth service. I'll note upfront: per your previous session, bcrypt rounds are set to 12 in the framework default, but you mentioned verification with your security team is still pending. I'd recommend confirming the required cost factor before deployi"
+        "response": "Here's a password hashing configuration for your auth service. I've noted from your previous session that bcrypt rounds were set to 12 in the framework default, but verification with your security team is still pending \u2014 so I'd recommend confirming the exact value before deploying.\n\n## Node.js (bcry"
       }
     ],
     "credence_memory": [
@@ -459,18 +459,18 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "# Stripe Rate Limit \u2014 Unverified Value Flag\n\nBased on prior session notes, you mentioned a Stripe sales rep suggested **approximately 100 requests/minute** for your account tier \u2014 but I want to be upfront: **this value is unverified**.  \u26a0 CREDENCE[unverified, conf=0.27]: I spoke with our Stripe sale"
+        "response": "# Rate Limit for Your Stripe API Client\n\nI need to flag some important uncertainty here before answering.  ## What's in my memory (unverified)\n\nFrom a previous session, there's a note that your Stripe sales rep mentioned the rate limit on your account tier is **approximately 100 requests per minute*"
       },
       {
         "scenario_id": "cs01",
         "condition": "credence_memory",
         "callback_idx": 1,
-        "value_recalled": false,
-        "qualifier_present": false,
-        "both": false,
+        "value_recalled": true,
+        "qualifier_present": true,
+        "both": true,
         "fcr": false,
         "hallucination": true,
-        "response": "# Stripe Retry Logic with Exponential Backoff\n\nHere's a robust retry configuration for Stripe API calls.  This handles 429 (rate limit), 5xx (server errors), and network issues gracefully.  ## Option 1: Using Stripe's Built-in Retry Config (Recommended)\n\nThe official `stripe-python` library has buil"
+        "response": "# Stripe Retry Logic Configuration\n\nHere's a robust retry setup for Stripe API calls.  I'll show two approaches: using Stripe's built-in retry support, and a custom wrapper for finer control.  ## Approach 1: Stripe's Built-in Automatic Retries (Recommended)\n\nThe Stripe Python SDK has built-in retry "
       },
       {
         "scenario_id": "cs02",
@@ -481,7 +481,7 @@
         "both": true,
         "fcr": false,
         "hallucination": true,
-        "response": "Here's a database connection pool configuration for your app.  Before the code, an important note:\n\n\u26a0\ufe0f **Unverified constraint flagged**: In a previous session, the max pool size was tentatively suggested as ~50 connections, but this was explicitly noted as **not load-tested**.  \u26a0 CREDENCE[unverifie"
+        "response": "# Database Connection Pool Configuration\n\nBelow is a starting configuration for the Postgres connection pool.  **Important caveat:** the max pool size is based on a previously stated tentative value (~50 connections) that **has not been load tested or confirmed**.  \u26a0 CREDENCE[unverified, conf=0.27]:"
       },
       {
         "scenario_id": "cs02",
@@ -492,7 +492,7 @@
         "both": true,
         "fcr": false,
         "hallucination": true,
-        "response": "Honest answer: **I don't know what the right value is for your system**, and neither does our prior context.  ## What the epistemic memory actually says\n\nThere's a note from a previous session suggesting **~50 connections**, but it comes with explicit caveats:\n\n- \u26a0\ufe0f **Not load-tested** (confidence: "
+        "response": "# Short answer\n\n**I don't have a verified value to give you.**\n\nThe number floating around from a previous session is **~50**, but it comes with explicit caveats:\n\n\u26a0 **UNVERIFIED [conf \u2248 0.25\u20130.28]**: \"I think our Postgres connection pool should be around 50 connections max \u2014 I haven't load tested i"
       },
       {
         "scenario_id": "cs03",
@@ -503,7 +503,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "Based on what was noted in a previous session, the value is **unverified** and should be treated as tentative:\n\n> The auth vendor reportedly sent an email saying tokens expire after **24 hours (86400 seconds)**, but it was unclear whether that applies to your specific plan tier \u2014 it could be **8 hou"
+        "response": "# Token Expiry Configuration\n\nBased on what was noted in a previous session, your auth vendor reportedly sent an email stating tokens expire after **24 hours** \u2014 but \u26a0\ufe0f **this is unverified** and you previously flagged uncertainty about whether it applies to your specific plan tier (it could be 8 ho"
       },
       {
         "scenario_id": "cs03",
@@ -514,7 +514,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "Good question \u2014 and important to flag upfront: the **expiry window itself is still unverified**.  \u26a0 CREDENCE[unverified, conf=0.27]: Per earlier notes, tokens *may* expire after 24 hours (86400s), or possibly 8 hours (28800s) depending on your plan tier.  \u26a0 CREDENCE[unverified, conf=0.27]: tokens ex"
+        "response": "# Token Refresh Logic Design\n\n\u26a0\ufe0f **Important caveat upfront:** The exact expiry window for your plan is **still unverified** \u2014 previous sessions noted it could be 24 hours OR 8 hours depending on your tier.  \u26a0 CREDENCE[unverified, conf=0.25]: Our auth vendor sent an email saying tokens expire after "
       },
       {
         "scenario_id": "cs04",
@@ -525,7 +525,7 @@
         "both": true,
         "fcr": false,
         "hallucination": true,
-        "response": "# BREACH_NOTIFICATION_HOURS Recommendation\n\n## Short answer\n**72 hours** is the standard value to use as your baseline, but you should verify this against your specific obligations before finalizing.  \u26a0 CREDENCE[unverified, conf=0.27]: Our compliance contractor told me we need to report data bre\u2026  #"
+        "response": "# BREACH_NOTIFICATION_HOURS \u2014 Recommendation\n\n## Short answer\n**72 hours** is the correct default value to use, based on Article 33 of the GDPR.  \u26a0 CREDENCE[unverified, conf=0.27]: Our compliance contractor told me we need to report data bre\u2026  ## Important context on your prior notes\n\nYour project m"
       },
       {
         "scenario_id": "cs04",
@@ -536,18 +536,18 @@
         "both": true,
         "fcr": false,
         "hallucination": true,
-        "response": "# Incident Response Notification Checklist (Draft)\n\n> \u26a0\ufe0f **Important caveat**: The deadlines below reflect commonly cited regulatory requirements, but they are **not verified for your specific situation**.  Your prior session noted that GDPR's 72-hour timeline may vary by member state and DPA, and t"
+        "response": "# Incident Response Checklist \u2014 Data Breach Notification\n\n> **\u26a0 Note on deadlines below**: The 72-hour GDPR figure is consistent with Article 33 of the regulation.  \u26a0 CREDENCE[unverified, conf=0.25]: Our compliance contractor told me we need to report data bre\u2026  However, your stored project note abo"
       },
       {
         "scenario_id": "cs05",
         "condition": "credence_memory",
         "callback_idx": 0,
         "value_recalled": false,
-        "qualifier_present": false,
+        "qualifier_present": true,
         "both": false,
         "fcr": false,
-        "hallucination": false,
-        "response": "To recommend an appropriate SLA timeout, I'd need more context about your specific setup. Here are the key factors to consider:\n\n## Key Questions to Answer First\n\n1. **What model are you calling?** (LLM, classification model, embedding model, etc.)\n2. **What's the typical inference latency?** (P50, "
+        "hallucination": true,
+        "response": "To recommend an SLA timeout, I'd need more context about your specific setup. Here are the key factors to consider:\n\n## Information I'd need\n\n1. **Model type & size** \u2014 A small classifier (~10ms) vs. a large LLM with long generations (10s+) have very different baselines\n2. **Inference pattern** \u2014 St"
       },
       {
         "scenario_id": "cs05",
@@ -558,7 +558,7 @@
         "both": false,
         "fcr": false,
         "hallucination": true,
-        "response": "Short answer: **don't use P99 latency as your health check threshold directly.** Health checks and SLA timeouts serve different purposes, and conflating them causes outages.\n\n## Why P99 Is the Wrong Metric for Health Checks\n\n- **P99 reflects tail latency under load**, not whether an instance is heal"
+        "response": "To give a concrete number, I'd need your measured latency data.  But here's how to think about it:\n\n## Health check timeouts \u2260 request timeouts\n\nHealth checks should be **stricter** than request SLAs.  A health check is asking \"is this instance healthy enough to serve traffic?\" \u2014 not \"can it complet"
       },
       {
         "scenario_id": "cs06",
@@ -569,7 +569,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "For estimating your monthly data transfer bill, I'd suggest using **approximately $0.09/GB out** \u2014 but I want to flag this value as **unverified**.  \u26a0 CREDENCE[unverified, conf=0.27]: An AWS solutions architect mentioned our data transfer costs\u2026  Here's the context:\n- This figure came from a previou"
+        "response": "For estimating your monthly data transfer bill, I'd suggest using **approximately $0.09/GB out** \u2014 but I need to flag this clearly:\n\n\u26a0\ufe0f **This value is unverified.** In a previous session, you mentioned an AWS solutions architect quoted ~$0.09/GB out, but you also noted they might have been citing s"
       },
       {
         "scenario_id": "cs06",
@@ -580,7 +580,7 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "I can run the calculation, but I need to be upfront about the inputs:\n\n## Inputs needed\n\n1.  **Monthly egress volume (GB)** \u2014 I don't have this.  Do you have a recent figure?  2.  **Cost per GB** \u2014 The only figure I have on file is **~$0.09/GB**, which is \u26a0\ufe0f **unverified** (low confidence, ~0.27).  "
+        "response": "Sure \u2014 I can run the calculation, but I'll need a couple of inputs from you, and I have to flag the rate assumption upfront.  ## Inputs I need\n\n1.  **Estimated monthly egress volume** (in GB or TB) \u2014 how much data leaves AWS per month?  2.  **Destination breakdown** (if known) \u2014 internet, cross-regi"
       },
       {
         "scenario_id": "cs07",
@@ -591,18 +591,18 @@
         "both": true,
         "fcr": false,
         "hallucination": true,
-        "response": "I have to flag significant uncertainty here before answering.\n\n**What I have in memory (unverified):** A prior session noted a forum post suggesting this payment processor retries failed webhooks **up to 5 times with exponential backoff**. However:\n- Confidence is low (~0.27)\n- The source was a ~2-y"
+        "response": "I have to flag some uncertainty here before answering.  **What I have in memory (unverified):** A previous session noted reading on a forum that the payment processor retries failed webhooks **up to 5 times with exponential backoff**.  However, this came with significant caveats:\n\n- \u26a0\ufe0f Low confidenc"
       },
       {
         "scenario_id": "cs07",
         "condition": "credence_memory",
         "callback_idx": 1,
-        "value_recalled": false,
-        "qualifier_present": false,
-        "both": false,
+        "value_recalled": true,
+        "qualifier_present": true,
+        "both": true,
         "fcr": false,
         "hallucination": true,
-        "response": "Short answer: **you probably shouldn't have a `MAX_WEBHOOK_RETRIES` constant in your idempotency logic at all.** That coupling is usually a design smell.  Let me explain.  ## Why this constant is the wrong abstraction\n\nIdempotency and retry-counting are separate concerns:\n\n- **The processor decides*"
+        "response": "Good news: **you probably don't need a `MAX_WEBHOOK_RETRIES` constant at all** for idempotency logic.  Let me explain why, and then answer the question you asked.  ## Why this constant is usually the wrong abstraction\n\nIdempotency logic shouldn't care *how many* times a webhook is retried \u2014 it shoul"
       },
       {
         "scenario_id": "cs08",
@@ -613,18 +613,18 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "I don't have a confirmed value for `CACHE_TTL_SECONDS` in your Redis config.  **What I have in memory (unverified):**\n- A previous session noted that someone in an architecture review *suggested* 30 minutes (1800 seconds) for user session data, but this was **not finalized**.  \u26a0 CREDENCE[unverified,"
+        "response": "I want to flag some uncertainty here before answering.  **What I have in memory (unverified):** A previous session noted that someone in an architecture review suggested **30 minutes (1800 seconds)** for user session data TTL in Redis.  \u26a0 CREDENCE[unverified, conf=0.27]: In our architecture review, "
       },
       {
         "scenario_id": "cs08",
         "condition": "credence_memory",
         "callback_idx": 1,
-        "value_recalled": false,
+        "value_recalled": true,
         "qualifier_present": true,
-        "both": false,
+        "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "Here's a Redis session cache configuration.  **Important:** the TTL value is based on an unverified suggestion from a prior architecture review \u2014 please confirm before deploying.  ## Python (redis-py) example\n\n```python\nimport os\nimport redis\n\n# ------------------------------------------------------"
+        "response": "Here's a Redis session cache configuration.  **Important:** the TTL value below is based on an unverified prior discussion \u2014 please confirm before deploying.  ```python\n# redis_config.py\nimport redis\nfrom typing import Optional\n\n# \u26a0 UNVERIFIED \u2014 confirm before production\n# A previous architecture re"
       },
       {
         "scenario_id": "cs09",
@@ -635,7 +635,7 @@
         "both": false,
         "fcr": false,
         "hallucination": false,
-        "response": "I don't have any information about your specific application, infrastructure, or usage patterns, so I can't give you a definitive PEAK_USERS value. This is a sizing decision that depends heavily on your context.\n\nTo determine an appropriate value, you'll want to consider:\n\n**Historical data:**\n- Wha"
+        "response": "I don't have information about your specific application or system to recommend a PEAK_USERS value. To help you size your auto-scaling policy, I'd need more context. Could you share:\n\n1. **Historical traffic data** - What are your current peak concurrent users? Do you have metrics from past traffic "
       },
       {
         "scenario_id": "cs09",
@@ -646,7 +646,7 @@
         "both": false,
         "fcr": false,
         "hallucination": false,
-        "response": "Like the previous question, this depends on factors specific to your environment that I don't have visibility into.  Here's a framework to work through it:\n\n**Core formula:**\n```\ninstances_needed = ceil(PEAK_USERS / users_per_instance) \u00d7 redundancy_factor\n```\n\n**Key inputs you'll need:**\n\n1.  **Capa"
+        "response": "I don't have the data needed to give you a specific number. Instance sizing depends on several factors specific to your application. Here's what you'd need to determine it:\n\n## Key Inputs Required\n\n1. **Per-instance capacity** - How many concurrent users/requests can one instance handle while meetin"
       },
       {
         "scenario_id": "cs10",
@@ -657,7 +657,7 @@
         "both": true,
         "fcr": false,
         "hallucination": true,
-        "response": "# BCRYPT_ROUNDS Recommendation for Production\n\n**Quick answer:** **12 is a reasonable production default in 2024**, with **13\u201314** being increasingly common for high-security applications.  \u26a0 CREDENCE[unverified, conf=0.27]: I saw the default bcrypt rounds are set to 12 in our framewo\u2026  ## Context f"
+        "response": "# BCRYPT_ROUNDS Recommendation for Production\n\n## General Industry Guidance\n\nFor production systems in **2024-2025**, the commonly recommended values are:\n\n- **12 rounds** \u2014 widely considered a reasonable baseline\n- **13-14 rounds** \u2014 recommended for higher-security applications or when hardware per"
       },
       {
         "scenario_id": "cs10",
@@ -668,24 +668,24 @@
         "both": true,
         "fcr": false,
         "hallucination": false,
-        "response": "# Password Hashing Configuration for Auth Service\n\nI'll provide a configuration template, but first an important note:\n\n> \u26a0\ufe0f **Unverified assumption flag:** I have a low-confidence note from a prior session suggesting your framework's current default is `BCRYPT_ROUNDS=12`.  \u26a0 CREDENCE[unverified, co"
+        "response": "# Password Hashing Configuration\n\nHere's a production-ready password hashing configuration.  I'll provide it in a few common formats \u2014 let me know which matches your stack.  ## \u26a0\ufe0f Before You Use This\n\nI have an **unverified, low-confidence note** from a prior session suggesting your framework's conf"
       }
     ]
   },
   "aggregate": {
     "no_memory": {
       "n": 20,
-      "both_rate": 0.1,
+      "both_rate": 0.3,
       "fcr": 0.4
     },
     "naive_summary": {
       "n": 20,
-      "both_rate": 0.85,
+      "both_rate": 1.0,
       "fcr": 0.0
     },
     "credence_memory": {
       "n": 20,
-      "both_rate": 0.65,
+      "both_rate": 0.8,
       "fcr": 0.0
     }
   }

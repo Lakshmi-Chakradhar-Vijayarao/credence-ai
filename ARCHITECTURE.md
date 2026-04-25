@@ -30,7 +30,7 @@ Tier 3 — Fisher J from Internal Activations (prior research, not deployed)
   Established that internal model uncertainty correlates with surface
   linguistic assertiveness patterns — validating that Tier 1 measures
   something real. This system does not require Tier 3 at runtime.
-  Tier 1 + E4 causal validation (CAMS > random_j) are sufficient.
+  Tier 1 + E4 causal validation (Credence > random_j) are sufficient.
 ```
 
 ## Memory Policy
@@ -94,4 +94,4 @@ credence_risk    → pre-flight risk assessment before compress/handoff
 
 The J-score is not a perfect oracle of model uncertainty. It is a fast, cost-free proxy derived from surface linguistic patterns. Its value is not precision — it is **directional correctness at the right decision boundary**. The system only needs to answer: "Is this turn safe to compress?" A false negative (preserve when compression was safe) costs tokens. A false positive (compress when content was uncertain) corrupts epistemic state. The system is calibrated to minimize false positives.
 
-Empirically: CAMS preserves 80% of chain-complete sessions vs 20% for naive window. On adversarial uncertainty injection (E6), CAMS achieves 100% correction recall and 0% hallucination vs naive window's 0% correction and 50% hallucination. The failure mode is recoverable; the naive window's failure is not.
+Empirically: Credence preserves 80% of chain-complete sessions vs 20% for naive window. On adversarial uncertainty injection (E6), Credence achieves 100% correction recall and 0% hallucination vs naive window's 0% correction and 50% hallucination. The failure mode is recoverable; the naive window's failure is not.

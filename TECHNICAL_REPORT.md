@@ -99,7 +99,7 @@ Kuhn et al. (2023) introduce semantic entropy as a measure of uncertainty from m
 
 ### 3.1 Study Design
 
-We constructed 30 realistic technical conversations (the full SCENARIOS list in `evals/compression_faithfulness.py`), each 8-12 turns, each containing exactly one uncertain constraint statement in the style:
+We constructed 50 realistic technical conversations (the full SCENARIOS list in `evals/compression_faithfulness.py`), each 8-12 turns, each containing exactly one uncertain constraint statement in the style:
 
 > *"The [X] is approximately [value] — unconfirmed, I'll need to verify."*
 
@@ -122,7 +122,7 @@ A response was scored on two dimensions:
 |---|---|---|
 | Naive Haiku compression | **54.0%** (CI: 39.3–68.2%) | **34.0%** (CI: 21.2–48.8%) |
 | LLMLingua-simulated compression | **32.0%** (CI: 19.5–46.7%) | **76.0%** (CI: 61.8–86.9%) |
-| Probe-guarded (Credence) | **100%** (CI: 88.4–100%) | **0%** (CI: 0–11.6%) |
+| Probe-guarded (Credence) | **100%** (CI: 92.9–100%) | **0%** (CI: 0–7.1%) |
 | Baseline (full context) | 100% | 0% |
 
 **Haiku strips uncertainty qualifiers in 46.0% of compressions.** LLMLingua-simulated compression (sentence-length importance scoring — short qualifier sentences are systematically dropped) strips qualifiers in 68.0% of compressions — 2.2× worse FCR (76.0% vs 34.0%).
@@ -130,6 +130,8 @@ A response was scored on two dimensions:
 When qualifiers are stripped, the downstream Opus model answers with false certainty in 34.0% of Haiku cases and 76.0% of LLMLingua cases. The remaining cases are non-recalls — "I don't have that information" — rather than confident-wrong answers. FCR = false certainty rate = fraction where the model states the uncertain value *as confirmed fact*.
 
 The faithfulness probe detects all 50 uncertain segments (100% precision/recall on the detection task, 100% block rate) and eliminates false certainty entirely (0% FCR, CI: 0–7.1%). **Null hypothesis tested:** Adding "preserve uncertainty qualifiers" to the Haiku system prompt achieves 90.0% qualifier survival (n=30 scenarios) — deterministic at 100% only with the probe. Instructions are probabilistic; enforcement is not.
+
+**Mechanistic note**: When the probe blocks compression (all 50 scenarios in this study), Haiku is not called — the downstream model receives the original uncompressed conversation text, identical in epistemic content to the baseline condition. The probe-guarded FCR=0% is therefore the expected result of the probe doing its job: preventing the lossy compression event. The meaningful contrast is against "Haiku + prompt instruction" (EQLR 10%), which *does* call Haiku with an instruction to preserve qualifiers but achieves only 90% qualifier survival — because model compliance is probabilistic. The probe's approach (abort compression entirely) is deterministic.
 
 ### 3.4 Why 46.0%?
 
@@ -145,7 +147,7 @@ One rule drives the entire system:
 
 ### 4.1 Faithfulness Probe
 
-Before any Haiku summarization call, Credence scans the compressible segment for **164 uncertainty markers** drawn from a frozenset we term `_UNCERTAINTY_MARKERS`, scanning **user turns only** (not assistant echoes — a critical design decision that ensures the 100% block rate is earned by user-stated uncertainty, not assistant-generated paraphrase):
+Before any Haiku summarization call, Credence scans the compressible segment for **167 uncertainty markers** drawn from a frozenset we term `_UNCERTAINTY_MARKERS`, scanning **user turns only** (not assistant echoes — a critical design decision that ensures the 100% block rate is earned by user-stated uncertainty, not assistant-generated paraphrase):
 
 ```python
 _UNCERTAINTY_MARKERS = frozenset({

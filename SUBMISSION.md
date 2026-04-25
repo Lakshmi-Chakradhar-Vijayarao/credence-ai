@@ -268,7 +268,9 @@ A context safety layer for Claude Code sessions that prevents uncertain constrai
 
 **FCR definition:** FCR = fraction of responses that *lack any uncertainty qualifier* about the compressed constraint. This is a proxy for the harmful outcome (user acts on unverified value as if confirmed). A stricter definition — "explicitly asserted as confirmed fact" — shows 0% for all conditions in the null_hypothesis study (n=30), suggesting Opus 4.7 rarely makes explicit confident false assertions even with qualifiers stripped. The primary harm is qualifier absence causing user over-confidence, not explicit fabrication.
 
-**E6 limitation:** Sessions are 12-14 turns — shorter than the compression threshold (fires at n_turns > 16). E6 measures full_context vs. windowed_context. The compression_faithfulness study (n=30) is the only experiment that directly tests the probe under real compression.
+**Probe condition mechanics**: When the faithfulness probe blocks compression (all 50 scenarios in the n=50 study), the downstream model receives the original uncompressed conversation text — the same input as the baseline condition. FCR=0% for the probe condition follows directly from this: the probe prevents the lossy compression event entirely. The contrast that matters is against "Haiku + prompt instruction" (EQLR 10%), which *does* attempt compression with an instruction to preserve qualifiers but achieves only 90% qualifier survival. The probe's approach is to block compression at the source rather than attempt to compress while preserving.
+
+**E6 limitation:** Sessions are 12-14 turns — shorter than the compression threshold (fires at n_turns > 16). E6 measures full_context vs. windowed_context. The compression_faithfulness study (n=50) is the only experiment that directly tests the probe under real Haiku compression.
 
 **Stress test (n=1000 latency, n=200 precision/recall, n=50 GTS, offline, 1.8s):** Probe p50=0.011ms (7× better than 0.07ms claimed). Probe precision 0% FP, recall 100%. J-score gap 0.344 (confident vs hedged). GTS 100% recall / 0% FP. Run: `python -m evals.stress_test`
 

@@ -3,22 +3,22 @@
     "mean_constraint_recall": {
       "baseline": 0.8506,
       "naive_window": 0.6567,
-      "cams": 0.8178
+      "credence": 0.8178
     },
     "mean_chain_complete": {
       "baseline": 1.0,
       "naive_window": 0.2,
-      "cams": 0.8
+      "credence": 0.8
     },
     "mean_hallucination": {
       "baseline": 0.0,
       "naive_window": 0.0,
-      "cams": 0.0
+      "credence": 0.0
     },
     "mean_tokens": {
       "baseline": 40602.0,
       "naive_window": 30766.0,
-      "cams": 40843.0
+      "credence": 40843.0
     }
   },
   "sessions": [
@@ -76,7 +76,7 @@
     },
     {
       "session_id": "debugging_01",
-      "condition": "cams",
+      "condition": "credence",
       "constraint_recall": 0.9167,
       "chain_complete": 1.0,
       "hallucination_rate": 0.0,
@@ -154,7 +154,7 @@
     },
     {
       "session_id": "debugging_02",
-      "condition": "cams",
+      "condition": "credence",
       "constraint_recall": 0.7333,
       "chain_complete": 1.0,
       "hallucination_rate": 0.0,
@@ -232,7 +232,7 @@
     },
     {
       "session_id": "debugging_03",
-      "condition": "cams",
+      "condition": "credence",
       "constraint_recall": 0.8333,
       "chain_complete": 1.0,
       "hallucination_rate": 0.0,
@@ -310,7 +310,7 @@
     },
     {
       "session_id": "design_01",
-      "condition": "cams",
+      "condition": "credence",
       "constraint_recall": 0.9444,
       "chain_complete": 1.0,
       "hallucination_rate": 0.0,
@@ -388,7 +388,7 @@
     },
     {
       "session_id": "design_02",
-      "condition": "cams",
+      "condition": "credence",
       "constraint_recall": 0.7667,
       "chain_complete": 0.0,
       "hallucination_rate": 0.0,
@@ -466,7 +466,7 @@
     },
     {
       "session_id": "design_03",
-      "condition": "cams",
+      "condition": "credence",
       "constraint_recall": 0.7111,
       "chain_complete": 0.0,
       "hallucination_rate": 0.0,
@@ -544,7 +544,7 @@
     },
     {
       "session_id": "code_review_01",
-      "condition": "cams",
+      "condition": "credence",
       "constraint_recall": 0.8,
       "chain_complete": 1.0,
       "hallucination_rate": 0.0,
@@ -622,7 +622,7 @@
     },
     {
       "session_id": "code_review_02",
-      "condition": "cams",
+      "condition": "credence",
       "constraint_recall": 0.85,
       "chain_complete": 1.0,
       "hallucination_rate": 0.0,
@@ -700,7 +700,7 @@
     },
     {
       "session_id": "research_01",
-      "condition": "cams",
+      "condition": "credence",
       "constraint_recall": 0.8,
       "chain_complete": 1.0,
       "hallucination_rate": 0.0,
@@ -778,7 +778,7 @@
     },
     {
       "session_id": "research_02",
-      "condition": "cams",
+      "condition": "credence",
       "constraint_recall": 0.8222,
       "chain_complete": 1.0,
       "hallucination_rate": 0.0,
