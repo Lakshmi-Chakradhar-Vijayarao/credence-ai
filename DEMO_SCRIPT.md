@@ -1,156 +1,208 @@
-# Credence — 3-Minute Demo Script
+# Credence — 180-Second Demo Screenplay (Final)
 
-**Format:** Screen recording with voiceover. No slides. Terminal only.
-**Tone:** Engineer-to-engineer. Measured. "Here's a failure we measured, here's the fix."
-**Resolution:** 1080p minimum. Terminal font: 18pt.
-
----
-
-## [0:00–0:30] — Show the failure
-
-**Screen:** Open terminal. Run `python demo/live_demo.py` — pause at the failure checkpoint.
-
-**Say:**
-> "Here's something I measured in Claude Code. You're in a long session. Early on you said: 'I think the auth token expires in 3600 seconds — but it might be 86400, I haven't confirmed with the vendor yet.'
->
-> Fifteen turns of coding later, Claude writes this."
-
-**Show on screen:**
-```python
-TOKEN_EXPIRY = 3600  # auth token expiry
-```
-
-**Say:**
-> "No warning. No flag. The uncertainty is gone. You ship it.
->
-> We measured how often this happens. Under LLMLingua-style compression — which is aggressive, token-efficient, what production systems use — 68% of compressions strip the uncertainty qualifier. 74% of downstream answers then state the value as confirmed fact.
->
-> That's the failure. And it has a name: Epistemic Qualifier Loss."
+**Mental model**: Show → Name → Measure → Fix → Audit yourself
+**Tone**: Engineer-to-engineer. Not hype. You measured something. Here are the numbers.
+**Setup**: Black terminal, 18pt font, single window, keyboard only, 1080p.
 
 ---
 
-## [0:30–1:15] — Run Credence (show all 5 checkpoints)
+## ACT 1: THE FAILURE [0:00–0:30]
 
-**Screen:** `python demo/live_demo.py` — let it run through all checkpoints
+**Screen**: Terminal. No title card. Run the session replay from `demo/live_demo.py`.
+Show turn 3, then skip to turn 12. Nothing else on screen.
 
-**Say:**
-> "Now with Credence. Same uncertain constraint. Same pipeline."
-
-**Show each checkpoint as it fires:**
 ```
-CHECKPOINT 1 — REGISTRATION
-  Constraint: "auth token expires in 3600s — unconfirmed"
-  J-score: 0.24  Zone: LOW  Latency: 0.37ms
+Turn 3 (you said):
+  "I think the auth token expires in 3600 seconds —
+   but it might be 86400, I haven't confirmed with
+   the vendor yet."
 
+Turn 12 (Claude wrote):
+  TOKEN_EXPIRY = 3600   # auth token expiry
+```
+
+**[3 seconds of silence. Let the code sit.]**
+
+**Voiceover:**
+> "No warning. No flag. You shipped it."
+
+**[1 second pause.]**
+
+> "Claude didn't make up that number. You gave it that number.
+> It just forgot that you weren't sure."
+
+> "This system was built using Claude Code —
+> and it protects Claude Code sessions."
+
+---
+
+## ACT 2: THE SOUL [0:30–1:15]
+
+*This is the center of the video. Slow down here. One number only.*
+
+**Screen**: Stay on terminal. No switching.
+
+**Voiceover:**
+> "Compression doesn't remove the fact. It removes the uncertainty.
+
+> We named this: **Epistemic Qualifier Loss — EQL**.
+
+> Under aggressive compression — 74% of downstream answers state the uncertain
+> value as confirmed fact."
+
+**Screen**: Reveal ONE line. Hold for 4 full seconds.
+
+```
+LLMLingua compression  →  74% False Certainty Rate
+Credence               →   0% False Certainty Rate
+```
+
+**[1 second pause.]**
+
+**Voiceover:**
+> "We measured it. We fixed it."
+
+---
+
+## ACT 3: THE ENGINEERING [1:15–2:00]
+
+**Screen**: `python demo/live_demo.py` running live
+
+**Voiceover as Checkpoint 2 appears:**
+
+```
 CHECKPOINT 2 — FAITHFULNESS PROBE
   Found: "unconfirmed" in user turn
-  Decision: BLOCK compression → PRESERVE verbatim
-  Latency: 0.011ms  API calls: 0
+  Decision: BLOCK → preserve original verbatim
+  Latency: 0.011ms   API calls: 0
+```
 
-CHECKPOINT 3 — TRUTH BUFFER
-  Injecting 1 unverified constraint into system prompt every turn.
+> "0.011 milliseconds. Zero API calls. 100% block rate on 50 controlled scenarios.
 
+> The obvious alternative — add 'preserve uncertainty qualifiers' to the Haiku
+> system prompt — gets you to 90% qualifier survival. We tested it.
+> The probe is binary: either the marker is present or it isn't.
+> Prompt instructions are probabilistic. Enforcement is not."
+
+**As Checkpoint 4 appears:**
+
+```
 CHECKPOINT 4 — CONSISTENCY ENFORCER
-  Query overlaps: "token", "expires", "auth"
-  → Imperative: "YOU MUST express uncertainty."
+  Query overlap: "token", "expires", "auth"
+  → Imperative injection active
+```
 
+> "When the user's query overlaps a registered uncertain constraint,
+> enforcement escalates from advisory to imperative."
+
+**As Checkpoint 5 appears:**
+
+```
 CHECKPOINT 5 — GENERATION-TIME SCANNER
-  TOKEN_EXPIRY = 3600  ⚠⚠ CREDENCE[HIGH RISK, conf=0.15]: unverified
+  TOKEN_EXPIRY = 3600  ⚠⚠ CREDENCE[HIGH RISK, conf=0.15]: unconfirmed
 ```
 
-**Say:**
-> "Five checkpoints. Three are fully deterministic — they don't ask Claude, they just enforce. The probe is 0.011 milliseconds, zero API calls. EQLR 46% to zero. FCR 74% to zero."
+> "Unverified values annotated directly in generated code before the user sees it."
 
----
+**Screen**: Gate blocking a Write call. [SLOW DOWN — hold 3 seconds]
 
-## [1:15–1:45] — The numbers
-
-**Screen:** Show the results table (paste or display from JSON)
-
-**Say:**
-> "I ran 50 conversations through this. Each had one uncertain constraint. Three conditions: naive Haiku compression, LLMLingua-inspired compression, Credence.
-
-| Condition | EQLR | FCR |
-|---|---|---|
-| Naive Haiku | 46% | 6% |
-| LLMLingua sim | 68% | **74%** |
-| Credence | **0%** | **0%** |
-
-> The obvious alternative — add 'preserve uncertainty qualifiers' to the Haiku prompt — gets you to 90% qualifier survival. Not 100%. Prompt instructions are probabilistic. The probe is binary enforcement: the qualifier is present, or it isn't. 100% block rate on 50 scenarios.
->
-> This is the tested alternative. Prompt engineering doesn't close the gap. Deterministic enforcement does."
-
----
-
-## [1:45–2:15] — The ghost constraint problem (Opus 4.7 use)
-
-**Screen:** Briefly show `evals/ghost_gauntlet.py` scenario structure, then result
-
-**Say:**
-> "Now the harder problem. What if the user never hedged?
->
-> 'The Stripe rate limit is 50 req/min.' Stated as fact. Actually from a sales call. Nobody confirmed it.
->
-> The faithfulness probe sees nothing. No markers.
->
-> Here's where Opus 4.7 matters. The Scout Classifier makes a single structured call to Opus 4.7: classify this claim — is it a confirmed fact, or an implicit unverified assumption?
->
-> Haiku gets this wrong. The language looks identical. Opus 4.7's reasoning is what distinguishes a ghost constraint from a known fact.
->
-> Ghost gauntlet: 10 domain sessions, 30 total claims. Credence BothRate: 1.000. Naive sliding window: 0.200."
-
----
-
-## [2:15–2:45] — The Claude Code hook (the money shot)
-
-**Screen:** Show `.claude/settings.json`, then show the gate blocking a Write call
-
-**Say:**
-> "The last piece is the one most specific to Claude Code. A PreToolUse hook intercepts every Write, Edit, Bash call. If the arguments overlap a registered unverified constraint, the tool is blocked before it runs."
-
-**Show on screen:**
 ```
-╔══════════════════════════════════════════════════════════════╗
-║  CREDENCE GATE — TOOL BLOCKED                                ║
-╚══════════════════════════════════════════════════════════════╝
-
-  Tool:    Edit
-  ⚠ [LOW] auth token expires in 3600s — unconfirmed
-     Overlap: token, expires, auth
-
-  Use credence_verify(<id>, <confirmed_value>) to resolve.
+╔═══════════════════════════════════════╗
+║  CREDENCE GATE — TOOL BLOCKED         ║
+╚═══════════════════════════════════════╝
+  Tool: Edit
+  ⚠ auth token expires in 3600s — unconfirmed
+  Overlap: token, expires, auth
 ```
 
-**Say:**
-> "The model cannot embed an unverified value into code. Not advisory. Blocked. The Rust implementation runs in 3.4 milliseconds — 98 times faster than the Python equivalent."
+> "The model cannot embed an unverified value into code. Not advisory. Blocked.
+
+> Rust implementation: 3.4 milliseconds. Python equivalent: 331 milliseconds.
+> 98 times faster. At 100 tool calls per session —
+> 33 seconds of overhead versus 0.34 seconds.
+> We measured this. We shipped Rust."
+
+**Voiceover for ghost constraints:**
+
+> "The harder case: no markers. The probe sees nothing.
+> We use Opus here — not for generation, but for classification.
+> Haiku misclassifies implicit assumptions as confirmed facts.
+> Opus 4.7's reasoning depth makes the distinction."
 
 ---
 
-## [2:45–3:00] — Install + close
+## ACT 4: THE EVIDENCE [2:00–2:40]
 
-**Screen:** Two terminal commands
+**Screen**: Four lines. Each holds for 4 seconds.
+
+```
+Compression faithfulness  n=50
+  LLMLingua: EQLR 68% → 0%   FCR 74% → 0%
+  Haiku:     EQLR 46% → 0%   FCR  6% → 0%
+
+Long session recall  n=23   Credence 100%   Naive window 19.6%
+
+Multi-hop chain      n=1    Credence  3/3   Naive window    0/3
+
+Ghost constraints    n=10   BothRate 1.000  Naive window  0.200
+```
+
+**Voiceover:**
+> "Seven independent evaluations. All conditions Opus 4.7 — no mixed models.
+
+> We ran adversarial audits on our own results.
+> Found our own scorer inflation — original FCR was 34%, corrected to 6%
+> after audit. Those corrections are in the repo with the reasoning.
+
+> 178 tests. Every number here is reproducible."
+
+---
+
+## ACT 5: THE PRINCIPLE [2:40–3:00]
+
+**Screen**: Two commands. Nothing else.
 
 ```bash
 pip install -e .
-# Add 6 lines to .claude/settings.json
 python quickstart.py
 ```
 
-**Say:**
-> "Install is two commands. 22 MCP tools, the enforcement hook, full cross-session registry.
->
-> Everything here is reproducible. `python3 tests.py` — 178 tests, offline, 3 seconds.
->
-> The principle: uncertain information should carry its epistemic weight through the entire pipeline. Credence is a working implementation of that principle, built specifically for Claude Code."
+**Voiceover:**
+> "Two minutes to install. 22 MCP tools.
+> Rust enforcement gate. Full cross-session epistemic registry.
+
+> The deeper point: epistemic state is infrastructure.
+> Every fact in your pipeline has a confidence level attached
+> to when it was stated. That confidence level is as important
+> as the fact itself — especially in agentic systems that act on it.
+
+> Credence is the first working implementation of that principle,
+> built specifically for Claude Code."
+
+**[End on `quickstart.py` output — all checkpoints green, latencies visible.
+No title card. No logo. Just the running system.]**
 
 ---
 
-## Recording Notes
+## The Three Moments That Must Breathe
 
-- **The hook-blocking moment is the money shot** — slow down, let the red box sit 3 seconds
-- **The LLMLingua 74% → 0% table** — pause here, let it land
-- **Don't say "AI-powered enforcement"** — say "deterministic enforcement." That's the point.
-- **Key numbers to hit**: 0.011ms, 0% false positive rate, 74% FCR, 178 tests, 3.4ms Rust gate
-- **Tone**: You measured something, you fixed it, here are the numbers. Not hype.
-- **Black terminal on dark background.** No browser. No IDE.
-- **No mouse clicks** — pure keyboard. Looks professional.
+1. **Silence after `TOKEN_EXPIRY = 3600`** — 3 seconds. Don't fill it.
+2. **The 74% → 0% table** — 4 seconds on screen. Nothing else visible.
+3. **The gate blocking the Write call** — 3 seconds. Slowest moment in the video.
+
+These three pauses are where engineers either lean in or check their phone.
+
+## Key Phrases
+
+- "Claude didn't make up that number — it forgot that you weren't sure" (the hook)
+- "Compression doesn't remove the fact. It removes the uncertainty." (the naming)
+- "We measured it. We fixed it." (the pivot — pause after this)
+- "Prompt instructions are probabilistic. Enforcement is not." (the contrast)
+- "We found our own scorer inflation and corrected it." (the credibility)
+- "Not advisory. Blocked." (the gate moment)
+
+## Do Not Say
+
+- "AI-powered enforcement" → say "deterministic enforcement"
+- "We built a 22-tool system" → reveal system scale after trust is established
+- Any architecture diagram or layer diagram → not in 3 minutes
