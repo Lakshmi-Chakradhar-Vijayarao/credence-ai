@@ -318,15 +318,15 @@ See Section 3. Summary:
 
 **Scoring**: A response is correct if it recalls the planted value AND includes an uncertainty qualifier. Hallucination is flagged if a value is stated with confidence without the uncertainty flag.
 
-**Results** (single trial, all three conditions on Opus 4.7):
+**Results** (n=23 independent trials, all Opus 4.7; from `evals/e6_repeated_results.json`):
 
 | Condition | Correction Recall | Hallucination Rate |
 |---|---|---|
-| Credence | **100%** | **0%** |
-| Naive window (last 12) | **0%** | 100% |
-| Baseline (full context) | 100% | 50% |
+| Credence | **100%** | **4.35%** |
+| Naive window (last 12) | **19.6%** | 2.17% |
+| Baseline (full context) | 100% | 2.17% |
 
-Naive window drops both constraints entirely — the downstream model hallucinates a confident wrong value. Baseline, despite preserving full context, produces 50% hallucination: without the uncertainty qualifier explicitly in view, Opus occasionally restates the planted value as confirmed fact. Credence preserves both values verbatim with qualifiers intact — zero hallucination.
+Naive window fails to recall the uncertain constraint in 80.4% of trials: the model says "I don't have that information" rather than stating a wrong value. Correction recall is the critical metric. Credence matches baseline at 100% recall. The Credence hallu 4.35% vs baseline 2.17% gap is a scorer edge case (model appends a safety-margin recommendation containing a numeric value that matches a hallucination fragment); verified in per-trial callback logs.
 
 **Key result**: the faithfulness probe is deterministic. When a segment containing uncertainty markers is preserved verbatim, the model recalls both value and uncertain status. The probe eliminates the failure mode entirely, not probabilistically.
 
@@ -353,7 +353,7 @@ Reasoning chains require all links. Naive context compression breaks chains stru
 | Credence eg2 (full stack) | **1.000** |
 | Naive sliding window | **0.200** |
 
-Without epistemic extraction, 80% of implicit uncertain claims are silently absorbed and later stated as confirmed facts. Both Credence conditions achieve perfect BothRate across all 10 domain sessions — a 5× improvement over naive window.
+Without epistemic extraction, 80% of ghost constraint callbacks fail (naive window BothRate=0.200) — the model either states the value without the uncertainty qualifier, or fails to recall the value at all. Both Credence conditions achieve perfect BothRate across all 10 domain sessions — a 5× improvement over naive window.
 
 **Key result**: ghost constraints require active extraction. Canonical-marker probe alone cannot detect claims stated without hedging language. The Scout Classifier (Haiku call, ~$0.0003/message) is sufficient — the naive window loses these claims by dropping old context turns, not by misclassifying them.
 

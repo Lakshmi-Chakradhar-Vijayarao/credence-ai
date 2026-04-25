@@ -62,13 +62,13 @@ All results measured fresh. All conditions use Claude Opus 4.7 unless noted. All
 
 | Condition | Correction Recall | Hallucination Rate |
 |---|---|---|
-| **Credence** | **100%** | **0–4%** |
-| Baseline (full context) | 100% | ~2% |
-| Naive sliding window | **~20%** | **~80%** |
+| **Credence** | **100%** | **4.35%** |
+| Baseline (full context) | 100% | 2.17% |
+| Naive sliding window | **19.6%** | **2.17%** |
 
 n=23 independent trials. All conditions: Opus 4.7.
 
-**Result**: Naive window loses the constraint in ~80% of trials; when it answers, it states the wrong value with confidence 80% of the time. Credence matches baseline precision with zero compression cost to epistemic quality.
+**Result**: Naive window fails to recall the uncertain constraint in 80.4% of trials (correction_recall 19.6%). When it does answer, it hallucinates at ~2.17% — the primary failure mode is silently dropping the constraint from context, not stating a wrong value confidently. Credence preserves correction recall at 100% across all 23 trials. Credence hallu 4.35% vs baseline 2.17% — the gap is a scorer edge case (model adds a safety margin recommendation that contains a numeric value matching a hallucination fragment); documented in e6_repeated_results.json.
 
 **Reproduce**: `python -m evals.experiments --exp E6`
 
@@ -112,13 +112,17 @@ CS-FCR = Cross-Session False Certainty Rate. n=10 scenarios, n=20 callbacks.
 
 **Question**: Is a well-crafted "preserve uncertainty qualifiers" instruction sufficient, or is deterministic enforcement necessary?
 
-| Approach | Qualifier Survival | Is Deterministic? |
+*Qualifier Survival = fraction of compressions where the output context retains ≥1 uncertainty marker. All three rows measure the same metric (compression output quality). Downstream response quality is a separate measurement.*
+
+| Approach | Qualifier Survival (in context) | Is Deterministic? |
 |---|---|---|
-| No instruction | ~54% | — |
+| No instruction | 46.7% (this study) / ~54% (n=50 study) | — |
 | Prompt instruction: "preserve qualifiers" | **90.0%** | No |
 | **Credence faithfulness probe** | **100%** | **Yes** |
 
-**Result**: The best prompt instruction achieves 90.0% qualifier survival — the remaining 10% is probabilistic model non-compliance. The probe is binary: either uncertainty is present in the user turn (BLOCK) or it isn't (ALLOW). Instructions are probabilistic; enforcement is not.
+**Result**: Probe achieves 100% context qualifier survival because it blocks compression entirely — the original text is passed to the downstream model unchanged. Prompt instruction achieves 90.0%; the remaining 10% is model non-compliance with the instruction. Probe is binary enforcement; instruction is probabilistic.
+
+**Downstream response quality** (separate metric, from null_hypothesis study): Probe downstream hedging = 93.3% (28/30 Opus answers used qualifying language even though full context was available). FCR = 0% (downstream certainty = 0/30). The 6.7% gap is Opus answering with non-assertive non-hedging language ("I don't have enough information") rather than false certainty — not an epistemic failure.
 
 **Reproduce**: `python -m evals.null_hypothesis`
 
