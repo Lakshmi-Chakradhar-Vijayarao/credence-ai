@@ -34,7 +34,7 @@ python demo/live_demo.py      # trace one uncertain claim through the full pipel
 
 With API key:
 ```bash
-python -m evals.compression_faithfulness   # reproduce the headline result (~$2, n=30)
+python -m evals.compression_faithfulness   # reproduce the headline result (~$3, n=50)
 python -m evals.experiments --exp E7       # the 3-hop chain proof
 streamlit run demo/app.py                  # full interactive demo
 ```
@@ -68,7 +68,7 @@ constraints at T3-T4. 8 HIGH-J filler turns. Callback at T13-T14.
 |---|---|---|
 | Credence | **100%** | **0–4%** |
 | Baseline (full context) | 100% | ~2% |
-| Naive sliding window | **~20%** | **~80%** |
+| Naive sliding window | **~20%** | **~50%** |
 
 Run: `python -m evals.experiments --exp E6`
 
@@ -341,7 +341,7 @@ Epistemic provenance: no other memory system has it.
 | E7 Multi-Hop Chain: 3-step dependency (categorical) | **3/3 hops** | 3/3 | **0/3** |
 | E8 Debugging Session: uncertain hypothesis recall | **0.944** | 1.000 | 0.522 |
 | Ghost Gauntlet (n=10 sessions × 3 conditions) | BothRate=**1.000** | — | **0.200** (naive window) |
-| Cross-Session Memory FCR (n=16 callbacks, Opus 4.7) | CS-FCR=**0%** | — | **50%** (no memory) |
+| Cross-Session Memory FCR (n=20 callbacks, Opus 4.7) | CS-FCR=**0%** | — | **40%** (no memory) |
 | Native gate latency (PreToolUse hook) | **3.4ms** (Rust) | — | 331ms (Python) |
 | Adversarial tests (5 offline, deterministic) | **5/5 pass** | — | — |
 | Precision eval: CE FP rate (8 unrelated queries) | **0%** FP (offline) | — | — |
@@ -523,7 +523,7 @@ agent_b_system = monitor.build_agent_b_system(handoff, base_system="You are a se
 
 ```bash
 # Offline (free, no API key)
-python3 tests.py                                    # 116 unit tests
+python3 tests.py                                    # 178 unit tests
 python3 test_claims.py                              # validate submission claims
 
 # Core experiments (~$3 total)
@@ -558,7 +558,7 @@ credence/                Core package
   agent.py                CredenceAgent — long-task runner with epistemic memory
 
 evals/                  Evidence suite
-  compression_faithfulness.py   Primary evidence (n=30, Haiku compression)
+  compression_faithfulness.py   Primary evidence (n=50, Haiku + LLMLingua compression)
   null_hypothesis.py            Prompt instruction baseline (n=30)
   experiments.py                E1–E9 ablation experiments
   ghost_detector_ablation.py    Ghost detection ablation (n=5 sessions, mechanism isolation)
@@ -570,7 +570,7 @@ evals/                  Evidence suite
   precision_eval.py             CE/GTS/probe false-positive rates (offline)
   agent_propagation_eval.py     Cross-agent fidelity — PipelineMonitor validation
   conversation_benchmark.py     10-session multi-turn benchmark
-  cross_session_eval.py         Cross-session FCR (n=16 callbacks, 8 scenarios)
+  cross_session_eval.py         Cross-session FCR (n=20 callbacks, 10 scenarios)
   flagship/                     3-scenario flagship experiment
 
 demo/
