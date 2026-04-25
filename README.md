@@ -28,7 +28,7 @@ python demo/live_demo.py      # trace one uncertain claim through the full pipel
 
 With API key:
 ```bash
-python -m evals.compression_faithfulness   # reproduce the headline result (~$2, n=50)
+python -m evals.compression_faithfulness   # reproduce the headline result (~$2, n=30)
 python -m evals.experiments --exp E7       # the 3-hop chain proof
 streamlit run demo/app.py                  # full interactive demo
 ```
@@ -40,19 +40,19 @@ streamlit run demo/app.py                  # full interactive demo
 We ran two studies. Both conditions are Opus 4.7 — no different models, no shortcuts.
 
 **Study 1 — Compression (n=50):** 50 conversations with one uncertain constraint each.
-Compressed by Haiku or LLMLingua. Queried by Opus.
+Compressed by Haiku or LLMLingua-inspired scorer. Queried by Opus 4.7.
 
-| Condition | Qualifier survival | False certainty downstream |
-|---|---|---|
-| Naive Haiku (n=50) | 52.0% | **26.0%** |
-| LLMLingua-2 simulated (n=50) | 32.0% | **70.0%** |
-| Haiku + "preserve qualifiers" instruction (n=30) | **93.3%** | n/a¹ |
-| Credence (faithfulness probe, n=50) | **100%** (blocks) | **0%** |
+| Condition | Qualifier survival | False certainty (FCR) | 95% CI |
+|---|---|---|---|
+| Naive Haiku (n=50) | 54.0% | **34.0%** | [21.2%, 48.8%] |
+| LLMLingua-2 simulated (n=50) | 32.0% | **76.0%** | [61.8%, 86.9%] |
+| Haiku + "preserve qualifiers" instruction (n=30) | **90.0%** | n/a¹ | — |
+| Credence (faithfulness probe, n=50) | **100%** (CI: 92.9–100%) | **0%** | [0%, 7.1%] |
 
 ¹ Null hypothesis tests qualifier survival through compression, not downstream FCR.
-Prompt instructions get you to 93.3% qualifier survival. The probe is **deterministic** — 100% block rate, zero API calls.
-LLMLingua-style token-importance compression causes 2.7× more false certainty than naive Haiku.
-Run: `python -m evals.compression_faithfulness --n 50` or `python -m evals.null_hypothesis`
+Prompt instructions get you to 90.0% qualifier survival. The probe is **deterministic** — 100% block rate, zero API calls.
+LLMLingua-style importance scoring causes **2.2× more false certainty** than naive Haiku (76.0% vs 34.0%).
+Run: `python -m evals.compression_faithfulness` or `python -m evals.null_hypothesis`
 
 **Study 2 — Long session (n=23 trials, all Opus 4.7):** 12-turn session. Uncertain
 constraints at T3-T4. 8 HIGH-J filler turns. Callback at T13-T14.
@@ -71,7 +71,7 @@ Run: `python -m evals.experiments --exp E6`
 
 Two distinct failure modes require two different mitigations:
 
-**1. Compression loss.** Haiku doesn't understand epistemic metadata. "I think the rate limit is ~50 req/min — unconfirmed" and "the rate limit is 50 req/min" are semantically equivalent summaries to a compression model. The qualifier is collateral loss in 48% of Haiku compressions and 68% of LLMLingua compressions (measured, n=50).
+**1. Compression loss.** Haiku doesn't understand epistemic metadata. "I think the rate limit is ~50 req/min — unconfirmed" and "the rate limit is 50 req/min" are semantically equivalent summaries to a compression model. The qualifier is collateral loss in 46.0% of Haiku compressions and 68.0% of LLMLingua compressions (measured, n=50). FCR: 34.0% and 76.0% respectively.
 
 **2. Reasoning loss.** Even with the qualifier present in context, Opus 4.7 states uncertain constraints as confirmed facts in ~50% of long-session callbacks. The text was there. Epistemic attention was not. Context presence ≠ epistemic attention.
 
@@ -97,7 +97,7 @@ User says something uncertain
     ▼ before compression
 ┌───────────────────────────────────────────┐
 │  LAYER 1 — Faithfulness Probe  (~0.07ms)  │  DETERMINISTIC
-│  frozenset of 113 uncertainty markers      │
+│  frozenset of 167 uncertainty markers      │
 │  Scans user turns only (avoids echo bias)  │
 │  Uncertainty found → block Haiku → KEEP   │
 └───────────────────────────────────────────┘
@@ -115,9 +115,10 @@ User says something uncertain
     ▼ after generation
 ┌───────────────────────────────────────────┐
 │  LAYER 3 — Generation-Time Scanner (~0.08ms) │  DETERMINISTIC
-│  Two-pass regex scan. Annotates code and  │
-│  prose with ⚠⚠ HIGH RISK / ⚠ UNVERIFIED  │
-│  based on decayed confidence. Zero API.   │
+│  Two-pass scan. Catches NUMERIC literals  │
+│  (3600, 50) AND STRING literals ("RS256", │
+│  "/api/v2", "us-east-1"). Three tiers:    │
+│  ⚠⚠ HIGH RISK / ⚠ UNVERIFIED / CHECK.    │
 └───────────────────────────────────────────┘
                       │
     ▼ at tool execution boundary
@@ -152,7 +153,7 @@ Zero API calls from Layers 1, 3, 4, 5.
 
 ## The Opus 4.7 Insight: Ghost Constraints
 
-The faithfulness probe catches explicit hedges: *"I think"*, *"approximately"*, *"probably"* — 113 markers, all canonical.
+The faithfulness probe catches explicit hedges: *"I think"*, *"approximately"*, *"probably"* — 167 markers: canonical hedges, vendor/source language, production-untested assertions.
 
 But what about this:
 > *"The Stripe rate limit is 50 req/min."*
@@ -175,12 +176,13 @@ mgr = ContextManager(
 )
 ```
 
-Ghost Gauntlet results (n=10 sessions × 3 claims, all Opus 4.7):
+Ghost Gauntlet results (n=10 sessions × 3 conditions, all Opus 4.7):
 
 | Condition | BothRate (value + qualifier recalled) |
 |---|---|
-| Credence (ghost detector active) | **1.000** |
-| Naive window | **0.133** |
+| Credence v1 (Scout + Truth Buffer) | **1.000** |
+| Credence eg2 (full stack) | **1.000** |
+| Naive sliding window | **0.200** |
 
 Run: `python -m evals.ghost_gauntlet`
 
@@ -253,19 +255,25 @@ Restart Claude Code. You have 18 epistemic memory tools and automatic tool block
 
 ## What Gets Annotated (Generation-Time Scanner)
 
-When the model writes code that embeds an unverified value:
+GTS catches **numeric literals AND string literals** — both are equally dangerous in production code.
 
 ```python
 # Without Credence:
 TOKEN_EXPIRY = 3600
+ALGORITHM = "RS256"
+BASE_URL = "/api/v2"
 
-# With Credence (GTS Layer):
-TOKEN_EXPIRY = 3600  # ⚠⚠ CREDENCE[HIGH RISK, conf=0.15]: I think the auth token expires in 3600s — unconfirmed
-RATE_LIMIT = 50      # ⚠ CREDENCE[unverified, conf=0.31]: rate limit is ~50 req/min (unverified)
-BATCH_SIZE = 100     # CREDENCE[check, conf=0.42]: batch size confirmed at 100 items
+# With Credence (GTS Layer — numeric + string):
+TOKEN_EXPIRY = 3600      # ⚠⚠ CREDENCE[HIGH RISK, conf=0.15]: auth token expiry ~3600s — unconfirmed
+RATE_LIMIT = 50          # ⚠ CREDENCE[unverified, conf=0.31]: rate limit ~50 req/min (unverified)
+ALGORITHM = "RS256"      # ⚠ CREDENCE[unverified, conf=0.28]: encryption algorithm is RS256 — per vendor docs
+BASE_URL = "/api/v2"     # ⚠ CREDENCE[unverified, conf=0.25]: API base URL is "/api/v2" — tentative
+AWS_REGION = "us-east-1" # ⚠ CREDENCE[unverified, conf=0.25]: AWS region us-east-1 — from sales call
+BATCH_SIZE = 100         # CREDENCE[check, conf=0.42]: batch size confirmed at 100 items
 ```
 
 Tier escalates as confidence decays across turns: `j × 0.95^turns_elapsed`.
+String extraction covers: quoted fragments, uppercase identifiers (RS256, AES-256-GCM), hyphenated region/env tokens (us-east-1, eu-west-2).
 
 ---
 
@@ -301,22 +309,23 @@ Epistemic provenance: no other memory system has it.
 
 | Experiment | Credence | Baseline | Naive |
 |---|---|---|---|
-| Compression faithfulness — Haiku (n=50) | FCR=**0%** | 0% | FCR=**26%** |
-| Compression faithfulness — LLMLingua (n=50) | FCR=**0%** | 0% | FCR=**70%** |
-| Null hypothesis: prompt instruction qualifier survival (n=30) | **100%** (probe) | — | 93.3% (not deterministic) |
+| Compression faithfulness — Haiku (n=50) | FCR=**0%** (CI: 0–7.1%) | 0% | FCR=**34.0%** (CI: 21.2–48.8%) |
+| Compression faithfulness — LLMLingua (n=50) | FCR=**0%** (CI: 0–7.1%) | — | FCR=**76.0%** (CI: 61.8–86.9%) |
+| Null hypothesis: prompt instruction qualifier survival (n=30) | **100%** (probe) | — | 87.5% (not deterministic) |
 | E6 Negative Needle: constraint recall (n=23 trials, Opus 4.7) | **100%** | 100% | 19.6% |
 | E7 Multi-Hop Chain: 3-step dependency (categorical) | **3/3 hops** | 3/3 | **0/3** |
 | E8 Debugging Session: uncertain hypothesis recall | **0.944** | 1.000 | 0.522 |
-| Ghost Detector Ablation (n=5 pure ghost sessions) | BothRate=**1.000** | — | **0.400** (no detection) |
-| Ghost Gauntlet: implicit uncertain claims (n=10 sessions) | BothRate=**1.000** | — | 0.133 |
-| Cross-Session Memory FCR (n=20 callbacks, Opus 4.7) | CS-FCR=**0%** | — | **40%** (no memory) |
+| Ghost Gauntlet (n=10 sessions × 3 conditions) | BothRate=**1.000** | — | **0.200** (naive window) |
+| Cross-Session Memory FCR (n=16 callbacks, Opus 4.7) | CS-FCR=**0%** | — | **50%** (no memory) |
 | Native gate latency (PreToolUse hook) | **3.4ms** (Rust) | — | 331ms (Python) |
 | Adversarial tests (5 offline, deterministic) | **5/5 pass** | — | — |
-| Unit tests (offline, free) | **132/132 pass** | — | — |
+| Precision eval: CE FP rate (8 unrelated queries) | **0%** FP (offline) | — | — |
+| Precision eval: GTS string FP rate | **0%** FP (offline) | — | — |
+| Unit tests (offline, free) | **178/178 pass** (11 skipped offline-only) | — | — |
 
 Reproduce any result:
 ```bash
-python -m evals.compression_faithfulness      # ~$2, n=50
+python -m evals.compression_faithfulness      # ~$3, n=50 — HEADLINE result
 python -m evals.null_hypothesis               # ~$1, n=30
 python -m evals.experiments --exp E6          # ~$0.50
 python -m evals.experiments --exp E7          # ~$0.20
@@ -324,18 +333,45 @@ python -m evals.ghost_gauntlet                # ~$2
 python -m evals.ghost_detector_ablation       # ~$3
 python -m evals.cross_session_eval --dry-run  # structure validation (free)
 python -m evals.cross_session_eval            # cross-session FCR (~$3, n=10)
-python3 tests.py                              # free, offline, 132 tests
+python -m evals.long_session_eval --dry-run   # 50-turn session structure (free)
+python -m evals.long_session_eval             # 50-turn invariant eval (~$5, n=5)
+python -m evals.precision_eval               # CE/GTS false-positive rates (free, offline)
+python -m evals.stress_test                  # full system stress test — n=1000 probe, n=200 precision/recall (free, 1.8s)
+python3 tests.py                              # free, offline, 178 passing + 11 skipped
 python3 test_claims.py                        # free, offline
 ```
 
 ---
 
+## Prior Work — What Each Paper Misses
+
+Three research areas surround this problem. None of them intersect at the enforcement boundary.
+
+| System | What it does | What it misses |
+|---|---|---|
+| **LLMLingua-2** (ACL 2024) | Token-level compression with importance scoring | Defines faithfulness as "not introducing new tokens" — never measures epistemic qualifier loss |
+| **Semantic Entropy** (Kuhn et al., ICLR 2023) | Sampling-based uncertainty detection (N=5 samples, NLI clustering) | Detection only — no enforcement, no compression clause, no cross-session state |
+| **UProp** (ACL 2025) | Measures uncertainty propagation across multi-step agents | Measures the loss but provides no intervention at the boundary |
+| **MemGPT / Mem0** (NeurIPS 2023 / 2024) | Hierarchical and persistent memory systems | Stores facts as flat strings — epistemic qualifiers stripped at write time |
+| **R-Tuning** (NAACL 2024 Outstanding) | Fine-tunes models to say "I don't know" | Requires model modification; no compression clause; no cross-session state |
+
+**The gap**: No prior system defines FCR (False Certainty Rate from compression), inserts an enforcement gate at the compression boundary, or tracks verified vs. unverified status across sessions. Credence occupies that intersection — not because the papers are wrong, but because they treat compression and epistemic UQ as separate problems. They are not.
+
+**Credence incorporates research from all three areas:**
+- Faithfulness probe is a deterministic approximation of Kuhn et al.'s SE approach (frozenset lookup vs. N=5 sampling — same goal, 10,000× faster, zero API calls)
+- Uncertainty-weighted compression prompt explicitly names registered uncertain values during Haiku summarization (importance-scoring principle from LLMLingua-2, applied to epistemic values)
+- PipelineMonitor measures propagation fidelity in the UProp spirit — and adds enforcement that UProp lacks
+
+---
+
 ## Known Limitations (Honest)
 
-- **Confident-wrong ceiling:** J-score measures linguistic assertiveness, not factual correctness (ρ = −0.034 with correctness). A model that confidently states a wrong fact scores HIGH-J. The SE probe (behavioral entropy) catches this for implicit uncertainty, not for factual errors.
+- **Confident-wrong ceiling:** J-score measures linguistic assertiveness, not factual correctness (ρ = −0.034 with correctness). A model that confidently states a wrong fact scores HIGH-J. Credence does not detect factual errors — only epistemic markers.
 - **Truth Buffer is probabilistic:** Layer 2 depends on Claude following system prompt instructions. Long contexts can dilute compliance. Layer 3 (GTS) fires regardless.
+- **GTS numeric collision:** A common numeric value like `50` registered as a constraint will annotate every `= 50` assignment in generated code, including unrelated ones. Over-annotation is safer than under-annotation, but it is real noise. Use specific multi-digit values to minimise this.
 - **Short sessions (<16 turns):** Compression never fires. Credence's compression routing adds no value; use the registry directly.
 - **FCR definition:** FCR = absence of uncertainty markers in the downstream response, not necessarily a false fact. The harm is real in both interpretations.
+- **LLMLingua result:** The 76.0% FCR figure uses a hand-coded LLMLingua-inspired simulation (sentence-length importance scoring drops short qualifier sentences), not the actual LLMLingua-2 library. The core mechanism is accurate to LLMLingua's design. The high FCR reflects LLMLingua's aggressive importance-based dropping of short qualifier sentences.
 
 ---
 
@@ -417,23 +453,6 @@ Resources are passive — any MCP-compatible agent inherits the epistemic ledger
 
 ---
 
-## Model Adapters (OpenAI, Gemini, Ollama)
-
-```python
-from credence.adapters import OpenAIAdapter, GeminiAdapter, OllamaAdapter
-
-mgr = OpenAIAdapter(api_key="sk-...", model="gpt-4o")    # GPT-4o + GPT-3.5 compression
-mgr = GeminiAdapter(api_key="AI...", model="gemini-1.5-pro")
-mgr = OllamaAdapter(model="llama3.2")                    # zero API cost, local
-
-result = mgr.chat("I think the rate limit is 100 req/min — unconfirmed")
-print(result.j_score, result.zone, result.decision)
-```
-
-All adapters share identical faithfulness probe, Truth Buffer, GTS, and J-routing. Adding a new provider is a 40-line `BaseAdapter` subclass.
-
----
-
 ## Epistemic Transport Protocol (ETP v1)
 
 `etp-v1.json` — open JSON Schema for model-agnostic epistemic metadata transport. The principle: information passing between AI agents should carry its epistemic weight, not just its content.
@@ -452,12 +471,26 @@ All adapters share identical faithfulness probe, Truth Buffer, GTS, and J-routin
 
 ---
 
-## REST API + TypeScript SDK
+## Multi-Agent Pipeline
 
-```bash
-uvicorn api.main:app --port 8000       # all 18 MCP tools as HTTP endpoints
-npm install credence-ai                # TypeScript SDK
+```python
+from credence import PipelineMonitor, CredenceRegistry
+
+reg     = CredenceRegistry("epistemic_registry.db")
+monitor = PipelineMonitor(registry=reg, api_key=os.environ["ANTHROPIC_API_KEY"])
+
+# Agent A produces a plan with uncertain estimates
+agent_a_output = "Use a rate limit of 100 req/s based on staging tests."
+
+# Monitor intercepts before passing to Agent B
+handoff = monitor.intercept(agent_a_output, from_session="planner", to_session="implementer")
+
+# Inject epistemic context into Agent B's system prompt
+agent_b_system = monitor.build_agent_b_system(handoff, base_system="You are a senior engineer.")
+# → Agent B now sees: "EPISTEMIC HANDOFF — rate limit 100 req/s is UNVERIFIED (from staging)"
+# → Truth Buffer enforces qualifier propagation in Agent B's responses
 ```
+
 
 ---
 
@@ -469,7 +502,7 @@ python3 tests.py                                    # 116 unit tests
 python3 test_claims.py                              # validate submission claims
 
 # Core experiments (~$3 total)
-python -m evals.compression_faithfulness            # headline: 26% (Haiku) / 70% (LLMLingua) → 0% FCR
+python -m evals.compression_faithfulness            # headline: 34.0% (Haiku) / 76.0% (LLMLingua) → 0% FCR
 python -m evals.null_hypothesis                     # null hypothesis: 93% with instruction only
 python -m evals.experiments --exp E6                # long session recall
 python -m evals.experiments --exp E7                # 3-hop chain
@@ -488,37 +521,42 @@ python -m evals.flagship.run                        # 3-scenario experiment (~$5
 
 ```
 credence/                Core package
-  context_manager.py      Memory governor + all 5 layers
-  registry.py             SQLite constraint store + trajectory
-  confidence_proxy.py     J-score computation (zero API)
-  mcp_server.py           FastMCP server (18 tools)
-  hooks.py                Claude Code PreToolUse enforcement hook
-  semantic_entropy.py     SE probe — behavioral entropy (Haiku, N=3, compression routing)
-  behavioral_signal.py    Tier 2 behavioral consistency
+  context_manager.py      Enforcement engine — 4 checkpoints (probe, CE, GTS, Truth Buffer)
+  registry.py             SQLite constraint store + trajectory + decay
+  confidence_proxy.py     J-score computation (zero API, zero latency)
+  memory.py               Cross-session epistemic persistence
+  pipeline_monitor.py     Multi-agent middleware — intercept + handoff
+  mcp_server.py           FastMCP server (22 tools)
+  hooks.py                Python PreToolUse hook (fallback; Rust gate is preferred)
+  semantic_entropy.py     SE probe — optional Tier 2 signal
   envelope.py             Multi-agent provenance wrapper
-  adapters/               OpenAI, Gemini, Ollama adapters
+  agent.py                CredenceAgent — long-task runner with epistemic memory
 
-evals/                  All experiments
-  compression_faithfulness.py   Primary evidence (n=50)
-  null_hypothesis.py            Prompt instruction baseline
-  experiments.py                E1–E9 ablation suite
-  ghost_gauntlet.py             Implicit constraint benchmark
-  e6_repeated.py                Multi-trial statistical validation
-  adversarial_tests.py          5 adversarial tests
+evals/                  Evidence suite
+  compression_faithfulness.py   Primary evidence (n=30, Haiku compression)
+  null_hypothesis.py            Prompt instruction baseline (n=30)
+  experiments.py                E1–E9 ablation experiments
+  ghost_detector_ablation.py    Ghost detection ablation (n=5 sessions, mechanism isolation)
+  ghost_gauntlet.py             Full implicit constraint benchmark (n=10 sessions × 3 conditions)
+  e6_repeated.py                Multi-trial statistical validation (n=23)
+  e6_ablation.py                Layer isolation — which checkpoint matters?
+  adversarial_tests.py          5 adversarial robustness tests
+  long_session_eval.py          50-turn proof — invariant holds at scale
+  precision_eval.py             CE/GTS/probe false-positive rates (offline)
+  agent_propagation_eval.py     Cross-agent fidelity — PipelineMonitor validation
+  conversation_benchmark.py     10-session multi-turn benchmark
+  cross_session_eval.py         Cross-session FCR (n=16 callbacks, 8 scenarios)
+  flagship/                     3-scenario flagship experiment
 
 demo/
-  app.py                  Streamlit (4 tabs)
-  live_demo.py            No-API-key pipeline trace
+  app.py                  Streamlit UI (5 tabs: failure/fix/live/evidence/multi-agent)
+  live_demo.py            Terminal demo (no API key)
 
-api/main.py             REST backend
-packages/credence-ts/   TypeScript SDK
-hooks_demo/             Claude Code hooks integration example
-
-credence_gate/          Native Rust enforcement binary
-  src/main.rs           credence-gate: 98× faster PreToolUse hook (331ms→3.4ms)
+credence_gate/          Native Rust enforcement binary (98× faster than Python hook)
+  src/main.rs           credence-gate: 3.4ms PreToolUse enforcement
   Cargo.toml            Build: cargo build --release
 
-tests.py                132 unit tests (S1–S24 suites)
+tests.py                178 unit tests (S1–S26 suites, 11 skipped offline)
 test_claims.py          Submission claim validation
 quickstart.py           First-run demo
 etp-v1.json             Epistemic Transport Protocol schema

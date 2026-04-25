@@ -900,7 +900,7 @@
       ],
       "chain_complete": true,
       "hops_recalled": 3,
-      "tokens_used": 14732
+      "tokens_used": 14733
     },
     {
       "condition": "naive_window",
@@ -911,7 +911,7 @@
         },
         {
           "hop_id": 2,
-          "recalled": false
+          "recalled": true
         },
         {
           "hop_id": 3,
@@ -919,8 +919,8 @@
         }
       ],
       "chain_complete": false,
-      "hops_recalled": 0,
-      "tokens_used": 13791
+      "hops_recalled": 1,
+      "tokens_used": 13783
     },
     {
       "condition": "credence",
@@ -940,7 +940,7 @@
       ],
       "chain_complete": true,
       "hops_recalled": 3,
-      "tokens_used": 34257
+      "tokens_used": 33951
     }
   ],
   "E1": [
@@ -969,7 +969,7 @@
       "tokens_used": 14277
     },
     {
-      "condition": "cams",
+      "condition": "credence",
       "callback_scores": [
         0.5,
         0.5,
@@ -1006,43 +1006,43 @@
         {
           "question": "What was the exact original error and which file and line number did it occur on?",
           "recall_score": 1.0,
-          "answer": "From my tracked context:\n\n**Original error:**\n- `RuntimeError: dictionary changed size during iteration`\n- File: `payment_processor.py`\n- Line: 147\n- "
+          "answer": "From the established facts I've been tracking:\n\n- **Error:** `RuntimeError: dictionary changed size during iteration`\n- **File:** `payment_processor.p"
         },
         {
           "question": "What two uncertain hypotheses did we have about the root cause?",
           "recall_score": 1.0,
-          "answer": "From my tracked context, your two hypotheses \u2014 both flagged by you as uncertain (\"genuinely not sure\"):\n\n1. *Possibly* a threading issue with the GIL "
+          "answer": "The two uncertain hypotheses, recorded exactly as you stated them:\n\n- **H2** (*uncertain \u2014 could be either or both*): Threading issue with the GIL\n- *"
         },
         {
           "question": "What fix did we try and what happened after we deployed it?",
           "recall_score": 1.0,
-          "answer": "From my tracked context:\n\n**Attempted fix:**\n- Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot before iteratin"
+          "answer": "**Attempted fix:**\n- **F1** (deployed yesterday): Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot before itera"
         }
       ],
       "mean_recall": 1.0,
-      "tokens_used": 44715
+      "tokens_used": 45489
     },
     {
       "condition": "naive_window",
       "callback_logs": [
         {
           "question": "What was the exact original error and which file and line number did it occur on?",
-          "recall_score": 0.4,
-          "answer": "I don't have that information. In our session you described:\n\n- **Error type:** `RuntimeError: dictionary changed size during iteration`\n- **Affected "
+          "recall_score": 0.2,
+          "answer": "I don't have that information \u2014 you haven't shared the original error's file or line number in this conversation.\n\n**What I have on record:**\n- **Orig"
         },
         {
           "question": "What two uncertain hypotheses did we have about the root cause?",
-          "recall_score": 0.16666666666666666,
-          "answer": "I don't have two uncertain hypotheses on record from this session. Looking back at what we actually established:\n\n## What was stated as fact / strong "
+          "recall_score": 0.3333333333333333,
+          "answer": "Looking back at what we've discussed, I'd characterize the uncertainty flags this way:\n\n**1. Whether `list(dict.items())` is fully safe under concurre"
         },
         {
           "question": "What fix did we try and what happened after we deployed it?",
           "recall_score": 1.0,
-          "answer": "## Fix attempted\n\nWrapped the iteration with `list(self.pending_transactions.items())` to iterate over a snapshot instead of the live dict. Deployed y"
+          "answer": "**Attempted fix #1 (deployed yesterday):**\n- Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot of the dict befor"
         }
       ],
-      "mean_recall": 0.5222222222222223,
-      "tokens_used": 32771
+      "mean_recall": 0.5111111111111111,
+      "tokens_used": 32960
     },
     {
       "condition": "credence",
@@ -1050,21 +1050,21 @@
         {
           "question": "What was the exact original error and which file and line number did it occur on?",
           "recall_score": 1.0,
-          "answer": "From the logged state:\n\n- **Exact error**: `RuntimeError: dictionary changed size during iteration`\n- **File**: `payment_processor.py`\n- **Line**: 147"
+          "answer": "From the established facts I've been tracking:\n\n- **Error:** `RuntimeError: dictionary changed size during iteration`\n- **File:** `payment_processor.p"
         },
         {
           "question": "What two uncertain hypotheses did we have about the root cause?",
-          "recall_score": 0.8333333333333334,
-          "answer": "From the logged state, your two hypotheses (flagged: *genuinely not sure which, could be either one, or both*):\n\n1. **Threading issue with the GIL**\n2"
+          "recall_score": 1.0,
+          "answer": "From the tracked hypotheses, both flagged with your exact uncertainty (\"genuinely not sure ... could be either one, or both\"):\n\n- **H1:** Threading is"
         },
         {
           "question": "What fix did we try and what happened after we deployed it?",
           "recall_score": 1.0,
-          "answer": "From the logged state:\n\n**Fix attempted**: Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot of the dict before "
+          "answer": "From the tracked attempted fixes:\n\n**F1:** Wrapped the iteration with `list(self.pending_transactions.items())` to take a snapshot before iterating. D"
         }
       ],
-      "mean_recall": 0.9444444444444445,
-      "tokens_used": 42012
+      "mean_recall": 1.0,
+      "tokens_used": 44945
     }
   ]
 }

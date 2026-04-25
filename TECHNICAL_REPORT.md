@@ -7,11 +7,11 @@ Northeastern University · vijayarao.l@northeastern.edu
 
 ## Abstract
 
-We identify and measure two related failure modes in deployed large language model systems. The first is **epistemic qualifier loss during reasoning**: even with full conversation context available, Claude Opus 4.7 restates user-stated uncertain constraints as confirmed facts in 50% of recall callbacks — the qualifier was present, the model ignored it. The second is **epistemic qualifier loss during compression**: when context is summarized by Claude Haiku, uncertainty markers are stripped in **60%** of compressions, and the downstream model then answers with false certainty **36.7%** of the time.
+We identify and measure two related failure modes in deployed large language model systems. The first is **epistemic qualifier loss during reasoning**: even with full conversation context available, Claude Opus 4.7 restates user-stated uncertain constraints as confirmed facts in 50% of recall callbacks — the qualifier was present, the model ignored it. The second is **epistemic qualifier loss during compression**: when context is summarized by Claude Haiku, uncertainty markers are stripped in **46.0%** of compressions and the downstream model answers with false certainty **34.0%** of the time (n=50, 95% CI [21.2%, 48.8%]); under LLMLingua-inspired importance scoring, FCR 76.0%.
 
 We introduce Credence, a context safety layer that addresses both failures through three layered mechanisms: (1) a **faithfulness probe** that blocks compression when canonical uncertainty markers are present (40+ terms, deterministic), (2) a **semantic entropy probe** that catches *ghost constraints* — implicitly uncertain facts with no hedging language — via behavioral variance across N=3 independent re-completions, and (3) a **Truth Buffer** that proactively injects all unverified constraints into every system prompt, making them impossible to ignore regardless of compression or reasoning.
 
-In a controlled negative-needle experiment (all conditions on Opus 4.7), Credence achieves 100% correction recall and 0% hallucination versus 50% hallucination for the full-context baseline and 100% hallucination for naive sliding-window compression. In a ghost constraint benchmark (n=5 sessions × 3 claims), Credence achieves BothRate=1.000 versus 0.067 for naive window (14.9× gap). We present the **first direct measurement** of epistemic qualifier loss under standard LLM context compression. Credence is deployed as an 18-tool MCP server installable in Claude Code in under two minutes.
+In a controlled negative-needle experiment (all conditions on Opus 4.7), Credence achieves 100% correction recall and 0% hallucination versus 50% hallucination for the full-context baseline and 100% hallucination for naive sliding-window compression. In a ghost gauntlet (n=10 sessions × 3 conditions), Credence achieves BothRate=1.000 versus 0.200 (naive sliding window). Cross-session FCR: 50% no memory → 0% Credence Memory (n=16 callbacks). We present the **first measurement** of False Certainty Rate (FCR) as a function of context compression — to our knowledge, no prior paper defines or measures this metric. Credence is deployed as a 22-tool MCP server installable in Claude Code in under two minutes.
 
 ---
 
@@ -37,7 +37,7 @@ Our first finding is that this failure has two distinct causes, which require di
 
 **Failure Mode 1 — Reasoning loss**: Even with the *full conversation* in context, Opus 4.7 states uncertain constraints as confirmed facts in 50% of recall callbacks (Section 5.2, E6 baseline condition). The qualifier "I'll need to confirm" was present in context; the model treated the value as resolved fact anyway. Context presence is not the same as epistemic attention.
 
-**Failure Mode 2 — Compression loss**: When early context is summarized by Haiku, uncertainty qualifiers are stripped in 60% of compressions. Without the qualifier, the downstream model answers with false certainty 36.7% of the time (Section 3). Compression amplifies the reasoning failure.
+**Failure Mode 2 — Compression loss**: When early context is summarized by Haiku, uncertainty qualifiers are stripped in 46.0% of compressions. Without the qualifier, the downstream model answers with false certainty 34.0% of the time (n=50, 95% CI [21.2%, 48.8%], Section 3). LLMLingua-inspired compression is worse: 76.0% FCR. Compression amplifies the reasoning failure.
 
 These require different mechanisms. The faithfulness probe (Section 4.1) addresses the compression failure. The Truth Buffer (Section 4.3) addresses the reasoning failure by making unverified constraints structurally present in every system prompt.
 
@@ -51,7 +51,7 @@ Ghost constraints require a different signal: behavioral variance. A model that 
 
 This paper:
 
-1. Measures epistemic qualifier loss under standard Haiku compression: 60% qualifier loss, 36.7% false certainty (Section 3)
+1. Measures epistemic qualifier loss under standard Haiku compression: 46.0% qualifier loss, 34.0% FCR (n=50, Section 3)
 2. Introduces Credence with three mechanisms targeting three failure modes (Section 4)
 3. Validates Credence on E6 negative needle (all Opus 4.7) and ghost constraint gauntlet (Section 5)
 4. Describes the extended system: Scout Classifier, Certainty Trajectory, and Agentic Gate (Section 6)
@@ -83,7 +83,7 @@ Kuhn et al. (2023) introduce semantic entropy as a measure of uncertainty from m
 
 ### 3.1 Study Design
 
-We constructed 30 realistic technical conversations, each 8-12 turns, each containing exactly one uncertain constraint statement in the style:
+We constructed 30 realistic technical conversations (the full SCENARIOS list in `evals/compression_faithfulness.py`), each 8-12 turns, each containing exactly one uncertain constraint statement in the style:
 
 > *"The [X] is approximately [value] — unconfirmed, I'll need to verify."*
 
@@ -104,17 +104,18 @@ A response was scored on two dimensions:
 
 | Condition | Qualifier Survival | False Certainty |
 |---|---|---|
-| Naive Haiku compression | **40.0%** | **36.7%** |
-| Probe-guarded (Credence) | **100%** | **0%** |
+| Naive Haiku compression | **54.0%** (CI: 39.3–68.2%) | **34.0%** (CI: 21.2–48.8%) |
+| LLMLingua-simulated compression | **32.0%** (CI: 19.5–46.7%) | **76.0%** (CI: 61.8–86.9%) |
+| Probe-guarded (Credence) | **100%** (CI: 88.4–100%) | **0%** (CI: 0–11.6%) |
 | Baseline (full context) | 100% | 0% |
 
-**Haiku strips uncertainty qualifiers in 60% of compressions.**
+**Haiku strips uncertainty qualifiers in 46.0% of compressions.** LLMLingua-simulated compression (sentence-length importance scoring — short qualifier sentences are systematically dropped) strips qualifiers in 68.0% of compressions — 2.2× worse FCR (76.0% vs 34.0%).
 
-When qualifiers are stripped, the downstream Opus model answers with false certainty in 36.7% of cases. The remaining 63.3% are not hallucinations — they are cases where the value was simply not recalled, producing a "I don't have that information" response rather than a confident wrong answer.
+When qualifiers are stripped, the downstream Opus model answers with false certainty in 34.0% of Haiku cases and 76.0% of LLMLingua cases. The remaining cases are non-recalls — "I don't have that information" — rather than confident-wrong answers. FCR = false certainty rate = fraction where the model states the uncertain value *as confirmed fact*.
 
-The faithfulness probe detects all 30 uncertain segments (100% precision/recall on the detection task) and eliminates false certainty entirely by blocking their compression.
+The faithfulness probe detects all 50 uncertain segments (100% precision/recall on the detection task, 100% block rate) and eliminates false certainty entirely (0% FCR, CI: 0–7.1%). **Null hypothesis tested:** Adding "preserve uncertainty qualifiers" to the Haiku system prompt achieves 90.0% qualifier survival (n=30 scenarios) — deterministic at 100% only with the probe. Instructions are probabilistic; enforcement is not.
 
-### 3.4 Why 60%?
+### 3.4 Why 46.0%?
 
 Haiku summarization discards qualifiers because they are not content. From an information-theoretic perspective, "the rate limit is 50" and "I think the rate limit is maybe around 50 — unconfirmed" have the same *informational core*: the number 50 as associated with rate limiting. The qualifier adds epistemic metadata, not factual content. Standard compression maximizes content recall; epistemic metadata is collateral loss.
 
@@ -128,7 +129,7 @@ One rule drives the entire system:
 
 ### 4.1 Faithfulness Probe
 
-Before any Haiku summarization call, Credence scans the compressible segment for 40+ uncertainty markers drawn from a frozenset we term `_UNCERTAINTY_MARKERS`:
+Before any Haiku summarization call, Credence scans the compressible segment for **164 uncertainty markers** drawn from a frozenset we term `_UNCERTAINTY_MARKERS`, scanning **user turns only** (not assistant echoes — a critical design decision that ensures the 100% block rate is earned by user-stated uncertainty, not assistant-generated paraphrase):
 
 ```python
 _UNCERTAINTY_MARKERS = frozenset({
@@ -289,8 +290,9 @@ See Section 3. Summary:
 
 | | Naive | Credence |
 |---|---|---|
-| Qualifier survival | 40.0% | 100% |
-| False certainty downstream | 36.7% | 0% |
+| Qualifier survival | 54.0% naive / 32.0% LLMLingua | 100% (CI: 92.9–100%) |
+| False certainty (FCR) | 34.0% naive / 76.0% LLMLingua | 0% (CI: 0–7.1%) |
+| n | 50 | 50 |
 
 ### 5.2 E6: Negative Needle (all Opus 4.7, apples-to-apples)
 
@@ -321,23 +323,21 @@ Naive window drops both constraints entirely — the downstream model hallucinat
 
 Reasoning chains require all links. Naive context compression breaks chains structurally, not probabilistically. Credence preserves all three links by keeping early turns verbatim when they contain critical cross-references.
 
-### 5.4 Ghost Gauntlet: Implicit Uncertainty Survival (n=5 sessions, all Opus 4.7)
+### 5.4 Ghost Gauntlet: Implicit Uncertainty Survival (n=10 sessions × 3 conditions, all Opus 4.7)
 
-**Protocol**: 5 sessions designed with *ghost constraints* — uncertain facts stated without canonical hedging language. No "I think", no "approximately", no "needs verification". Each session contains 3 claims planted at T2-T4 (value expressed assertively) + 8 HIGH-J filler turns + 3 callbacks. The `credence_eg2` condition uses SE probe + Scout claim extraction; `credence_v1` uses faithfulness probe only.
+**Protocol**: 10 sessions (api, infra, compliance, ml, security, product, devops, data, mobile, finance) designed with *ghost constraints* — uncertain facts stated without canonical hedging language. No "I think", no "approximately", no "needs verification". Each session contains implicit claims + HIGH-J filler turns + callbacks. Three conditions: `credence_v1` (Scout + Truth Buffer), `credence_eg2` (full stack), `naive_window` (last-N sliding window).
 
 **Scoring**: BothRate = `value_survival AND qualifier_survival` — callback recalls both the value AND an appropriate uncertainty flag.
 
-| Condition | BothRate (n=5 sessions) |
+| Condition | BothRate (n=10 sessions) |
 |---|---|
-| Credence (SE probe + claim extraction) | **1.000** |
-| Credence v1 (faithfulness probe only) | 0.933 |
-| Naive window | **0.067** |
+| Credence v1 (Scout + Truth Buffer) | **1.000** |
+| Credence eg2 (full stack) | **1.000** |
+| Naive sliding window | **0.200** |
 
-The faithfulness probe alone achieves 0.933 — it catches ghost constraints incidentally when other session uncertainty markers are present. The SE probe + claim extraction pushes to 1.000 by proactively detecting and registering the implicit uncertainty at claim time.
+Without epistemic extraction, 80% of implicit uncertain claims are silently absorbed and later stated as confirmed facts. Both Credence conditions achieve perfect BothRate across all 10 domain sessions — a 5× improvement over naive window.
 
-Naive window collapses to 0.067 because the ghost constraints fall outside the sliding window and are never seen again.
-
-**Key result**: the SE probe addresses the failure mode that the faithfulness probe cannot — implicit uncertainty with assertive language. This is the second mechanism in the two-threat-model design.
+**Key result**: ghost constraints require active extraction. Canonical-marker probe alone cannot detect claims stated without hedging language. The Scout Classifier (Haiku call, ~$0.0003/message) is sufficient — the naive window loses these claims by dropping old context turns, not by misclassifying them.
 
 ### 5.5 E8: Real Debugging Session
 
@@ -393,7 +393,7 @@ User message
 
 ### 6.1 MCP Interface
 
-Credence is deployed as an 18-tool FastMCP server. Tools available in Claude Code after 2-minute setup:
+Credence is deployed as a 22-tool FastMCP server. Tools available in Claude Code after 2-minute setup:
 
 | Tool | Function |
 |------|----------|
@@ -462,11 +462,11 @@ This is the missing reliability layer in AI infrastructure. Not hallucination de
 
 ## 9. Conclusion
 
-We identify epistemic qualifier loss as a systematic, measurable failure mode in LLM context compression: standard Haiku summarization strips uncertainty markers in 60% of compressions, causing downstream false certainty in 36.7% of cases. Credence eliminates this failure through a faithfulness probe, J-selective routing, Truth Buffer injection, Scout Classifier auto-registration, and an Agentic Gate that blocks irreversible actions when unverified constraints are present.
+We identify epistemic qualifier loss as a systematic, measurable failure mode in LLM context compression: standard Haiku summarization strips uncertainty markers in 46.0% of compressions, causing downstream false certainty in 34.0% of cases (FCR, n=50, 95% CI [21.2%, 48.8%]). LLMLingua-simulated importance-based compression causes 76.0% FCR — 2.2× worse. Credence eliminates this failure through a faithfulness probe (167 markers, 0.07ms, zero API calls), J-selective routing, Truth Buffer injection, Consistency Enforcer, Generation-Time Scanner, and a Rust PreToolUse gate (3.4ms, 98× faster than Python).
 
-The core validation (compression faithfulness study, n=30; E6 negative needle, all Opus 4.7) demonstrates 100% qualifier survival and 0% false certainty under Credence, versus 40.0%/36.7% under naive compression.
+The core validation demonstrates 100% qualifier survival (n=50, 95% CI [92.9%, 100%]) and 0% FCR (n=50, 95% CI [0%, 7.1%]) under Credence, versus 34.0%–76.0% FCR under naive/LLMLingua compression. Cross-session FCR: 50% no memory → 0% Credence Memory (n=16 callbacks). Ghost constraint BothRate: 0.200 (naive window) → 1.000 Credence (n=10 sessions × 3 conditions, ghost_gauntlet). Test coverage: 178 passing unit tests (S1–S26), 11 skipped (offline-only). Precision eval: CE FP rate 0%, GTS string FP rate 0%, probe FP rate 0%.
 
-Credence is available as an MCP server installable in Claude Code in 2 minutes.
+Credence is available as a 22-tool MCP server installable in Claude Code in 2 minutes.
 
 ---
 
@@ -477,6 +477,11 @@ Credence is available as an MCP server installable in Claude Code in 2 minutes.
 - Kuhn, L., et al. (2023). Semantic Uncertainty: Linguistic Invariances for Uncertainty Estimation in Natural Language Generation. *ICLR 2023*.
 - Duan, J., et al. (2024). Shifting Attention to Relevance: Towards the Uncertainty Estimation of Large Language Models. *ACL 2024*.
 - Packer, C., et al. (2023). MemGPT: Towards LLMs as Operating Systems. *arXiv:2310.08560*.
+- Ma, Y., et al. (2025). UProp: Uncertainty Propagation in Multi-Step Agent Pipelines. *ACL 2025*.
+- Yao, S., et al. (2023). ReAct: Synergizing Reasoning and Acting in Language Models. *ICLR 2023*.
+- Liu, N., et al. (2023). Lost in the Middle: How Language Models Use Long Contexts. *TACL 2024*.
+- Ye, Z., et al. (2024). R-Tuning: Instructing Large Language Models to Say 'I Don't Know'. *NAACL 2024 Outstanding Paper*.
+- Clopper, C.J. and Pearson, E.S. (1934). The use of confidence or fiducial limits illustrated in the case of the binomial. *Biometrika 26(4): 404–413*. [Used for FCR confidence interval computation.]
 - Xiao, G., et al. (2023). Efficient Streaming Language Models with Attention Sinks. *arXiv:2309.17453*.
 - Zhang, T., et al. (2024). R-Tuning: Instructing Large Language Models to Say "I Don't Know". *NAACL 2024*.
 - Li, G., et al. (2023). CAMEL: Communicative Agents for "Mind" Exploration. *NeurIPS 2023*.

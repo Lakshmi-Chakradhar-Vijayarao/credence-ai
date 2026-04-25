@@ -923,6 +923,71 @@ if _FASTMCP_AVAILABLE:
         status = mem.project_status(project_id)
         return status
 
+    @mcp.tool()
+    def credence_pipeline_intercept(
+        agent_output: str,
+        from_session:  str,
+        to_session:    str,
+        use_ghost_detector: bool = False,
+    ) -> dict:
+        """
+        Epistemic middleware for multi-agent pipelines.
+
+        Call this BETWEEN agents — after Agent A produces output and BEFORE
+        Agent B is invoked. The monitor scans Agent A's output for uncertain
+        claims, registers them in the shared registry, and returns a
+        system_block to prepend to Agent B's system prompt.
+
+        Without this tool: Agent A's uncertain estimates arrive at Agent B as
+        apparent facts. Agent B embeds them in code without qualification.
+        With this tool: Agent B's Truth Buffer sees the constraints and enforces
+        qualifier propagation automatically.
+
+        Args:
+            agent_output:       The text output from the upstream agent (Agent A).
+            from_session:       Session ID of the upstream agent.
+            to_session:         Session ID of the downstream agent.
+            use_ghost_detector: If True, use Ghost Detector for implicit claims
+                                (requires ANTHROPIC_API_KEY set server-side).
+                                If False, use probe-only (free, deterministic).
+
+        Returns:
+            system_block:   Prepend this to Agent B's system prompt.
+            n_extracted:    Uncertain claims found in Agent A's output.
+            n_injected:     Claims registered and injected.
+            strategy:       "probe" | "ghost_detector" | "none"
+            has_uncertain:  True if any uncertain claims were found.
+            claims:         List of extracted claims with confidence scores.
+        """
+        from .pipeline_monitor import PipelineMonitor
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        monitor = PipelineMonitor(
+            registry=_get_registry(),
+            api_key=api_key if use_ghost_detector else None,
+            use_ghost_detector=use_ghost_detector,
+        )
+        handoff = monitor.intercept(
+            agent_output=agent_output,
+            from_session=from_session,
+            to_session=to_session,
+        )
+        return {
+            "system_block":  handoff.system_block,
+            "n_extracted":   handoff.n_extracted,
+            "n_injected":    handoff.n_injected,
+            "strategy":      handoff.strategy,
+            "has_uncertain": handoff.has_uncertain,
+            "claims": [
+                {
+                    "content":    c.content,
+                    "confidence": c.confidence,
+                    "source":     c.source,
+                    "cid":        c.cid,
+                }
+                for c in handoff.claims
+            ],
+        }
+
 
 # ---------------------------------------------------------------------------
 # MCP Resources — epistemic:// URI scheme

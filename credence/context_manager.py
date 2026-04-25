@@ -241,6 +241,18 @@ _GTS_CODE_BLOCK  = re.compile(r'(```[^\n]*\n)(.*?)(```)', re.DOTALL)
 _GTS_SKIP_PREFIXES = ("def ", "class ", "import ", "from ", "//", "/*", "*", "#", "@")
 # Prose scanner: split on sentence-ending punctuation followed by whitespace/EOL.
 _GTS_SENTENCE_SPLIT = re.compile(r'(?<=[.!?])\s+')
+# String literal scanner: extract quoted strings from constraint content.
+# Two sub-patterns:
+#   _GTS_STR_EXTRACT: matches any quoted string 3-80 chars (captures spaces too)
+#   _GTS_STR_ASSIGN:  matches string literal on RHS of an assignment in code
+_GTS_STR_EXTRACT = re.compile(r'["\']([^"\']{3,80})["\']')
+# String assignment in code: variable = "value" or variable = 'value'
+_GTS_STR_ASSIGN  = re.compile(r'=\s*["\']([^"\']{2,80})["\']')
+# Unquoted identifier-like values in constraint content.
+# Pattern 1: uppercase identifiers — RS256, AES-256-GCM, HMAC-SHA256
+_GTS_IDENT_EXTRACT = re.compile(r'\b([A-Z][A-Z0-9\-]{2,29})\b')
+# Pattern 2: lowercase hyphenated tokens — us-east-1, eu-west-2, read-write, ap-southeast
+_GTS_HYPHEN_EXTRACT = re.compile(r'\b([a-z]{2,12}(?:-[a-z0-9]{1,12}){1,4})\b')
 
 # ---------------------------------------------------------------------------
 # Confidence Policy Layer
@@ -315,7 +327,7 @@ _UNCERTAINTY_MARKERS = frozenset({
     "probably", "maybe", "provisionally", "preliminary", "supposedly",
     "ambiguous", "unclear", "hasn't clarified", "not yet clarified",
     # Open-question markers — unresolved decisions
-    "unconfirmed", "not confirmed", "open question", "still open",
+    "unconfirmed", "not confirmed", "not yet confirmed", "open question", "still open",
     "needs verification", "need to verify",
     "not yet decided", "not decided", "to be determined", "to be confirmed",
     "haven't confirmed", "haven't verified", "haven't checked",
@@ -347,6 +359,24 @@ _UNCERTAINTY_MARKERS = frozenset({
     "according to the rep", "per the ticket", "per the thread", "vendor claims",
     "sales rep said", "they told us", "our rep mentioned", "the rep said",
     "according to their docs", "per their docs",
+    # Vendor/sales channel — ghost constraint patterns (implicit unverified sources)
+    "per the vendor", "from the vendor", "according to the vendor",
+    "vendor estimate", "vendor ballpark", "vendor said", "vendor mentioned",
+    "sales call", "from the sales call", "during the sales call",
+    "the demo showed", "from the demo", "according to the demo", "per the demo",
+    "account rep said", "the account rep", "sales team said", "the sales team",
+    "from a quote", "per the quote", "based on a quote", "their estimate",
+    "their ballpark", "in their quote", "per their estimate",
+    # Informal / undocumented sources
+    "from a blog post", "i read online", "saw online", "read online",
+    "from a forum", "per a forum post", "from a slack message", "in a slack",
+    "from a tweet", "per a tweet", "someone mentioned", "i heard",
+    "from a stackoverflow", "from stackoverflow", "per stackoverflow", "from stack overflow",
+    "from a reddit post", "per reddit", "saw on reddit", "per a reddit",
+    # Production-untested assertions
+    "not production-tested", "not load-tested", "never tested in production",
+    "works in theory", "should work in theory", "ought to work",
+    "not stress-tested", "not benchmarked in production",
     # Conditional epistemic — depends on unresolved state
     "assuming that", "assuming this is correct", "if that's right",
     "if that's correct", "if i'm reading this right", "if the config is right",
@@ -1176,6 +1206,26 @@ class ContextManager:
             f"The user's original goal: {self._turn1_goal}\n\n"
             if self._turn1_goal else ""
         )
+        # Uncertainty-weighted compression: explicitly enumerate registered unverified
+        # constraints so Haiku must preserve them verbatim, not just "try to preserve
+        # qualifiers" generically. Inspired by LLMLingua-2's importance-scored
+        # preservation — we apply the same principle to epistemic values specifically.
+        _preserve_block = ""
+        if self._registry is not None and self._session_id is not None:
+            try:
+                _uncertain = self._registry.list_uncertain(self._session_id)
+                if _uncertain:
+                    _lines = [
+                        f"  - [{c.get('zone','LOW')}] {c.get('constraint_text','')}"
+                        for c in _uncertain[:8]
+                    ]
+                    _preserve_block = (
+                        "\nCRITICAL — the following constraints are UNVERIFIED. "
+                        "You MUST quote each one verbatim with its uncertainty qualifier:\n"
+                        + "\n".join(_lines) + "\n"
+                    )
+            except Exception:
+                pass
         summary_resp = self.client.messages.create(
             model=self.compression_model,
             messages=[{
@@ -1186,7 +1236,8 @@ class ContextManager:
                     "to continue the conversation toward the user's goal. "
                     "IMPORTANT: if anything was stated as uncertain, approximate, "
                     "or needing verification, explicitly preserve that uncertainty "
-                    "flag in your summary (e.g. 'tentative', 'unverified', 'approx.').\n\n"
+                    "flag in your summary (e.g. 'tentative', 'unverified', 'approx.')."
+                    + _preserve_block + "\n\n"
                     + goal_line
                     + "Conversation segment to summarize:\n\n"
                     + conv_text
@@ -1417,7 +1468,7 @@ class ContextManager:
             return base_prompt, False
 
         uncertain = self._registry.get_relevant_claims(
-            user_message, self._session_id, max_claims=6
+            user_message, self._session_id, max_claims=9999
         )
         if not uncertain:
             return base_prompt, False
@@ -1482,22 +1533,43 @@ class ContextManager:
 
         current_turn = self._turn_idx
 
-        # Build lookup: numeric string → list of constraint dicts (with eff_conf).
-        # Multiple constraints can share the same numeric value (e.g. rate_limit=50,
-        # retry_delay=50). Store all of them; at annotation time we pick the one
-        # whose content words best overlap the code/prose line being annotated.
-        # Only track values with ≥2 digits to avoid false-positives on
+        # Build lookup: value string → list of constraint dicts (with eff_conf).
+        # Covers both numeric literals (50, 3600, 0.95) and string literals
+        # ("/api/v2", "RS256", "read:users") found inside constraint content.
+        # Multiple constraints can share the same value. At annotation time we
+        # pick by content-word overlap; break ties by lowest effective confidence.
+        # Only track numeric values with ≥2 digits to avoid false-positives on
         # common single-digit literals (0, 1, 2, 3 …).
         value_map: dict[str, list[dict]] = {}
+        # str_value_map: maps lowercased string fragment → list of constraints.
+        # Separate from value_map to use different matching logic in Pass 1/2.
+        str_value_map: dict[str, list[dict]] = {}
         for c in constraints:
             eff_conf = self._registry.get_effective_confidence(
                 c["constraint_id"], current_turn
             )
             c = {**c, "eff_conf": eff_conf}
             ctext = c.get("content", "")
+            # Numeric values
             for num in _GTS_NUM_PATTERN.findall(ctext):
                 if len(num.replace(".", "")) >= 2:
                     value_map.setdefault(num, []).append(c)
+            # String literal values: quoted fragments in constraint content
+            for frag in _GTS_STR_EXTRACT.findall(ctext):
+                key = frag.lower()
+                str_value_map.setdefault(key, []).append(c)
+            # Unquoted uppercase identifiers: RS256, AES-256-GCM, etc.
+            # Skip common stop-words that happen to be all-caps
+            _IDENT_SKIP = {"AND", "OR", "NOT", "FOR", "THE", "USE", "API", "URL",
+                           "JWT", "SQL", "CSS", "HTTP", "HTTPS", "JSON", "XML"}
+            for ident in _GTS_IDENT_EXTRACT.findall(ctext):
+                if ident not in _IDENT_SKIP:
+                    str_value_map.setdefault(ident.lower(), []).append(c)
+            # Lowercase hyphenated region/env tokens: us-east-1, eu-west-2, read-write, etc.
+            _HYPHEN_SKIP = {"not-yet", "to-be", "in-the", "of-the", "out-of", "based-on"}
+            for token in _GTS_HYPHEN_EXTRACT.findall(ctext):
+                if token not in _HYPHEN_SKIP and len(token) >= 5:
+                    str_value_map.setdefault(token.lower(), []).append(c)
 
         def _best_constraint(num: str, line_context: str) -> dict:
             """
@@ -1522,7 +1594,7 @@ class ContextManager:
                     best, best_score = cand, score
             return best
 
-        if not value_map:
+        if not value_map and not str_value_map:
             return response_text, []
 
         scan_hits: list[dict] = []
@@ -1574,6 +1646,8 @@ class ContextManager:
                     continue
 
                 annotated = line
+                matched = False
+                # Pass 1a: numeric literal assignments  (e.g. RATE_LIMIT = 50)
                 for num in value_map:
                     if re.search(r"=\s*" + re.escape(num) + r"\b", line):
                         c       = _best_constraint(num, line)
@@ -1592,7 +1666,31 @@ class ContextManager:
                             "line":            stripped,
                             "source":          "code",
                         })
+                        matched = True
                         break
+                # Pass 1b: string literal assignments  (e.g. SCOPE = "read:users")
+                if not matched and str_value_map:
+                    for m in _GTS_STR_ASSIGN.finditer(line):
+                        frag_key = m.group(1).lower()
+                        if frag_key in str_value_map:
+                            c_list  = str_value_map[frag_key]
+                            c       = c_list[0]
+                            ctext   = c.get("content", "")
+                            cid     = c.get("constraint_id", "?")
+                            snippet = ctext[:55].replace("\n", " ")
+                            if len(ctext) > 55:
+                                snippet += "…"
+                            suffix  = _policy_annotation(c, snippet, for_code=True)
+                            annotated = line.rstrip() + suffix
+                            scan_hits.append({
+                                "value":           m.group(1),
+                                "constraint_id":   cid,
+                                "constraint_text": ctext[:80],
+                                "eff_conf":        round(c.get("eff_conf", 0.30), 3),
+                                "line":            stripped,
+                                "source":          "code_string",
+                            })
+                            break
                 out.append(annotated)
             return "\n".join(out)
 
@@ -1608,10 +1706,13 @@ class ContextManager:
             sentences = _GTS_SENTENCE_SPLIT.split(prose)
             out: list[str] = []
             for sent in sentences:
+                if "CREDENCE:" in sent:
+                    out.append(sent)
+                    continue
                 annotated = sent
+                matched = False
+                # Pass 2a: numeric value in prose sentence
                 for num in value_map:
-                    if "CREDENCE:" in sent:
-                        break
                     if re.search(r'\b' + re.escape(num) + r'\b', sent):
                         c       = _best_constraint(num, sent)
                         ctext   = c.get("content", "")
@@ -1629,7 +1730,30 @@ class ContextManager:
                             "line":            sent[:80],
                             "source":          "prose",
                         })
+                        matched = True
                         break
+                # Pass 2b: string fragment in prose sentence
+                if not matched and str_value_map:
+                    sent_lower = sent.lower()
+                    for frag_key, c_list in str_value_map.items():
+                        if len(frag_key) >= 4 and frag_key in sent_lower:
+                            c       = c_list[0]
+                            ctext   = c.get("content", "")
+                            cid     = c.get("constraint_id", "?")
+                            snippet = ctext[:60].replace("\n", " ")
+                            if len(ctext) > 60:
+                                snippet += "…"
+                            suffix  = _policy_annotation(c, snippet, for_code=False)
+                            annotated = sent.rstrip() + suffix
+                            scan_hits.append({
+                                "value":           frag_key,
+                                "constraint_id":   cid,
+                                "constraint_text": ctext[:80],
+                                "eff_conf":        round(c.get("eff_conf", 0.30), 3),
+                                "line":            sent[:80],
+                                "source":          "prose_string",
+                            })
+                            break
                 out.append(annotated)
             return "  ".join(out) if len(out) > 1 else (out[0] if out else prose)
 
@@ -1667,7 +1791,11 @@ class ContextManager:
         _query_ctx = getattr(self, '_current_user_message', '')
         current_turn = self._turn_idx
         if _query_ctx:
-            uncertain = self._registry.get_relevant_claims(_query_ctx, self._session_id, max_claims=6)
+            # No hard cap — show ALL unverified constraints, relevance-ranked.
+            # Directly relevant ones first; remaining sorted by staleness.
+            uncertain = self._registry.get_relevant_claims(
+                _query_ctx, self._session_id, max_claims=9999
+            )
             # Augment with effective_confidence if not already present
             for c in uncertain:
                 if "effective_confidence" not in c:
@@ -1676,7 +1804,7 @@ class ContextManager:
                     )
         else:
             uncertain = self._registry.get_effective_uncertain(
-                self._session_id, current_turn=current_turn, max_claims=6
+                self._session_id, current_turn=current_turn, max_claims=9999
             )
         if not uncertain:
             return self.system_prompt
@@ -1698,20 +1826,10 @@ class ContextManager:
                 return f"• [{zone}, conf={eff:.2f}] {content}"
             return f"• [{zone}] {content}"
 
-        # Count total unverified constraints to detect truncation
-        all_uncertain_count = len(self._registry.list_uncertain(self._session_id))
-        truncated = all_uncertain_count > len(uncertain)
-
         lines = "\n".join(_constraint_label(c) for c in uncertain)
-        truncation_note = (
-            f"\n(Note: {all_uncertain_count - len(uncertain)} additional unverified "
-            f"constraint(s) exist but are not shown here — verify all pending "
-            f"constraints before finalizing decisions.)"
-            if truncated else ""
-        )
         block = (
             "EPISTEMIC CONTEXT — UNVERIFIED CONSTRAINTS (DISPUTED first, then by staleness):\n"
-            f"{lines}{truncation_note}\n"
+            f"{lines}\n"
             "When discussing topics related to these constraints, always acknowledge "
             "their uncertain status. Do not treat them as confirmed facts."
         )

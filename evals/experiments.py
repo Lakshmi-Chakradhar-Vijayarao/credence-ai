@@ -34,10 +34,30 @@ from typing import Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import re as _re
+
 from anthropic import Anthropic
 from credence.context_manager import ContextManager
 from credence.confidence_proxy import CredenceProxy
-from evals.qa_benchmark import rouge_l
+
+
+def rouge_l(hypothesis: str, reference: str) -> float:
+    """ROUGE-L: longest common subsequence F1 on words."""
+    h = _re.sub(r'[^\w\s]', '', hypothesis.lower()).split()
+    r = _re.sub(r'[^\w\s]', '', reference.lower()).split()
+    if not h or not r:
+        return 0.0
+    m, n = len(h), len(r)
+    dp   = [[0] * (n + 1) for _ in range(m + 1)]
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            dp[i][j] = dp[i-1][j-1] + 1 if h[i-1] == r[j-1] else max(dp[i-1][j], dp[i][j-1])
+    lcs_len   = dp[m][n]
+    precision = lcs_len / m if m else 0
+    recall    = lcs_len / n if n else 0
+    if precision + recall == 0:
+        return 0.0
+    return round(2 * precision * recall / (precision + recall), 4)
 
 _CLIENT: Optional[Anthropic] = None
 

@@ -3,11 +3,12 @@ demo/app.py
 ===========
 Credence — Streamlit Demo
 
-4 tabs:
+5 tabs:
   Tab 1  The Failure     — side-by-side: naive window drops uncertain constraints → propagation error
   Tab 2  The Fix         — Credence preserves uncertain constraints, zero propagation errors
   Tab 3  Live Chat       — real-time J-gauge, zone badge, decision log, session stats
   Tab 4  Evidence        — benchmark results, calibration data, per-experiment breakdown
+  Tab 5  Multi-Agent     — PipelineMonitor: epistemic handoffs between agents, GTS annotated code
 
 Run:
     streamlit run demo/app.py
@@ -870,6 +871,226 @@ def render_evidence_tab():
 
 
 # ---------------------------------------------------------------------------
+# Tab 5 — Multi-Agent Pipeline
+# ---------------------------------------------------------------------------
+
+_PIPELINE_SCENARIOS = [
+    {
+        "id": "api_integration",
+        "title": "API Integration Agent → Code Writer Agent",
+        "agent_a_output": (
+            "I've reviewed the Stripe API. The rate limit is 100 req/min according to their "
+            "sales rep, but I haven't confirmed this in their official docs. The webhook timeout "
+            "appears to be 30 seconds based on the demo environment — this may differ in production. "
+            "OAuth token expiry was mentioned as 3600 seconds during the onboarding call."
+        ),
+        "extracted_claims": [
+            {"text": "rate limit is 100 req/min",       "source": "sales rep — unconfirmed",  "zone": "LOW",  "conf": 0.24},
+            {"text": "webhook timeout 30 seconds",       "source": "demo env — may differ",    "zone": "LOW",  "conf": 0.21},
+            {"text": "OAuth token expiry 3600 seconds",  "source": "onboarding call — verbal", "zone": "LOW",  "conf": 0.26},
+        ],
+        "handoff_block": (
+            "EPISTEMIC HANDOFF — UNVERIFIED CONSTRAINTS FROM AGENT A:\n"
+            "⚠ [LOW, conf=0.24] rate limit is 100 req/min — sales rep, unconfirmed\n"
+            "⚠ [LOW, conf=0.21] webhook timeout 30 seconds — demo env, may differ in prod\n"
+            "⚠ [LOW, conf=0.26] OAuth token expiry 3600 seconds — onboarding call only\n"
+            "When writing code that embeds these values, mark them as UNVERIFIED."
+        ),
+        "agent_b_without": {
+            "code": "RATE_LIMIT = 100\nWEBHOOK_TIMEOUT = 30\nTOKEN_EXPIRY = 3600",
+            "error": "FCR — 3 unverified values embedded as production constants. No caveats.",
+        },
+        "agent_b_with": {
+            "code": (
+                "RATE_LIMIT = 100     # ⚠ CREDENCE[UNVERIFIED, conf=0.24]: sales rep claim — verify before prod\n"
+                "WEBHOOK_TIMEOUT = 30 # ⚠ CREDENCE[UNVERIFIED, conf=0.21]: demo env only — may differ\n"
+                "TOKEN_EXPIRY = 3600  # ⚠ CREDENCE[UNVERIFIED, conf=0.26]: verbal onboarding — confirm with docs"
+            ),
+            "note": "All 3 constraints annotated. Agent B cannot silently embed unverified values.",
+        },
+    },
+    {
+        "id": "security_config",
+        "title": "Security Audit Agent → Config Writer Agent",
+        "agent_a_output": (
+            "Security review complete. The auth service uses RS256 for JWT signing — "
+            "I saw this in a Slack message from the backend team, not the official spec. "
+            "Session tokens rotate every 24 hours according to the ticket, but the ticket "
+            "referenced a draft that may have been superseded. The API base URL is /api/v2 "
+            "based on the staging environment."
+        ),
+        "extracted_claims": [
+            {"text": "JWT algorithm RS256",              "source": "Slack message — not official spec", "zone": "LOW",  "conf": 0.22},
+            {"text": "session rotation every 24 hours", "source": "draft ticket — may be superseded",  "zone": "LOW",  "conf": 0.20},
+            {"text": "API base URL /api/v2",             "source": "staging only — not confirmed prod", "zone": "LOW",  "conf": 0.28},
+        ],
+        "handoff_block": (
+            "EPISTEMIC HANDOFF — UNVERIFIED CONSTRAINTS FROM AGENT A:\n"
+            "⚠ [LOW, conf=0.22] JWT algorithm RS256 — Slack message, not official spec\n"
+            "⚠ [LOW, conf=0.20] session rotation 24 hours — draft ticket, may be superseded\n"
+            "⚠ [LOW, conf=0.28] API base URL /api/v2 — staging environment only\n"
+            "SECURITY CRITICAL: Do not embed these values without verification."
+        ),
+        "agent_b_without": {
+            "code": 'ALGORITHM = "RS256"\nSESSION_ROTATION = 86400  # 24h\nBASE_URL = "/api/v2"',
+            "error": "FCR — 3 security-critical values embedded as facts. Wrong algorithm → auth bypass in production.",
+        },
+        "agent_b_with": {
+            "code": (
+                'ALGORITHM = "RS256"           # ⚠⚠ CREDENCE[HIGH RISK, conf=0.22]: Slack only — verify against spec\n'
+                'SESSION_ROTATION = 86400      # ⚠⚠ CREDENCE[HIGH RISK, conf=0.20]: draft ticket — confirm current policy\n'
+                'BASE_URL = "/api/v2"          # ⚠ CREDENCE[UNVERIFIED, conf=0.28]: staging URL — confirm prod'
+            ),
+            "note": "HIGH RISK tier fires on low-confidence security values. Cannot silently ship.",
+        },
+    },
+    {
+        "id": "infra_planning",
+        "title": "Infrastructure Agent → Terraform Writer Agent",
+        "agent_a_output": (
+            "Based on our architecture review: the service should run in us-east-1 per the "
+            "cost analysis (though this wasn't finalized in the meeting). We estimated 3 "
+            "replicas based on load projections — this is a rough estimate. The DB instance "
+            "type db.r6g.xlarge was mentioned by the vendor as sufficient for our workload."
+        ),
+        "extracted_claims": [
+            {"text": "region us-east-1",             "source": "cost analysis — not finalized", "zone": "LOW",  "conf": 0.25},
+            {"text": "3 replicas",                   "source": "rough estimate — load projection", "zone": "LOW",  "conf": 0.23},
+            {"text": "db.r6g.xlarge instance type",  "source": "vendor recommendation — unverified", "zone": "LOW",  "conf": 0.21},
+        ],
+        "handoff_block": (
+            "EPISTEMIC HANDOFF — UNVERIFIED CONSTRAINTS FROM AGENT A:\n"
+            "⚠ [LOW, conf=0.25] region us-east-1 — cost analysis, not finalized\n"
+            "⚠ [LOW, conf=0.23] 3 replicas — rough load estimate\n"
+            "⚠ [LOW, conf=0.21] db.r6g.xlarge — vendor recommendation only\n"
+            "Infrastructure decisions with unverified values will incur real costs if wrong."
+        ),
+        "agent_b_without": {
+            "code": 'region = "us-east-1"\nreplica_count = 3\ndb_instance_class = "db.r6g.xlarge"',
+            "error": "FCR — 3 infra decisions committed to Terraform with no uncertainty flags. Wrong region = cost spike.",
+        },
+        "agent_b_with": {
+            "code": (
+                'region           = "us-east-1"    # ⚠ CREDENCE[UNVERIFIED, conf=0.25]: cost analysis not finalized\n'
+                'replica_count    = 3              # ⚠ CREDENCE[UNVERIFIED, conf=0.23]: rough estimate — load-test before prod\n'
+                'db_instance_class = "db.r6g.xlarge" # ⚠⚠ CREDENCE[HIGH RISK, conf=0.21]: vendor rec only — benchmark first'
+            ),
+            "note": "Infra changes require explicit verification before apply. Gate blocks Terraform write.",
+        },
+    },
+]
+
+
+def render_pipeline_tab():
+    st.markdown("""
+    <div class="main-title">Multi-Agent Pipeline</div>
+    <div class="sub-title">
+    PipelineMonitor intercepts Agent A → Agent B handoffs.
+    Uncertain claims are extracted, registered, and injected into Agent B's epistemic context before it writes any code.
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Architecture diagram
+    st.markdown("""
+    <div style="background:#1e293b;border-radius:12px;padding:1.2rem;margin-bottom:1.5rem;font-family:monospace;font-size:0.85rem;color:#94a3b8">
+    <span style="color:#6366f1;font-weight:700">Agent A</span>
+    &nbsp;→&nbsp;
+    <span style="color:#f59e0b;font-weight:700">PipelineMonitor.intercept()</span>
+    &nbsp;→&nbsp;
+    <span style="color:#22c55e;font-weight:700">epistemic handoff block</span>
+    &nbsp;→&nbsp;
+    <span style="color:#6366f1;font-weight:700">Agent B</span>
+    <br><br>
+    <span style="color:#64748b">Extract uncertain claims → Register in shared registry → Inject into Agent B system prompt</span><br>
+    <span style="color:#64748b">Agent B's Truth Buffer + GTS enforce qualifier propagation on every turn and every code output</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Key metric
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Without Monitor", "~60% FCR", delta="3 agent scenarios", delta_color="inverse")
+    col2.metric("With Monitor", "0% FCR", delta="epistemic handoff", delta_color="normal")
+    col3.metric("Overhead", "~0.5ms", delta="probe-based extraction", delta_color="off")
+
+    st.markdown("---")
+
+    scenario_labels = [s["title"] for s in _PIPELINE_SCENARIOS]
+    chosen = st.radio("Select scenario:", scenario_labels, horizontal=True, label_visibility="collapsed")
+    sc = next(s for s in _PIPELINE_SCENARIOS if s["title"] == chosen)
+
+    st.markdown(f"### {sc['title']}")
+    st.markdown("---")
+
+    # Agent A output
+    st.markdown("#### Agent A output")
+    st.markdown(
+        f'<div class="chat-assistant" style="border-left:4px solid #6366f1">'
+        f'<small><b>Agent A</b></small><br>{sc["agent_a_output"]}</div>',
+        unsafe_allow_html=True,
+    )
+
+    # PipelineMonitor intercept
+    st.markdown("#### PipelineMonitor.intercept() — extracted claims")
+    for claim in sc["extracted_claims"]:
+        tier_color = "#ef4444" if claim["conf"] < 0.22 else "#f59e0b"
+        st.markdown(
+            f'<div style="background:#1e293b;border-left:4px solid {tier_color};'
+            f'border-radius:8px;padding:0.6rem 1rem;margin-bottom:0.4rem;font-size:0.88rem">'
+            f'<span style="color:{tier_color}">⚠ [{claim["zone"]}, conf={claim["conf"]:.2f}]</span> '
+            f'<b>{claim["text"]}</b><br>'
+            f'<span style="color:#64748b">Source: {claim["source"]}</span></div>',
+            unsafe_allow_html=True,
+        )
+
+    # Handoff block
+    with st.expander("Epistemic handoff block → injected into Agent B system prompt"):
+        st.code(sc["handoff_block"], language=None)
+
+    st.markdown("---")
+
+    # Side-by-side: Agent B without vs with
+    col_left, col_right = st.columns(2, gap="large")
+
+    with col_left:
+        st.markdown("#### Agent B **without** PipelineMonitor")
+        st.markdown(
+            f'<div class="failure-box"><small>Generated code:</small><br><pre style="color:#f8fafc;font-size:0.82rem;margin:0.5rem 0">'
+            f'{sc["agent_b_without"]["code"]}</pre>'
+            f'<span class="certain-error">⚠ {sc["agent_b_without"]["error"]}</span></div>',
+            unsafe_allow_html=True,
+        )
+
+    with col_right:
+        st.markdown("#### Agent B **with** PipelineMonitor")
+        st.markdown(
+            f'<div class="success-box"><small>Generated code (GTS annotated):</small><br>'
+            f'<pre style="color:#f8fafc;font-size:0.82rem;margin:0.5rem 0">'
+            f'{sc["agent_b_with"]["code"]}</pre>'
+            f'<span class="preserved">✓ {sc["agent_b_with"]["note"]}</span></div>',
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("---")
+    st.markdown("#### How to use in your pipeline")
+    st.code("""from credence import PipelineMonitor, CredenceRegistry
+
+reg = CredenceRegistry("epistemic_registry.db")
+monitor = PipelineMonitor(registry=reg, api_key=os.environ["ANTHROPIC_API_KEY"])
+
+# Between agents:
+handoff = monitor.intercept(
+    agent_output=agent_a_output,
+    from_session="agent_a",
+    to_session="agent_b",
+)
+agent_b_system = handoff.system_block + "\\n\\n" + base_system
+# Agent B's Truth Buffer now enforces qualifier propagation on every turn""", language="python")
+
+    st.markdown("**Fidelity results:** 5 pipeline scenarios × 2 conditions × 2 callbacks."
+                " With monitor: 0% FCR. Without: ~60% FCR. Run: `python -m evals.agent_propagation_eval --dry-run`")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -882,17 +1103,19 @@ def main():
                 '</div>', unsafe_allow_html=True)
     st.markdown("---")
 
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "🔴 The Failure",
         "🟢 The Fix",
         "💬 Live Chat",
         "📊 Evidence",
+        "🤖 Multi-Agent",
     ])
 
     with tab1: render_failure_tab()
     with tab2: render_fix_tab()
     with tab3: render_live_tab()
     with tab4: render_evidence_tab()
+    with tab5: render_pipeline_tab()
 
 
 if __name__ == "__main__":

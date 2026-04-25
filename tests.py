@@ -1,5 +1,5 @@
 """
-tests.py — Unit and component tests for Credence (132 passing, S1–S24 suites).
+tests.py — Unit and component tests for Credence (167 passing, 11 skipped, S1–S26 suites).
 
 Tests every identified risk from the codebase audit:
   - Null/empty inputs to all public methods
@@ -350,7 +350,7 @@ try:
           "EPISTEMIC CONTEXT" not in augmented,
           f"Unexpected injection: {augmented[:200]!r}")
 
-    # S6-B: >6 unverified constraints → Truth Buffer only shows ≤6
+    # S6-B: >6 unverified constraints → Truth Buffer shows ALL (no silent drop)
     reg_s6b = CredenceRegistry(":memory:")
     cids_s6b = []
     for i in range(10):
@@ -362,10 +362,10 @@ try:
     mgr_s6b = ContextManager(api_key=api_key, registry=reg_s6b, session_id="s6b")
     mgr_s6b._current_user_message = ""  # no query context → uses get_effective_uncertain
     augmented_b = mgr_s6b._augment_with_truth_buffer()
-    # Count bullet-point entries in the injection block
+    # All 10 must appear — no silent drop
     bullet_count = augmented_b.count("• [")
-    check("S6-B 10 constraints → only ≤6 shown in TB", bullet_count <= 6,
-          f"Counted {bullet_count} bullets, expected ≤6")
+    check("S6-B 10 constraints → all 10 shown in TB (no silent drop)", bullet_count == 10,
+          f"Counted {bullet_count} bullets, expected 10")
     check("S6-B all 10 still in registry",
           len(reg_s6b.list_uncertain("s6b")) == 10,
           f"Registry has {len(reg_s6b.list_uncertain('s6b'))} entries")
@@ -1261,7 +1261,7 @@ try:
           probe_user,
           "probe missed user-stated 'I think / might be'")
 
-    # --- S21-H: TB truncation disclosure present when >6 constraints -------------
+    # --- S21-H: TB shows ALL constraints with no cap (invariant: nothing silently dropped) ---
     reg21c = CredenceRegistry(":memory:")
     for i in range(8):
         reg21c.register(f"Claim {i} — value {100+i} unconfirmed", "s21c",
@@ -1274,21 +1274,22 @@ try:
     mgr21c._pending_alignment_caveat = None
     mgr21c._current_user_message = ""
     tb = mgr21c._augment_with_truth_buffer()
-    check("S21-H TB discloses truncation when >6 constraints",
-          "additional unverified" in tb,
-          "truncation disclosure missing from TB injection")
+    bullet_count_21h = tb.count("• [")
+    check("S21-H TB shows all 8 constraints (no silent drop, no truncation)",
+          bullet_count_21h == 8,
+          f"Expected 8 bullets, got {bullet_count_21h}")
 
-    # --- S21-I: String-valued constraint — GTS correctly misses it (documented gap)
+    # --- S21-I: String-aware GTS — catches unquoted identifier in string literal assignment
     reg21d = CredenceRegistry(":memory:")
-    reg21d.register("The API uses OAuth2 — unconfirmed", "s21d", j_score=0.3, zone="LOW")
+    reg21d.register('The API uses "RS256" signing — per vendor docs, unconfirmed', "s21d",
+                    j_score=0.3, zone="LOW")
     mgr21d = ContextManager(api_key="dummy", registry=reg21d, session_id="s21d")
     mgr21d._turn_idx = 2
-    code_str = '```python\nauth_method = "oauth2"\n```'
+    code_str = '```python\nALGORITHM = "RS256"\n```'
     _, hits_str = mgr21d._scan_output_for_constraints(code_str)
-    check("S21-I string-valued constraint correctly NOT annotated by GTS (documented gap)",
-          len(hits_str) == 0,
-          f"GTS unexpectedly annotated string assignment: {hits_str}")
-    # This is a known limitation — document it but don't hide it
+    check("S21-I string GTS catches quoted identifier (RS256) in code assignment",
+          len(hits_str) >= 1,
+          f"GTS missed string literal assignment. hits={hits_str}")
 
 except Exception as e:
     import traceback
@@ -1590,6 +1591,278 @@ except Exception as e:
     import traceback
     for name in ["S24-A","S24-B","S24-C","S24-D","S24-E","S24-F","S24-G",
                  "S24-H","S24-I","S24-J","S24-K","S24-L"]:
+        check(name, False, f"exception: {e}")
+    traceback.print_exc()
+
+section("S25: String GTS, TB no-cap invariant, vendor markers")
+# ─────────────────────────────────────────────────────────────────────────────
+# S25 — String-aware GTS, TB no-cap invariant, expanded vendor markers
+# Tests the three improvements added in the production hardening pass:
+#   1. String GTS catches non-numeric values (endpoints, scopes, identifiers)
+#   2. Truth Buffer shows ALL constraints — no silent drop above any threshold
+#   3. Vendor/source language markers trigger the faithfulness probe
+# ─────────────────────────────────────────────────────────────────────────────
+print("\n── S25: String GTS, TB no-cap invariant, vendor markers ─────────────────")
+try:
+    from credence.context_manager import ContextManager, _UNCERTAINTY_MARKERS
+    from credence.registry import CredenceRegistry
+
+    def _has_uncertainty(text: str) -> bool:
+        lower = text.lower()
+        return any(m in lower for m in _UNCERTAINTY_MARKERS)
+
+    # --- S25-A: String GTS — quoted path fragment caught ---
+    reg25a = CredenceRegistry(":memory:")
+    reg25a.register('API base URL is "/api/v2" — tentative, not confirmed', "s25a",
+                    j_score=0.25, zone="LOW")
+    mgr25a = ContextManager(api_key=api_key, registry=reg25a, session_id="s25a")
+    code_a = '```python\nBASE_URL = "/api/v2"\nTIMEOUT = 30\n```'
+    _, hits_a = mgr25a._scan_output_for_constraints(code_a)
+    check("S25-A string GTS catches quoted path /api/v2 in code assignment",
+          any(h["source"] in ("code_string",) for h in hits_a),
+          f"No code_string hits. hits={hits_a}")
+
+    # --- S25-B: String GTS — OAuth scope fragment caught ---
+    reg25b = CredenceRegistry(":memory:")
+    reg25b.register('The OAuth scope should be "read:users write:users" — from vendor call',
+                    "s25b", j_score=0.30, zone="LOW")
+    mgr25b = ContextManager(api_key=api_key, registry=reg25b, session_id="s25b")
+    code_b = '```python\nOAUTH_SCOPE = "read:users write:users"\n```'
+    _, hits_b = mgr25b._scan_output_for_constraints(code_b)
+    check("S25-B string GTS catches OAuth scope fragment",
+          len(hits_b) >= 1 and "read:users write:users" in hits_b[0]["value"],
+          f"hits={hits_b}")
+
+    # --- S25-C: String GTS — uppercase identifier caught (RS256) ---
+    reg25c = CredenceRegistry(":memory:")
+    reg25c.register("Encryption algorithm is RS256 — per vendor docs, unconfirmed",
+                    "s25c", j_score=0.28, zone="LOW")
+    mgr25c = ContextManager(api_key=api_key, registry=reg25c, session_id="s25c")
+    code_c = '```python\nALGORITHM = "RS256"\n```'
+    _, hits_c = mgr25c._scan_output_for_constraints(code_c)
+    check("S25-C string GTS catches uppercase identifier RS256",
+          len(hits_c) >= 1,
+          f"No hits for RS256. hits={hits_c}")
+
+    # --- S25-D: String GTS — hyphenated region identifier caught (us-east-1) ---
+    reg25d = CredenceRegistry(":memory:")
+    reg25d.register("AWS region is us-east-1 — from the sales call, not confirmed",
+                    "s25d", j_score=0.25, zone="LOW")
+    mgr25d = ContextManager(api_key=api_key, registry=reg25d, session_id="s25d")
+    code_d = '```python\nAWS_REGION = "us-east-1"\n```'
+    _, hits_d = mgr25d._scan_output_for_constraints(code_d)
+    check("S25-D string GTS catches hyphenated region us-east-1",
+          len(hits_d) >= 1,
+          f"No hits for us-east-1. hits={hits_d}")
+
+    # --- S25-E: TB no-cap — 15 constraints all shown in Truth Buffer ---
+    reg25e = CredenceRegistry(":memory:")
+    for i in range(15):
+        reg25e.register(f"Unverified constraint {i}: value {(i+1)*10} — unconfirmed",
+                        "s25e", j_score=0.28, zone="LOW")
+    mgr25e = ContextManager(api_key=api_key, registry=reg25e, session_id="s25e")
+    mgr25e._current_user_message = ""
+    tb_15 = mgr25e._augment_with_truth_buffer()
+    bullet_count_25e = tb_15.count("• [")
+    check("S25-E TB no-cap: all 15 constraints shown (no silent drop)",
+          bullet_count_25e == 15,
+          f"Expected 15 bullets, got {bullet_count_25e}")
+
+    # --- S25-F: TB no-cap — 20 constraints all shown ---
+    reg25f = CredenceRegistry(":memory:")
+    for i in range(20):
+        reg25f.register(f"Constraint {i}: rate {(i+1)*5} req/s — unconfirmed",
+                        "s25f", j_score=0.30, zone="LOW")
+    mgr25f = ContextManager(api_key=api_key, registry=reg25f, session_id="s25f")
+    mgr25f._current_user_message = ""
+    tb_20 = mgr25f._augment_with_truth_buffer()
+    bullet_count_25f = tb_20.count("• [")
+    check("S25-F TB no-cap: all 20 constraints shown",
+          bullet_count_25f == 20,
+          f"Expected 20 bullets, got {bullet_count_25f}")
+
+    # --- S25-G: Vendor markers — 'sales call' triggers probe ---
+    check("S25-G 'sales call' in _UNCERTAINTY_MARKERS",
+          "sales call" in _UNCERTAINTY_MARKERS, "'sales call' missing from markers")
+    text_g = "The rate limit is 100 req/min — got this from the sales call, not confirmed"
+    check("S25-G probe fires on 'sales call' in user text",
+          _has_uncertainty(text_g), f"probe did not fire on: {text_g!r}")
+
+    # --- S25-H: Vendor markers — 'per the vendor' triggers probe ---
+    check("S25-H 'per the vendor' in _UNCERTAINTY_MARKERS",
+          "per the vendor" in _UNCERTAINTY_MARKERS, "'per the vendor' missing from markers")
+    text_h = "Token expiry is 3600s per the vendor — haven't verified"
+    check("S25-H probe fires on 'per the vendor'",
+          _has_uncertainty(text_h), f"probe did not fire on: {text_h!r}")
+
+    # --- S25-I: Vendor markers — 'from the demo' triggers probe ---
+    check("S25-I 'from the demo' in _UNCERTAINTY_MARKERS",
+          "from the demo" in _UNCERTAINTY_MARKERS, "'from the demo' missing from markers")
+    text_i = "Peak load is 500 concurrent users — that's what from the demo showed"
+    check("S25-I probe fires on 'from the demo'",
+          _has_uncertainty(text_i), f"probe did not fire on: {text_i!r}")
+
+    # --- S25-J: Vendor markers — 'not load-tested' triggers probe ---
+    check("S25-J 'not load-tested' in _UNCERTAINTY_MARKERS",
+          "not load-tested" in _UNCERTAINTY_MARKERS, "'not load-tested' missing from markers")
+    text_j = "Memory per pod is 2GB — not load-tested yet"
+    check("S25-J probe fires on 'not load-tested'",
+          _has_uncertainty(text_j), f"probe did not fire on: {text_j!r}")
+
+    # --- S25-K: No false positive — confident text does NOT trigger probe ---
+    definitive_texts = [
+        "The rate limit is confirmed at 100 req/min.",
+        "Token expiry is set to 3600 seconds in production.",
+        "The vendor confirmed RS256 as the signing algorithm.",
+        "AWS region us-east-1 is verified in the deployment config.",
+    ]
+    false_positives = [t for t in definitive_texts if _has_uncertainty(t)]
+    check("S25-K no false positives on definitive statements",
+          len(false_positives) == 0,
+          f"False positives: {false_positives}")
+
+    # --- S25-L: String GTS — numeric constraint still works alongside string ---
+    reg25l = CredenceRegistry(":memory:")
+    reg25l.register('Rate limit is probably 50 req/min — unverified', "s25l", j_score=0.28, zone="LOW")
+    reg25l.register('Auth endpoint is "/auth/v2/token" — tentative', "s25l", j_score=0.25, zone="LOW")
+    mgr25l = ContextManager(api_key=api_key, registry=reg25l, session_id="s25l")
+    code_l = '```python\nRATE_LIMIT = 50\nAUTH_ENDPOINT = "/auth/v2/token"\n```'
+    _, hits_l = mgr25l._scan_output_for_constraints(code_l)
+    sources_l = {h["source"] for h in hits_l}
+    check("S25-L numeric and string GTS both fire in same code block",
+          len(hits_l) == 2 and "code" in sources_l and "code_string" in sources_l,
+          f"hits={hits_l} sources={sources_l}")
+
+except Exception as e:
+    import traceback
+    for name in ["S25-A","S25-B","S25-C","S25-D","S25-E","S25-F",
+                 "S25-G","S25-H","S25-I","S25-J","S25-K","S25-L"]:
+        check(name, False, f"exception: {e}")
+    traceback.print_exc()
+
+section("S26: Pipeline Monitor — multi-agent epistemic propagation")
+# ─────────────────────────────────────────────────────────────────────────────
+# S26 — PipelineMonitor: intercept, extract, inject, handoff
+# Tests the cross-agent enforcement middleware added in the agents pass.
+# All tests are offline (no API key); Ghost Detector tests skipped unless --api.
+# ─────────────────────────────────────────────────────────────────────────────
+print("\n── S26: Pipeline Monitor — multi-agent enforcement ──────────────────────")
+try:
+    from credence.pipeline_monitor import PipelineMonitor, EpistemicHandoff, ExtractedClaim
+    from credence.registry import CredenceRegistry
+
+    # --- S26-A: PipelineMonitor imports cleanly ---
+    check("S26-A PipelineMonitor and EpistemicHandoff import cleanly", True)
+
+    # --- S26-B: probe extracts from canonical markers ---
+    reg26b = CredenceRegistry(":memory:")
+    mon26b = PipelineMonitor(registry=reg26b, api_key=None, use_ghost_detector=False)
+    handoff_b = mon26b.intercept(
+        "I think the rate limit is about 50 req/min — unconfirmed from staging.",
+        "agent_a", "agent_b",
+    )
+    check("S26-B probe extracts ≥1 claim from canonical marker text",
+          handoff_b.n_extracted >= 1,
+          f"n_extracted={handoff_b.n_extracted}")
+    check("S26-B strategy is 'probe'",
+          handoff_b.strategy == "probe",
+          f"strategy={handoff_b.strategy}")
+
+    # --- S26-C: extracted claim is registered in shared registry ---
+    check("S26-C n_injected ≥ 1 (claim registered in registry)",
+          handoff_b.n_injected >= 1,
+          f"n_injected={handoff_b.n_injected}")
+    uncertain_b = reg26b.list_uncertain("agent_a")
+    check("S26-C registry has ≥1 unverified constraint after intercept",
+          len(uncertain_b) >= 1,
+          f"uncertain count={len(uncertain_b)}")
+
+    # --- S26-D: handoff system_block is non-empty and contains EPISTEMIC HANDOFF ---
+    check("S26-D system_block is non-empty",
+          len(handoff_b.system_block) > 0,
+          "system_block was empty")
+    check("S26-D system_block contains EPISTEMIC HANDOFF header",
+          "EPISTEMIC HANDOFF" in handoff_b.system_block,
+          f"header missing from system_block")
+
+    # --- S26-E: has_uncertain property ---
+    check("S26-E has_uncertain = True when claims injected",
+          handoff_b.has_uncertain is True)
+
+    # --- S26-F: no claims on definitely-certain text ---
+    reg26f = CredenceRegistry(":memory:")
+    mon26f = PipelineMonitor(registry=reg26f, api_key=None, use_ghost_detector=False)
+    handoff_f = mon26f.intercept(
+        "The production rate limit is 100 req/s. This was confirmed by the vendor and tested in production.",
+        "agent_a_f", "agent_b_f",
+    )
+    check("S26-F no claims extracted from definitive confirmed text",
+          handoff_f.n_injected == 0,
+          f"n_injected={handoff_f.n_injected} (unexpected claims found)")
+
+    # --- S26-G: build_agent_b_system includes handoff block + base system ---
+    reg26g = CredenceRegistry(":memory:")
+    mon26g = PipelineMonitor(registry=reg26g, api_key=None, use_ghost_detector=False)
+    handoff_g = mon26g.intercept(
+        "I think the auth token expiry is maybe 3600s — not confirmed.",
+        "ag_a", "ag_b",
+    )
+    system_g = mon26g.build_agent_b_system(
+        handoff=handoff_g,
+        base_system="You are a technical implementer.",
+        include_gate=True,
+    )
+    check("S26-G build_agent_b_system contains EPISTEMIC HANDOFF block",
+          "EPISTEMIC HANDOFF" in system_g)
+    check("S26-G build_agent_b_system contains GATE enforcement line",
+          "GATE" in system_g)
+    check("S26-G build_agent_b_system contains base system prompt",
+          "technical implementer" in system_g)
+
+    # --- S26-H: empty output → no claims, empty system_block ---
+    reg26h = CredenceRegistry(":memory:")
+    mon26h = PipelineMonitor(registry=reg26h, api_key=None, use_ghost_detector=False)
+    handoff_h = mon26h.intercept("", "a", "b")
+    check("S26-H empty agent output → n_injected=0",
+          handoff_h.n_injected == 0)
+    check("S26-H empty agent output → system_block is empty",
+          handoff_h.system_block == "")
+
+    # --- S26-I: vendor marker phrases trigger probe ---
+    reg26i = CredenceRegistry(":memory:")
+    mon26i = PipelineMonitor(registry=reg26i, api_key=None, use_ghost_detector=False)
+    handoff_i = mon26i.intercept(
+        "Per the vendor documentation, the rate limit is 500 req/min.",
+        "a_i", "b_i",
+    )
+    check("S26-I 'per the vendor' marker triggers probe extraction",
+          handoff_i.n_injected >= 1,
+          f"n_injected={handoff_i.n_injected}")
+
+    # --- S26-J: handoff_report is non-empty when claims found ---
+    report_j = mon26b.handoff_report(handoff_b)
+    check("S26-J handoff_report non-empty when claims present",
+          len(report_j) > 0 and "PipelineMonitor" in report_j)
+
+    # --- S26-K: EpistemicHandoff exported from credence package ---
+    import credence
+    check("S26-K PipelineMonitor exported from credence package",
+          hasattr(credence, "PipelineMonitor"))
+    check("S26-K EpistemicHandoff exported from credence package",
+          hasattr(credence, "EpistemicHandoff"))
+
+    # --- S26-L: agent_propagation_eval dry-run imports cleanly ---
+    import importlib
+    try:
+        importlib.import_module("evals.agent_propagation_eval")
+        check("S26-L evals.agent_propagation_eval imports cleanly", True)
+    except ImportError as ie:
+        check("S26-L evals.agent_propagation_eval imports cleanly", False, str(ie))
+
+except Exception as e:
+    import traceback
+    for name in ["S26-A","S26-B","S26-C","S26-D","S26-E","S26-F",
+                 "S26-G","S26-H","S26-I","S26-J","S26-K","S26-L"]:
         check(name, False, f"exception: {e}")
     traceback.print_exc()
 

@@ -1,0 +1,228 @@
+{
+  "summary": {
+    "without_monitor": {
+      "mean_fidelity": 1.0,
+      "false_certainty_rate": 0.0,
+      "n_scenarios": 5,
+      "n_callbacks": 10
+    },
+    "with_monitor": {
+      "mean_fidelity": 1.0,
+      "false_certainty_rate": 0.0,
+      "n_scenarios": 5,
+      "n_callbacks": 10
+    }
+  },
+  "scenarios": [
+    {
+      "scenario_id": "S01_api_integration",
+      "domain": "API Integration",
+      "condition": "without_monitor",
+      "fidelity_rate": 1.0,
+      "n_injected": 0,
+      "callbacks": [
+        {
+          "callback": "What rate limit should I configure for the production payment API?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        },
+        {
+          "callback": "What is the production endpoint URL I should use?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S01_api_integration",
+      "domain": "API Integration",
+      "condition": "with_monitor",
+      "fidelity_rate": 1.0,
+      "n_injected": 4,
+      "callbacks": [
+        {
+          "callback": "What rate limit should I configure for the production payment API?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        },
+        {
+          "callback": "What is the production endpoint URL I should use?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S02_infrastructure",
+      "domain": "Infrastructure",
+      "condition": "without_monitor",
+      "fidelity_rate": 1.0,
+      "n_injected": 0,
+      "callbacks": [
+        {
+          "callback": "How many database connections should I configure in the pool?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        },
+        {
+          "callback": "What cache TTL should I set for session data in Redis?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S02_infrastructure",
+      "domain": "Infrastructure",
+      "condition": "with_monitor",
+      "fidelity_rate": 1.0,
+      "n_injected": 4,
+      "callbacks": [
+        {
+          "callback": "How many database connections should I configure in the pool?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        },
+        {
+          "callback": "What cache TTL should I set for session data in Redis?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S03_security",
+      "domain": "Security Configuration",
+      "condition": "without_monitor",
+      "fidelity_rate": 1.0,
+      "n_injected": 0,
+      "callbacks": [
+        {
+          "callback": "What JWT algorithm should I use and where does that recommendation come from?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        },
+        {
+          "callback": "What token expiry value should I configure for JWTs?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S03_security",
+      "domain": "Security Configuration",
+      "condition": "with_monitor",
+      "fidelity_rate": 1.0,
+      "n_injected": 1,
+      "callbacks": [
+        {
+          "callback": "What JWT algorithm should I use and where does that recommendation come from?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        },
+        {
+          "callback": "What token expiry value should I configure for JWTs?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S04_ml_pipeline",
+      "domain": "ML Pipeline",
+      "condition": "without_monitor",
+      "fidelity_rate": 1.0,
+      "n_injected": 0,
+      "callbacks": [
+        {
+          "callback": "What batch size should I use for training? Where does this value come from?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        },
+        {
+          "callback": "What learning rate should I configure?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S04_ml_pipeline",
+      "domain": "ML Pipeline",
+      "condition": "with_monitor",
+      "fidelity_rate": 1.0,
+      "n_injected": 5,
+      "callbacks": [
+        {
+          "callback": "What batch size should I use for training? Where does this value come from?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        },
+        {
+          "callback": "What learning rate should I configure?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S05_deployment",
+      "domain": "Kubernetes Deployment",
+      "condition": "without_monitor",
+      "fidelity_rate": 1.0,
+      "n_injected": 0,
+      "callbacks": [
+        {
+          "callback": "What CPU limit should I set for the container?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        },
+        {
+          "callback": "What should I set as the maximum replicas for the HPA?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S05_deployment",
+      "domain": "Kubernetes Deployment",
+      "condition": "with_monitor",
+      "fidelity_rate": 1.0,
+      "n_injected": 5,
+      "callbacks": [
+        {
+          "callback": "What CPU limit should I set for the container?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        },
+        {
+          "callback": "What should I set as the maximum replicas for the HPA?",
+          "has_value": true,
+          "has_qualifier": true,
+          "false_certainty": false
+        }
+      ]
+    }
+  ]
+}
