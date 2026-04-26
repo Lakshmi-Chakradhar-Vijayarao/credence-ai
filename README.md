@@ -8,7 +8,7 @@ You're in a Claude Code session. You say:
 Fifteen turns of coding later, Claude writes:
 
 ```python
-RATE_LIMIT = 50  # rate limit
+RATE_LIMIT = 50
 ```
 
 No warning. No flag. The uncertainty is gone. You ship it.
@@ -35,7 +35,7 @@ We measured it across 50 compression scenarios:
 | LLMLingua-style scoring | 68% | 70% |
 | Credence (faithfulness probe) | **0%** | **0%** |
 
-Credence is a five-layer epistemic enforcement system built natively into Claude Code. It preserves uncertainty through compression, generation, code output, tool execution, and across session boundaries — deterministically, with no extra API calls for four of the five layers.
+Credence is a five-layer epistemic enforcement system built natively into Claude Code. It preserves uncertainty through compression, generation, code output, tool execution, and across session boundaries — deterministically, with zero extra API calls across all five enforcement layers.
 
 Every engineering team using Claude Code today is producing ghost constraints they don't know about. Every sprint. This is what it looks like in your codebase right now.
 
@@ -138,6 +138,7 @@ User states uncertain claim
 └──────────────────────────────────────────────┘
 
 Total overhead: ~0.56ms in-session + 3.4ms gate. Zero extra API calls.
+(Ghost Detector is opt-in: one Opus 4.7 call per constraint classification, on registration only.)
 ```
 
 ---
