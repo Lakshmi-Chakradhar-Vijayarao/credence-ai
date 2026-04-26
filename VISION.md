@@ -1,5 +1,27 @@
 # Credence: Vision and Research Arc
 
+## How We Got Here
+
+Credence did not start as a project about uncertainty. It started much further upstream.
+
+The original research direction was mechanistic interpretability — understanding not just what models output, but what happens inside them during inference. That led us to Fisher information as a signal: the idea that the Fisher score, computed from the gradient of the log-likelihood, could serve as a per-token measure of informational importance. If a token carries high Fisher weight, the model's predictions are sensitive to it. If it carries low Fisher weight, it can be dropped with minimal consequence. That was the hypothesis behind what we called the Fisher signal — a principled, geometry-aware alternative to attention-based importance scoring.
+
+From there, the natural extension was adaptive resource management. If you know which tokens are informationally important at the model level, you can make better decisions about memory — specifically about the KV cache. The KV cache stores key-value pairs for every token in the context window. Evicting entries aggressively saves memory and speeds up inference, but naive eviction loses information. Fisher-weighted eviction was the idea: evict low-Fisher entries first, retain high-Fisher entries, and tie the eviction policy directly to the model's own sensitivity signal rather than heuristics like recency or attention scores.
+
+That work was progressing. Then we hit the roadblock.
+
+The roadblock was this: Fisher-weighted eviction preserves informationally important tokens. But informational importance and epistemic importance are not the same thing. A token like "approximately" or "I think" carries low Fisher weight — it is a hedging word, not a content word, and the model's predictions are relatively insensitive to it. By the Fisher criterion, it should be evicted. But epistemically, it is the most important token in the sentence. It is the token that tells you whether you can trust what follows.
+
+That gap — between what compression systems consider important and what *epistemically* matters — was the insight. We had been thinking about compression as a resource management problem. The roadblock forced us to see it as an epistemic event. Every compression decision is simultaneously a decision about certainty. When a compression system drops "I think the rate limit is around 50 — unconfirmed" to "rate limit: 50," it has not just saved tokens. It has made a claim: *this is confirmed*.
+
+From that realization, the project crystallized. We stopped asking "how do we compress efficiently?" and started asking "what does compression do to the epistemic state of the conversation?" That question had never been measured. So we measured it. We designed experiments, built a scorer, ran n=50 studies, and found a 26% qualifier strip rate under Haiku and 68% under aggressive importance scoring. Then we built the enforcement layer — not as a compression improvement, but as a guard that sits *before* compression and asks a different question: does this segment contain uncertainty that should not be lost?
+
+The research arc is: mechanistic interpretability → Fisher signal → adaptive KV cache management → compression as epistemic event → Credence.
+
+Every step was necessary. Without the Fisher work, we would not have understood how compression systems score token importance. Without the KV cache work, we would not have understood why epistemic tokens are systematically undervalued by importance scorers. Without the roadblock, we would not have asked the question that turned into this project.
+
+---
+
 ## The Thesis
 
 We define **Epistemic Qualifier Loss (EQL)**: the loss of user-stated uncertainty markers during context window summarization, causing downstream models to treat explicitly uncertain claims as confirmed facts. The **EQL Rate (EQLR)** measures how often this happens: 46% under Haiku compression, 68% under LLMLingua-style scoring (n=50). The downstream False Certainty Rate (FCR) — how often the answering model states the uncertain value without any qualifier — is 6% and 74% respectively (corrected scorer v2, 198 markers). LLMLingua: 3 in 4 after compression. Both drop to 0% with Credence.
