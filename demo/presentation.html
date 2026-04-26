@@ -702,8 +702,20 @@ html,body {
    <span style="font-size:clamp(14px,2.2vw,30px)">The probe gets you <span class="c-green">100%.</span></span>
   </div>
 
+  <!-- Before/After evidence strip -->
+  <div class="a d3" style="width:100%;max-width:390px;margin-bottom:11px;
+    background:var(--surf);border:1px solid var(--border);border-radius:9px;padding:10px 14px">
+   <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);margin-bottom:7px">actual claim trace — what naive Haiku does</div>
+   <div style="font-family:'SF Mono',monospace;font-size:clamp(9px,.85vw,11px);line-height:1.8">
+    <span style="color:var(--fg3)">IN&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color:var(--fg)">"rate limit ~50 req/min — not certain, haven't confirmed"</span><br>
+    <span style="color:var(--amber)">NAIVE&nbsp;</span><span style="color:var(--amber)">"Rate limit: 50 req/min."</span><br>
+    <span style="color:var(--gold)">LOST&nbsp;&nbsp;</span><span style="color:var(--fg3)">['not certain', 'approximately', 'tentative', "haven't confirmed"]</span><br>
+    <span style="color:var(--fg3)">J&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color:var(--fg)">0.32</span><span style="color:var(--fg3)"> → </span><span style="color:var(--amber)">0.82</span><span style="color:var(--fg3)">&nbsp; probe fires first — Haiku never called</span>
+   </div>
+  </div>
+
   <!-- Null hypothesis -->
-  <div class="a d3" style="width:100%;max-width:390px;margin-bottom:12px">
+  <div class="a d4" style="width:100%;max-width:390px;margin-bottom:12px">
    <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);margin-bottom:7px">Qualifier survival rate · "preserve uncertainty qualifiers" instruction · n=30</div>
    <div class="prob-wrap">
     <div class="prob-row">
@@ -725,7 +737,7 @@ html,body {
   </div>
 
   <!-- Ghost comparison -->
-  <div class="a d4" style="width:100%;max-width:390px">
+  <div class="a d5" style="width:100%;max-width:390px">
    <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);margin-bottom:7px">Ghost constraint — zero hedging markers</div>
    <div style="font-family:'SF Mono',monospace;font-size:clamp(10px,.9vw,12px);color:var(--fg2);
      background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:8px">
@@ -744,7 +756,7 @@ html,body {
    </div>
   </div>
 
-  <div class="a d5" style="margin-top:11px;font-size:clamp(11px,1vw,13px);color:var(--fg3);font-style:italic;max-width:390px">
+  <div class="a d6" style="margin-top:11px;font-size:clamp(11px,1vw,13px);color:var(--fg3);font-style:italic;max-width:390px">
    Prompt instructions are probabilistic.<br>Enforcement is not. Opus sees what Haiku cannot.
   </div>
 
@@ -791,7 +803,7 @@ html,body {
     <div class="enf-badge eb-blue">detect</div>
     <div style="min-width:0;flex:1">
      <div class="enf-title">Truth Buffer</div>
-     <div class="enf-desc">All unverified constraints injected into system prompt before every turn. Sorted by confidence decay — stalest constraints first. Cap: 10 constraints.</div>
+     <div class="enf-desc">All unverified constraints injected into system prompt before every turn — advisory framing, stalest first. Even without CE firing, Claude sees: <span style="color:var(--blue);font-family:'SF Mono',monospace;font-size:9.5px">⚠ [LOW, conf=0.28] rate limit ~50 req/min — unverified</span>.</div>
     </div>
     <div class="enf-nums"><div class="enf-n c-blue">~0ms</div><div class="enf-u">SQLite read</div></div>
    </div>
@@ -799,7 +811,7 @@ html,body {
     <div class="enf-badge eb-purp">enforce</div>
     <div style="min-width:0;flex:1">
      <div class="enf-title">Consistency Enforcer</div>
-     <div class="enf-desc">32 synonym clusters — "rate" → {throttle, quota, frequency, throughput}. ≥2 overlap with user query → imperative injection escalates from advisory to MUST.</div>
+     <div class="enf-desc">32 synonym clusters. "How fast can we call the endpoint?" matches "rate limit ~50 req/min" via <span style="color:var(--purple);font-family:'SF Mono',monospace;font-size:9.5px">'fast'→'rate' · 'token' direct · 'expire'→'expiry'</span>. ≥2 overlap → advisory upgrades to MUST.</div>
     </div>
     <div class="enf-nums"><div class="enf-n c-purple">~0ms</div><div class="enf-u">set ops only</div></div>
    </div>
@@ -873,12 +885,16 @@ html,body {
    <div style="color:var(--fg3)">&nbsp;}}</div>
   </div>
 
-  <div class="a d5" style="background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:10px;color:var(--fg3);line-height:1.75;font-family:'SF Mono',monospace">
-   <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);margin-bottom:5px;font-family:inherit">Confidence Decay</div>
-   conf(t) = j₀ × 0.95^turns<br>
-   j₀ = 0.28 → turn 10: 0.171<br>
-   <span style="color:var(--gold)">→ &lt; 0.20 → HIGH RISK tier</span><br>
-   → ⚠⚠ escalates automatically
+  <div class="a d5" style="background:#0a0a0d;border:1px solid rgba(191,90,242,.25);border-radius:10px;padding:11px 14px;font-size:10px;font-family:'SF Mono',monospace;line-height:1.75">
+   <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(191,90,242,.7);margin-bottom:6px;font-family:inherit">CE injection — actual system prompt block</div>
+   <div style="color:var(--fg3)">CONSISTENCY ENFORCEMENT — ACTIVE</div>
+   <div style="color:var(--fg2);margin-top:3px">⚠ [LOW, conf=0.28]</div>
+   <div style="color:var(--fg3);font-size:9.5px;margin-left:4px">rate limit ~50 req/min — unconfirmed…</div>
+   <div style="color:var(--fg3);font-size:9.5px;margin-left:4px">token expiry ~3600s — tentative…</div>
+   <div style="color:var(--purple);margin-top:6px;font-size:9.5px">YOU MUST express uncertainty.</div>
+   <div style="color:var(--purple);font-size:9.5px">Stating this as confirmed fact</div>
+   <div style="color:var(--purple);font-size:9.5px">is an epistemic error.</div>
+   <div style="color:var(--fg3);margin-top:6px;font-size:9px">conf(t) = j₀ × 0.95^turns · j₀=0.28 → t=10: 0.171 → <span style="color:var(--gold)">HIGH RISK</span></div>
   </div>
  </div>
 </div>
