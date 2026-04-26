@@ -224,6 +224,41 @@ Build the Rust gate: `cargo build --release` in `credence_gate/`.
 
 ---
 
+## Reproducing the Results
+
+**No API key — free, runs in seconds:**
+```bash
+python3 tests.py                        # 178 unit tests (S1–S26 suites)
+python3 test_claims.py                  # validates all submission claims offline
+python -m evals.precision_eval          # CE / GTS / probe false-positive rates
+python -m evals.stress_test             # n=1000 probe latency, n=200 precision/recall
+python -m evals.adversarial_tests       # 5 adversarial robustness tests
+python quickstart.py                    # live demo of all 5 layers, no API key
+python demo/live_demo.py                # trace a single claim through the pipeline
+```
+
+**With API key — core evidence (~$5 total):**
+```bash
+python -m evals.compression_faithfulness --n 50   # headline: 26%→0% EQLR, 12%→0% FCR  (~$3)
+python -m evals.null_hypothesis                   # prompt instruction baseline (90% not 100%) (~$1)
+python -m evals.ghost_gauntlet                    # BothRate 0.200→1.000, implicit uncertainty (~$2)
+python -m evals.experiments --exp E6              # long session recall: 100% vs 19.6% (~$0.50)
+python -m evals.experiments --exp E7              # 3-hop chain: 3/3 vs 0/3 (~$0.20)
+python -m evals.experiments --exp E8              # real debugging session recall (~$0.30)
+```
+
+**Extended suite (~$15–20):**
+```bash
+python -m evals.e6_ablation                       # layer isolation: which checkpoint matters?
+python -m evals.ghost_detector_ablation           # Ghost Detector mechanism isolation
+python -m evals.cross_session_eval                # cross-session FCR, n=20 callbacks
+python -m evals.conversation_benchmark            # 10-session × 3-condition benchmark
+```
+
+All results are already saved in `evals/*.json` — no API key needed to read them.
+
+---
+
 ## For Reviewers
 
 | What you want to know | Where to find it |
