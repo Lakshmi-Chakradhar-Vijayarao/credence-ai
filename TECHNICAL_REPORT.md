@@ -1,7 +1,7 @@
 # Credence: Measuring and Preventing Epistemic Qualifier Loss in LLM Context Compression
 
 **Lakshmi Chakradhar Vijayarao**  
-Northeastern University · vijayarao.l@northeastern.edu
+
 
 ---
 
