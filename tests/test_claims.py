@@ -27,7 +27,8 @@ Exit code 1 = one or more failures (NO-GO).
 """
 
 import os, re, sys, time, json, argparse
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _ROOT)
 
 from credence.confidence_proxy import CredenceProxy
 from credence.registry import CredenceRegistry
@@ -505,11 +506,11 @@ try:
     import importlib.util
     spec = importlib.util.spec_from_file_location(
         "live_demo",
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "demo", "live_demo.py")
+        os.path.join(_ROOT, "demo", "live_demo.py")
     )
     # Just check it parses — don't execute
     import ast
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "demo", "live_demo.py")) as f:
+    with open(os.path.join(_ROOT, "demo", "live_demo.py")) as f:
         src = f.read()
     ast.parse(src)
     record("T9", "live_demo.py parses without syntax errors", True)
@@ -518,7 +519,7 @@ except SyntaxError as e:
 
 # Streamlit app syntax check
 try:
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "demo", "app.py")) as f:
+    with open(os.path.join(_ROOT, "demo", "app.py")) as f:
         src = f.read()
     ast.parse(src)
     record("T9", "demo/app.py parses without syntax errors", True)
@@ -536,7 +537,7 @@ t0 = time.perf_counter()
 proc = subprocess.run(
     [sys.executable, "demo/live_demo.py"],
     capture_output=True, text=True,
-    cwd=os.path.dirname(os.path.abspath(__file__)),
+    cwd=_ROOT,
     timeout=30,
 )
 t_demo = time.perf_counter() - t0

@@ -212,7 +212,7 @@ The gate runs before every Write/Edit/Bash/NotebookEdit tool call. At 100 tool c
 # Free, offline — run in 1 minute
 python -m evals.stress_test           # 1.8s, n=1000 probe + n=200 precision/recall
 python -m evals.precision_eval        # CE/GTS/probe false-positive rates
-python3 tests.py                      # 178 tests, 11 skipped
+python3 tests/tests.py                # 178 tests, 11 skipped
 
 # API required — headline experiments
 python -m evals.compression_faithfulness --n 50  # ~$3 — HEADLINE

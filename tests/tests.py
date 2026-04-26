@@ -42,7 +42,7 @@ parser.add_argument("--api", action="store_true", help="Run tests requiring live
 ARGS = parser.parse_args()
 
 # ── Imports ───────────────────────────────────────────────────────────────────
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from credence.registry import CredenceRegistry
 from credence.confidence_proxy import CredenceProxy

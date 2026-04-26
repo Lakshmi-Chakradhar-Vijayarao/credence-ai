@@ -224,8 +224,8 @@ python -m evals.ghost_gauntlet                   # n=10 sessions × 3 conditions
 python -m evals.ghost_detector_ablation          # n=5 sessions, mechanism isolation
 python -m evals.cross_session_eval --dry-run  # cross-session FCR structure (free)
 python -m evals.cross_session_eval            # cross-session FCR full run (~$3)
-python3 tests.py                              # 178 unit tests (S1–S26), 11 skipped, free, offline
-python3 test_claims.py                        # submission claim validation, offline
+python3 tests/tests.py                        # 178 unit tests (S1–S26), 11 skipped, free, offline
+python3 tests/test_claims.py                  # submission claim validation, offline
 python -m evals.precision_eval               # CE/GTS/probe false-positive rates, free, offline
 python -m evals.long_session_eval --dry-run  # 50-turn session structure validation, free
 ```
