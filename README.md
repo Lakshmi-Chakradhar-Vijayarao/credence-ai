@@ -17,6 +17,10 @@ This failure has a name. We defined it, measured it, and fixed it.
 
 ---
 
+**Demo video:** [youtube.com/watch?v=zKEf2k2bIsU](https://youtu.be/zKEf2k2bIsU)
+
+---
+
 ## What Is Credence
 
 **Epistemic Qualifier Loss (EQL)** — the loss of user-stated uncertainty markers during context compression, causing downstream models to treat uncertain claims as confirmed facts.
@@ -33,7 +37,7 @@ Credence is a five-layer epistemic enforcement system built natively into Claude
 
 ---
 
-## See It in 30 Seconds
+## Quick Start
 
 ```bash
 git clone https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai
@@ -45,14 +49,36 @@ streamlit run demo/app.py     # interactive demo
 
 Reproduce the headline result:
 ```bash
-python -m evals.compression_faithfulness --n 50   # ~$3
+python -m evals.compression_faithfulness --n 50   # ~$3, n=50
 ```
+
+---
+
+## The Opus 4.7 Story — Ghost Detector
+
+The faithfulness probe catches explicit hedges: *"I think"*, *"approximately"*, *"probably"* — 198 markers.
+
+But what about:
+> *"The Stripe rate limit is 50 req/min."*
+
+No hedging. Stated as fact. Actually from a sales call, never confirmed. The probe sees nothing. This is a **ghost constraint** — and it is the harder, more dangerous failure.
+
+Only Opus 4.7 can distinguish "established fact" from "vendor claim stated as fact" by reasoning about the *origin and reliability* of a claim — not its surface text. Haiku sees the same characters. Opus 4.7 reasons about provenance. A single structured Opus 4.7 call classifies each constraint. Ghost constraints then flow through all five enforcement layers identically to explicit ones.
+
+```
+Ghost Gauntlet — n=10 sessions × 3 conditions, all Opus 4.7
+
+Credence (Ghost Detector active)   BothRate = 1.000   ← value AND qualifier recalled
+Naive sliding window               BothRate = 0.200
+```
+
+This is the creative use of Opus 4.7 that no rule-based system can replicate — epistemic classification by provenance reasoning.
 
 ---
 
 ## How It Works
 
-Five checkpoints. Four are fully deterministic — they do not ask Claude for permission.
+Five checkpoints. Four are fully deterministic — no model cooperation required.
 
 ```
 User states uncertain claim
@@ -104,26 +130,6 @@ User states uncertain claim
 └──────────────────────────────────────────────┘
 
 Total overhead: ~0.56ms in-session + 3.4ms gate. Zero extra API calls.
-```
-
----
-
-## The Opus 4.7 Layer — Ghost Detector
-
-The faithfulness probe catches explicit hedges: *"I think"*, *"approximately"*, *"probably"*.
-
-But what about:
-> *"The Stripe rate limit is 50 req/min."*
-
-No hedging. Stated as fact. Actually from a sales call, never confirmed. The probe sees nothing. This is a **ghost constraint**.
-
-Only Opus 4.7 can distinguish "established fact" from "vendor claim stated as fact" — by reasoning about the *origin and reliability* of a claim, not its surface text. A single structured Opus 4.7 call classifies each constraint. Ghost constraints are registered and treated identically to explicit ones across all five layers.
-
-```
-Ghost Gauntlet (n=10 sessions × 3 conditions, all Opus 4.7)
-
-Credence              BothRate = 1.000
-Naive sliding window  BothRate = 0.200
 ```
 
 ---
@@ -183,39 +189,33 @@ Add to `.claude/settings.json`:
 
 Build the Rust gate: `cargo build --release` in `credence_gate/`.
 
-Add to your `CLAUDE.md`:
-```markdown
-Before implementing anything that depends on an uncertain constraint,
-call credence_risk. If risk_level=HIGH, surface the warning before writing code.
-```
-
 ---
 
 ## All Validated Results
 
-| Experiment | Credence | Naive/Baseline |
+| Experiment | Credence | Naive / Baseline |
 |---|---|---|
 | Compression — Haiku FCR (n=50) | **0%** | 12.0% |
 | Compression — LLMLingua sim FCR (n=50) | **0%** | 70.0% |
 | Prompt instruction qualifier survival (n=30) | **100%** (probe) | 90.0% (not deterministic) |
 | E6 Long session constraint recall (n=23) | **100%** | 19.6% (naive window) |
-| E7 Multi-hop 3-step chain | **3/3** hops | 0/3 (naive) |
+| E7 Multi-hop 3-step chain | **3/3 hops** | 0/3 (naive) |
 | Ghost Gauntlet BothRate (n=10 sessions) | **1.000** | 0.200 (naive) |
 | Cross-session FCR (n=20 callbacks) | **0%** | 40% (no memory) |
 | Rust gate latency | **3.4ms** | 331ms (Python) |
-| Unit tests | **178/178** pass | — |
+| Unit tests | **178/178 pass** | — |
 
 ---
 
-## Deeper Reading
+## For Reviewers
 
-| Document | What's inside |
+| What you want to know | Where to find it |
 |---|---|
-| [VISION.md](VISION.md) | Research origin, honest assessment, ETP standard, 2-year arc |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Layer-by-layer design decisions, J-score, adaptive thresholds |
-| [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md) | arXiv-style paper — methodology, related work, evaluation design |
-| [SUBMISSION.md](SUBMISSION.md) | Full evidence table, all run commands, prior work gap |
-| [BENCHMARKS.md](BENCHMARKS.md) | Single authoritative results table |
+| Why does this matter — research origin and vision | [VISION.md](VISION.md) |
+| Full methodology, related work, evaluation design | [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md) |
+| Every number, every run command, all evidence | [SUBMISSION.md](SUBMISSION.md) |
+| Layer-by-layer design decisions and J-score | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Single authoritative results table | [BENCHMARKS.md](BENCHMARKS.md) |
 
 ---
 
@@ -254,7 +254,5 @@ etp-v1.json             Epistemic Transport Protocol schema
 ```
 
 ---
-
-## License
 
 MIT — see [LICENSE](LICENSE)
