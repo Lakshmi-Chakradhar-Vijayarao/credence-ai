@@ -286,8 +286,6 @@ etp-v1.json                 Epistemic Transport Protocol schema
 
 [LinkedIn](https://www.linkedin.com/in/lakshmichakradharvijayarao/) · [X](https://x.com/LChakradharV28) · [lakshmichakradhar.v@gmail.com](mailto:lakshmichakradhar.v@gmail.com)
 
-Co-researcher: Claude (Anthropic)
-
 ---
 
 MIT — see [LICENSE](LICENSE)
