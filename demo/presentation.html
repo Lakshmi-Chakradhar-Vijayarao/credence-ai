@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Credence</title>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 
 :root {
   --black:  #000000;
@@ -14,794 +14,1142 @@
   --border: #2a2a2e;
   --bdr2:   #1c1c1e;
   --surf:   #0d0d0f;
-  --blue:   #2997ff;
-  --green:  #30d158;
-  --red:    #ff453a;
-  --orange: #ff9f0a;
-  --purple: #bf5af2;
+  /* Brand palette — each color owns a semantic role */
+  --blue:   #2997ff;   /* system / analytics / Credence info */
+  --green:  #30d158;   /* success / Credence wins            */
+  --orange: #ff9f0a;   /* Haiku / compression layer only      */
+  --gold:   #ffd60a;   /* key impact numbers / HIGH RISK      */
+  --amber:  #f4a261;   /* mild "before" context (sparingly)   */
+  --purple: #bf5af2;   /* Opus 4.7 exclusively                */
+  --teal:   #5ac8fa;   /* Rust gate / deterministic block     */
 }
 
-html,body { width:100%;height:100%;overflow:hidden;background:var(--black);color:var(--fg);
+html,body {
+  width:100%; height:100%; overflow:hidden;
+  background:var(--black); color:var(--fg);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
-  -webkit-font-smoothing:antialiased; }
+  -webkit-font-smoothing:antialiased;
+}
+#bg  { position:fixed; inset:0; z-index:0; }
+#bar { position:fixed; top:0; left:0; height:1.5px; background:var(--blue);
+       z-index:1000; width:0%; transition:width .55s cubic-bezier(.4,0,.2,1); }
+#act { position:fixed; top:26px; left:50%; transform:translateX(-50%);
+       font-size:11px; font-weight:600; letter-spacing:.15em; text-transform:uppercase;
+       color:var(--fg3); z-index:100; transition:opacity .35s; }
+#hint{ position:fixed; bottom:22px; right:24px; font-size:10px; color:#252528;
+       z-index:100; transition:opacity 1.4s; pointer-events:none; }
+#dots{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+       display:flex; gap:5px; z-index:100; }
+.dot { height:4px; width:4px; border-radius:3px; background:#222228;
+       transition:all .3s cubic-bezier(.4,0,.2,1); cursor:pointer; }
+.dot.on { background:var(--fg); width:18px; }
 
-/* ── Canvas ─────────────────────────────────────── */
-#bg { position:fixed;inset:0;z-index:0; }
+/* ── Scenes ────────────────────────────────────── */
+#stage { position:fixed; inset:0; z-index:10; }
+.sc { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      opacity:0; pointer-events:none; transition:opacity .4s cubic-bezier(.4,0,.2,1); }
+.sc.on { opacity:1; pointer-events:all; }
+.full  { flex-direction:column; padding:56px 7%; text-align:center; }
+.split { flex-direction:row;    padding:42px 5%; gap:28px; align-items:stretch; }
+.main  { flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; }
+.aside { width:306px; flex-shrink:0; display:flex; flex-direction:column; gap:9px; }
 
-/* ── Progress bar ────────────────────────────────── */
-#bar { position:fixed;top:0;left:0;height:1.5px;background:var(--blue);z-index:1000;
-  width:0%;transition:width .55s cubic-bezier(.4,0,.2,1); }
-
-/* ── Act label ───────────────────────────────────── */
-#act { position:fixed;top:26px;left:50%;transform:translateX(-50%);
-  font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;
-  color:var(--fg3);z-index:100;transition:opacity .35s; }
-
-/* ── Stage ───────────────────────────────────────── */
-#stage { position:fixed;inset:0;z-index:10; }
-
-.sc { position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  opacity:0;pointer-events:none;transition:opacity .42s cubic-bezier(.4,0,.2,1); }
-.sc.on { opacity:1;pointer-events:all; }
-.full { flex-direction:column;padding:68px 11%;text-align:center; }
-.split { flex-direction:row;padding:52px 6%;gap:44px;align-items:stretch; }
-.main { flex:1;display:flex;flex-direction:column;justify-content:center; }
-.aside { width:248px;flex-shrink:0;display:flex;flex-direction:column; }
-
-/* ── Enter animations ────────────────────────────── */
-@keyframes up { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+/* ── Animations ─────────────────────────────────── */
+@keyframes up{ from{opacity:0;transform:translateY(13px)} to{opacity:1;transform:none} }
 .a { opacity:0; }
-.sc.on .a     { animation:up .7s cubic-bezier(.16,1,.3,1) forwards; }
-.sc.on .a.d1  { animation-delay:.04s; }
-.sc.on .a.d2  { animation-delay:.20s; }
-.sc.on .a.d3  { animation-delay:.38s; }
-.sc.on .a.d4  { animation-delay:.56s; }
-.sc.on .a.d5  { animation-delay:.74s; }
-.sc.on .a.d6  { animation-delay:.92s; }
+.sc.on .a    { animation:up .6s cubic-bezier(.16,1,.3,1) forwards; }
+.sc.on .a.d1 { animation-delay:.05s; } .sc.on .a.d2 { animation-delay:.18s; }
+.sc.on .a.d3 { animation-delay:.32s; } .sc.on .a.d4 { animation-delay:.46s; }
+.sc.on .a.d5 { animation-delay:.60s; } .sc.on .a.d6 { animation-delay:.74s; }
+.sc.on .a.d7 { animation-delay:.88s; } .sc.on .a.d8 { animation-delay:1.02s; }
 
-/* ── Type scale ──────────────────────────────────── */
-.eyebrow { font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--blue);margin-bottom:20px; }
-.display { font-size:clamp(58px,9.5vw,114px);font-weight:800;line-height:1;letter-spacing:-.04em; }
-.head    { font-size:clamp(32px,5.2vw,70px);font-weight:700;line-height:1.08;letter-spacing:-.03em; }
-.sub     { font-size:clamp(20px,2.8vw,42px);font-weight:600;line-height:1.15;letter-spacing:-.02em; }
-.body-l  { font-size:clamp(17px,2vw,24px);font-weight:400;line-height:1.58;color:var(--fg2); }
-.body    { font-size:clamp(14px,1.5vw,18px);font-weight:400;line-height:1.65;color:var(--fg2); }
+/* ── Typography ─────────────────────────────────── */
+.eyebrow{ font-size:11px; font-weight:600; letter-spacing:.15em; text-transform:uppercase;
+          color:var(--blue); margin-bottom:12px; }
+.display{ font-size:clamp(50px,7.5vw,96px); font-weight:800; line-height:1; letter-spacing:-.04em; }
+.head   { font-size:clamp(24px,3.8vw,54px); font-weight:700; line-height:1.1; letter-spacing:-.03em; }
+.body-l { font-size:clamp(13px,1.5vw,19px); font-weight:400; line-height:1.65; color:var(--fg2); }
+.body   { font-size:clamp(11px,1.1vw,14px); font-weight:400; line-height:1.7;  color:var(--fg2); }
 
-.c-blue   { color:var(--blue); }
-.c-green  { color:var(--green); }
-.c-red    { color:var(--red); }
-.c-orange { color:var(--orange); }
-.c-purple { color:var(--purple); }
-.c-dim    { color:var(--fg2); }
-.c-dimmer { color:var(--fg3); }
+.c-blue   { color:var(--blue);   } .c-green  { color:var(--green);  }
+.c-orange { color:var(--orange); } .c-gold   { color:var(--gold);   }
+.c-amber  { color:var(--amber);  } .c-purple { color:var(--purple); }
+.c-teal   { color:var(--teal);   } .c-dim    { color:var(--fg2);    }
+.c-dimmer { color:var(--fg3);    }
 
-/* ── Atoms ───────────────────────────────────────── */
-.tag { display:inline-flex;align-items:center;gap:8px;background:rgba(41,151,255,.09);
-  border:1px solid rgba(41,151,255,.24);color:var(--blue);border-radius:100px;
-  padding:7px 18px;font-size:13px;font-weight:500; }
-.blink { width:6px;height:6px;border-radius:50%;background:var(--green);
-  box-shadow:0 0 6px var(--green);animation:pulse 2s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+/* ── Divider / tag / pill / blink ───────────────── */
+.divider{ height:1px; background:var(--bdr2); }
+@keyframes bpulse{ 0%,100%{opacity:1} 50%{opacity:.3} }
+.blink{ width:6px; height:6px; border-radius:50%; background:var(--green);
+        box-shadow:0 0 6px var(--green); animation:bpulse 2s ease-in-out infinite; }
+.pills{ display:flex; gap:7px; flex-wrap:wrap; justify-content:center; }
+.pill { display:inline-flex; align-items:center; gap:6px; background:#0f0f11;
+        border:1px solid var(--border); border-radius:100px;
+        padding:5px 13px; font-size:11px; color:var(--fg2); white-space:nowrap; }
 
-.pills { display:flex;gap:10px;flex-wrap:wrap;justify-content:center; }
-.pill  { display:inline-flex;align-items:center;gap:7px;background:#111113;
-  border:1px solid var(--border);border-radius:100px;padding:7px 16px;font-size:13px;color:var(--fg2); }
-
-.divider { height:1px;width:56px;background:var(--bdr2);margin:0 auto; }
-
-/* ── Code card ───────────────────────────────────── */
-.code-card { background:var(--surf);border:1px solid var(--border);border-radius:14px;
-  padding:26px 34px;font-family:"SF Mono","Fira Code","Courier New",monospace;
-  font-size:clamp(13px,1.3vw,17px);line-height:1.75;text-align:left;width:100%; }
-.code-card.c  { text-align:center;padding:42px 50px; }
-.cc-d { color:var(--fg3); }
-.cc-n { color:var(--orange); }
-.cc-k { color:var(--purple); }
-.cc-w { color:var(--red); }
-.cc-l { font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#3a3a3e;margin-bottom:10px; }
-
-/* ── Stat pair ───────────────────────────────────── */
-.stat-pair { display:flex;align-items:baseline;gap:28px;justify-content:center; }
-.stat-blk  { display:flex;flex-direction:column;align-items:center;gap:10px; }
-.stat-n    { font-size:clamp(72px,12.5vw,148px);font-weight:800;line-height:1;letter-spacing:-.05em; }
-.stat-n.r  { color:var(--red); }
-.stat-n.g  { color:var(--green); }
-.stat-lbl  { font-size:13px;color:var(--fg3);letter-spacing:.02em;text-align:center;line-height:1.5; }
-.stat-arr  { font-size:clamp(28px,3.5vw,46px);color:var(--fg3);font-weight:300;margin-bottom:24px; }
-
-/* ── Checkpoint card ─────────────────────────────── */
-.cp { background:#0a0a0c;border:1px solid var(--border);border-radius:14px;padding:22px 26px;
-  font-family:"SF Mono","Fira Code",monospace;font-size:clamp(12px,1.1vw,15px);line-height:1.95;width:100%; }
-.cp-t { font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);
-  margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--bdr2); }
-.cp-r { display:flex;gap:14px; }
-.cp-k { color:var(--fg3);min-width:104px;flex-shrink:0; }
-.cp-v { color:var(--fg); }
-.cp-b { color:var(--red);font-weight:700; }
-.cp-g { color:var(--green);font-weight:600; }
-
-/* ── Gate card ───────────────────────────────────── */
-@keyframes glow { 0%,100%{box-shadow:0 0 0 0 rgba(255,69,58,0)} 50%{box-shadow:0 0 36px 4px rgba(255,69,58,.12)} }
-.gate { background:rgba(255,69,58,.025);border:1px solid rgba(255,69,58,.4);border-radius:14px;
-  padding:26px 34px;font-family:"SF Mono","Fira Code",monospace;
-  font-size:clamp(12px,1.1vw,15px);line-height:1.95;width:100%;
-  animation:glow 2.5s ease-in-out infinite; }
-.gate-h { font-weight:700;letter-spacing:.05em;color:var(--red);font-size:clamp(11px,1.2vw,15px);
-  margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid rgba(255,69,58,.13); }
-.gate-r { display:flex;gap:16px;margin:3px 0; }
-.gate-k { color:#555;min-width:80px; }
-.gate-v { color:var(--fg); }
-.gate-a { color:var(--orange); }
-
-/* ── Epistemic side panel ────────────────────────── */
-.ep { background:#090909;border:1px solid var(--border);border-radius:14px;padding:20px;
-  height:100%;display:flex;flex-direction:column;
-  font-family:"SF Mono","Fira Code",monospace;font-size:12px; }
-.ep-h { font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);
-  margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--bdr2); }
-.ep-s  { margin-bottom:14px; }
-.ep-l  { font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);margin-bottom:4px; }
-.ep-v  { font-size:13px;color:var(--fg);line-height:1.4; }
-.ep-v.u { color:var(--orange); }
-.ep-v.b { color:var(--red);font-weight:700; }
-.ep-d  { height:1px;background:var(--bdr2);margin:10px 0; }
-.ep-row { display:flex;align-items:center;gap:8px; }
-.ep-dot { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
-.ep-dot.r { background:var(--red);   box-shadow:0 0 6px var(--red); }
-.ep-dot.g { background:var(--green); box-shadow:0 0 6px var(--green); }
-.ep-dot.o { background:var(--orange); }
-.ep-bar  { height:3px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden; }
-.ep-fill { height:100%;border-radius:2px;background:var(--orange); }
-
-/* ── Pipeline scene ──────────────────────────────── */
-.pipe-row { display:flex;align-items:center;width:100%;max-width:1440px;gap:0; }
-
-.pn {
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:#0a0a0c;border:1px solid var(--bdr2);border-radius:12px;
-  padding:14px 10px;min-width:118px;flex:1;
-  transition:all .4s cubic-bezier(.4,0,.2,1);
-  position:relative;
+/* ── Code card ──────────────────────────────────── */
+.code-card {
+  background:var(--surf); border:1px solid var(--border); border-radius:12px;
+  padding:16px 22px; font-family:"SF Mono","Fira Code",monospace;
+  font-size:clamp(11px,1vw,14px); line-height:1.8; text-align:left; width:100%;
 }
-.pn.active {
-  border-color:rgba(41,151,255,.55);
-  background:rgba(41,151,255,.055);
-  box-shadow:0 0 24px rgba(41,151,255,.1);
+.cc-d{ color:var(--fg3); } .cc-n{ color:var(--orange); }
+.cc-k{ color:var(--purple); } .cc-g{ color:var(--green); }
+.cc-l{ font-size:9px; letter-spacing:.1em; text-transform:uppercase;
+       color:#3a3a3e; margin-bottom:7px; display:block; }
+/* GTS annotation tiers */
+.gts-risk { color:var(--gold);   } /* HIGH RISK */
+.gts-warn { color:var(--amber);  } /* UNVERIFIED */
+.gts-chk  { color:var(--fg3);    } /* CHECK */
+
+/* ── Terminal card ──────────────────────────────── */
+.cp {
+  background:#0a0a0c; border:1px solid var(--border); border-radius:12px;
+  padding:14px 18px; font-family:"SF Mono","Fira Code",monospace;
+  font-size:clamp(10px,.9vw,13px); line-height:2; width:100%;
 }
-.pn.opus.active {
-  border-color:rgba(191,90,242,.55);
-  background:rgba(191,90,242,.055);
-  box-shadow:0 0 28px rgba(191,90,242,.12);
+.cp-t{ font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+       color:var(--blue); margin-bottom:9px; padding-bottom:9px;
+       border-bottom:1px solid var(--bdr2); }
+.cp-r{ display:flex; gap:11px; }
+.cp-k{ color:var(--fg3); min-width:88px; flex-shrink:0; }
+.cp-v{ color:var(--fg); min-width:0; }
+.cp-b{ color:var(--gold);  font-weight:700; }  /* BLOCK decision */
+.cp-g{ color:var(--green); font-weight:600; }
+
+/* ── Gate card (teal = Rust) ────────────────────── */
+@keyframes gate-glow{ 0%,100%{box-shadow:0 0 0 0 rgba(90,200,250,0)} 50%{box-shadow:0 0 26px 3px rgba(90,200,250,.1)} }
+.gate {
+  background:rgba(90,200,250,.025); border:1px solid rgba(90,200,250,.32); border-radius:12px;
+  padding:18px 22px; font-family:"SF Mono","Fira Code",monospace;
+  font-size:clamp(10px,.9vw,13px); line-height:2; width:100%;
+  animation:gate-glow 2.8s ease-in-out infinite;
 }
-.pn-badge { font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--bdr2);margin-bottom:7px;transition:color .3s; }
-.pn.active      .pn-badge { color:var(--blue); }
-.pn.opus.active .pn-badge { color:var(--purple); }
-.pn-title { font-family:"SF Mono","Fira Code",monospace;font-size:10.5px;font-weight:700;
-  letter-spacing:.05em;text-transform:uppercase;color:var(--fg3);text-align:center;
-  transition:color .3s;line-height:1.4; }
-.pn.active      .pn-title { color:var(--fg); }
-.pn-stat { font-size:10px;color:var(--bdr2);text-align:center;margin-top:6px;line-height:1.4;
-  transition:color .4s;max-width:120px; }
-.pn.active .pn-stat { color:var(--fg3); }
+.gate-h{ font-weight:700; letter-spacing:.04em; color:var(--teal); font-size:clamp(10px,.95vw,13px);
+         margin-bottom:11px; padding-bottom:10px; border-bottom:1px solid rgba(90,200,250,.1); }
+.gate-r{ display:flex; gap:13px; margin:2px 0; }
+.gate-k{ color:var(--fg3); min-width:74px; flex-shrink:0; }
+.gate-v{ color:var(--fg); min-width:0; }
+.gate-a{ color:var(--amber); }
 
-/* Connector between pipeline nodes */
-.pc { flex:0.4;display:flex;align-items:center;position:relative;height:24px;min-width:32px; }
-.pc-line { position:absolute;top:50%;left:0;right:12px;height:1px;background:var(--bdr2);
-  transform:translateY(-50%); }
-.pc-fill { position:absolute;top:50%;left:0;height:1px;background:var(--blue);
-  box-shadow:0 0 5px var(--blue);width:0;
-  transition:width .5s cubic-bezier(.4,0,.2,1);transform:translateY(-50%); }
-.pc-arrow { position:absolute;right:0;top:50%;transform:translateY(-50%);
-  font-size:11px;color:var(--bdr2);transition:color .2s; }
-.pc.active .pc-fill  { width:calc(100% - 14px); }
-.pc.active .pc-arrow { color:var(--blue); }
+/* ── Before / After ─────────────────────────────── */
+.ba-wrap{ display:grid; grid-template-columns:1fr 38px 1fr; width:100%; max-width:1040px; align-items:start; }
+.ba-col { display:flex; flex-direction:column; gap:9px; }
+.ba-lbl { font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--fg3); }
+.ba-arr { display:flex; align-items:center; justify-content:center;
+          font-size:clamp(20px,2.8vw,36px); color:var(--bdr2); align-self:center; }
 
-/* ── Opus 4.7 three-roles scene ──────────────────── */
-.trio { display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;width:100%;max-width:1020px; }
-.trio-card {
-  background:var(--surf);border:1px solid var(--border);border-radius:16px;
-  padding:28px 24px;display:flex;flex-direction:column;gap:14px;text-align:left;
-  transition:border-color .4s;
+/* ── Pipeline flow ──────────────────────────────── */
+.pipe-wrap{ display:flex; align-items:stretch; width:100%; max-width:1040px; }
+.pipe-node{
+  flex:1; min-width:0; background:var(--surf); border:1px solid var(--border);
+  padding:9px 8px 11px; text-align:center;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
 }
-.trio-card:nth-child(1) { border-top:2px solid var(--green); }
-.trio-card:nth-child(2) { border-top:2px solid var(--purple); }
-.trio-card:nth-child(3) { border-top:2px solid var(--blue); }
-.trio-badge { font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase; }
-.trio-head  { font-size:clamp(14px,1.5vw,18px);font-weight:700;line-height:1.25;color:var(--fg); }
-.trio-body  { font-size:clamp(12px,1.1vw,14px);font-weight:400;line-height:1.65;color:var(--fg2); }
+.pipe-node+.pipe-node{ border-left:none; }
+.pipe-node:first-child{ border-radius:10px 0 0 10px; }
+.pipe-node:last-child { border-radius:0 10px 10px 0; }
+.pipe-sep{ display:flex; align-items:center; justify-content:center; width:14px; flex-shrink:0;
+           color:var(--fg3); font-size:10px; background:var(--surf);
+           border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+.pipe-lbl { font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+.pipe-sub { font-size:7.5px; color:var(--fg3); font-family:"SF Mono",monospace; line-height:1.5; }
+.pipe-stat{ font-size:7px; color:#464650; font-family:"SF Mono",monospace; line-height:1.5; margin-top:2px; }
+.hl-green { border-top:2px solid var(--green); }
+.hl-orange{ border-top:2px solid var(--orange); }
+.hl-purple{ border-top:2px solid var(--purple); }
+.hl-blue  { border-top:2px solid var(--blue); }
+.hl-teal  { border-top:2px solid var(--teal); }
 
-/* ── Result rows ─────────────────────────────────── */
-.res-wrap { display:flex;flex-direction:column;width:100%;max-width:840px; }
-.res-row { display:flex;justify-content:space-between;align-items:center;
-  padding:18px 0;border-bottom:1px solid var(--bdr2);
-  opacity:0;transform:translateY(10px);
-  transition:opacity .5s ease,transform .5s ease; }
-.res-row.show { opacity:1;transform:none; }
-.res-title { font-size:clamp(14px,1.7vw,19px);font-weight:500;color:var(--fg); }
-.res-sub   { font-size:12px;color:var(--fg3);margin-top:3px; }
-.res-nums  { display:flex;align-items:center;gap:10px;font-family:"SF Mono",monospace;flex-shrink:0; }
-.rn-b  { color:var(--red);font-size:clamp(14px,1.7vw,21px);font-weight:700; }
-.rn-g  { color:var(--green);font-size:clamp(14px,1.7vw,21px);font-weight:700; }
-.rn-ar { color:#3a3a3e;font-size:13px; }
-.rn-u  { color:#3a3a3e;font-size:11px;margin-left:2px; }
+/* ── Trio agent cards ───────────────────────────── */
+.trio{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; width:100%; max-width:1040px; }
+.trio-card{
+  background:var(--surf); border:1px solid var(--border); border-radius:13px;
+  padding:18px 16px; display:flex; flex-direction:column; gap:10px; text-align:left;
+}
+.trio-card:nth-child(1){ border-top:2px solid var(--orange); }
+.trio-card:nth-child(2){ border-top:2px solid var(--purple); }
+.trio-card:nth-child(3){ border-top:2px solid var(--teal); }
+.trio-badge{ font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+.trio-head { font-size:clamp(13px,1.25vw,16px); font-weight:700; line-height:1.3; color:var(--fg); }
+.trio-body { font-size:clamp(10px,.9vw,13px); line-height:1.7; color:var(--fg2); flex:1; }
+.trio-stat { font-size:clamp(9px,.82vw,11px); color:var(--fg3); font-family:"SF Mono",monospace;
+             border-top:1px solid var(--bdr2); padding-top:9px; line-height:1.8; }
 
-/* ── Nav dots ────────────────────────────────────── */
-#dots { position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
-  display:flex;gap:6px;z-index:100; }
-.dot { height:5px;width:5px;border-radius:3px;background:#222;
-  transition:all .3s cubic-bezier(.4,0,.2,1); }
-.dot.on { background:var(--fg);width:18px; }
+/* ── Comparison table ───────────────────────────── */
+.cmp-wrap{ width:100%; max-width:820px; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.cmp-head{ display:grid; grid-template-columns:2.2fr .8fr .8fr 1.2fr;
+           background:rgba(255,255,255,.022); border-bottom:1px solid var(--bdr2); }
+.cmp-row { display:grid; grid-template-columns:2.2fr .8fr .8fr 1.2fr;
+           border-bottom:1px solid var(--bdr2); }
+.cmp-row:last-child{ border-bottom:none; }
+.cmp-th  { font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+           color:var(--fg3); padding:9px 15px; }
+.cmp-td  { padding:11px 15px; font-size:clamp(11px,1vw,14px);
+           display:flex; flex-direction:column; justify-content:center; }
+.cmp-lbl { font-size:clamp(11px,1vw,14px); font-weight:500; color:var(--fg); }
+.cmp-sub { font-size:10px; color:var(--fg3); margin-top:2px; line-height:1.4; }
+.cmp-bar { height:2px; border-radius:2px; margin-top:5px; max-width:120px; }
+.td-hi   { color:var(--green);  font-weight:700; }
+.td-lo   { color:var(--gold);   font-weight:700; }  /* bad baseline = gold */
+.td-md   { color:var(--amber);  font-weight:600; }
+.td-dim  { color:var(--fg3);    font-size:11px; }
 
-#hint { position:fixed;bottom:26px;right:28px;font-size:11px;color:#222;z-index:100;transition:opacity 1s; }
+/* ── Stat pair ──────────────────────────────────── */
+.stat-pair{ display:flex; align-items:baseline; gap:18px; justify-content:center; }
+.stat-blk { display:flex; flex-direction:column; align-items:center; gap:7px; }
+.stat-n   { font-size:clamp(58px,9.5vw,116px); font-weight:800; line-height:1; letter-spacing:-.05em; }
+.stat-n.bad { color:var(--gold); }
+.stat-n.good{ color:var(--green); }
+.stat-lbl { font-size:12px; color:var(--fg3); text-align:center; line-height:1.5; }
+.stat-arr { font-size:clamp(20px,2.5vw,36px); color:var(--fg3); font-weight:300; margin-bottom:16px; }
+
+/* ── Enforcement list ───────────────────────────── */
+.enf-list{ display:flex; flex-direction:column; gap:7px; width:100%; }
+.enf-row { display:flex; align-items:flex-start; gap:11px;
+           background:var(--surf); border:1px solid var(--border); border-radius:10px; padding:10px 13px; }
+.enf-badge{ flex-shrink:0; min-width:64px; text-align:center; border-radius:5px;
+            padding:3px 7px; font-size:8px; font-weight:700; letter-spacing:.1em;
+            text-transform:uppercase; margin-top:1px; }
+.eb-blue  { background:rgba(41,151,255,.08);  color:var(--blue);   border:1px solid rgba(41,151,255,.2); }
+.eb-purp  { background:rgba(191,90,242,.08);  color:var(--purple); border:1px solid rgba(191,90,242,.2); }
+.eb-orange{ background:rgba(255,159,10,.08);  color:var(--orange); border:1px solid rgba(255,159,10,.2); }
+.eb-teal  { background:rgba(90,200,250,.08);  color:var(--teal);   border:1px solid rgba(90,200,250,.2); }
+.eb-green { background:rgba(48,209,88,.08);   color:var(--green);  border:1px solid rgba(48,209,88,.2); }
+.enf-title{ font-size:clamp(11px,1vw,14px); font-weight:600; color:var(--fg); line-height:1.3; }
+.enf-desc { font-size:clamp(10px,.88vw,12px); color:var(--fg3); margin-top:2px; line-height:1.55; }
+.enf-nums { margin-left:auto; flex-shrink:0; padding-left:12px; text-align:right; }
+.enf-n   { font-size:clamp(12px,1.2vw,15px); font-weight:700; font-family:"SF Mono",monospace; }
+.enf-u   { font-size:9px; color:var(--fg3); margin-top:1px; }
+
+/* ── Intersection ───────────────────────────────── */
+.int-wrap{ display:flex; width:100%; max-width:740px; }
+.int-col { flex:1; min-width:0; padding:18px 16px; border:1px solid var(--bdr2);
+           display:flex; flex-direction:column; gap:7px; text-align:left; }
+.int-col:first-child{ border-radius:11px 0 0 11px; border-right:none; }
+.int-col:last-child { border-radius:0 11px 11px 0; border-left:none; }
+.int-sep { display:flex; align-items:center; justify-content:center; flex-shrink:0;
+           flex-direction:column; gap:5px; padding:0 7px; }
+.int-circle{ width:44px; height:44px; border-radius:50%; background:rgba(41,151,255,.07);
+             border:1px solid rgba(41,151,255,.26); display:flex; align-items:center;
+             justify-content:center; font-size:8px; font-weight:700;
+             letter-spacing:.08em; text-transform:uppercase; color:var(--blue); }
+.int-h   { font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--fg3); margin-bottom:3px; }
+.int-item{ font-size:clamp(11px,.9vw,13px); color:var(--fg2); line-height:1.5; }
+
+/* ── Chain boxes ────────────────────────────────── */
+.chain-wrap{ display:flex; align-items:center; width:100%; max-width:740px; }
+.chain-box { flex:1; min-width:0; background:var(--surf); border:1px solid var(--border);
+             border-radius:10px; padding:11px 13px; text-align:center; }
+.chain-arr { color:var(--bdr2); padding:0 7px; font-size:15px; flex-shrink:0; }
+.chain-lbl { font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+             color:var(--fg3); margin-bottom:3px; }
+.chain-val { font-size:clamp(13px,1.7vw,21px); font-weight:700; line-height:1.2; }
+.chain-sub { font-size:10px; color:var(--fg3); margin-top:2px; }
+
+/* ── Prob bars ──────────────────────────────────── */
+.prob-wrap{ display:flex; flex-direction:column; }
+.prob-row { display:flex; align-items:center; gap:11px; padding:7px 0; border-bottom:1px solid var(--bdr2); }
+.prob-row:last-child{ border-bottom:none; }
+.prob-lbl { min-width:160px; font-size:clamp(11px,.95vw,13px); color:var(--fg2); flex-shrink:0; }
+.prob-bg  { flex:1; height:4px; background:rgba(255,255,255,.05); border-radius:2px; }
+.prob-bar { height:4px; border-radius:2px; }
+.prob-val { min-width:38px; text-align:right; font-size:clamp(12px,1.2vw,15px);
+            font-weight:700; font-family:"SF Mono",monospace; }
+
+/* ── Marker grid ────────────────────────────────── */
+.mkr-grid{ display:flex; flex-direction:column; gap:4px; text-align:left; }
+.mkr-row { display:flex; gap:8px; align-items:baseline; }
+.mkr-cat { font-size:9px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+           color:var(--fg3); min-width:132px; flex-shrink:0; }
+.mkr-eg  { font-size:clamp(10px,.88vw,12px); color:var(--fg2);
+           font-family:"SF Mono",monospace; line-height:1.6; }
+
+/* ── Model diff (Haiku vs Opus) ─────────────────── */
+.mdiff      { display:grid; grid-template-columns:1fr 1fr; gap:9px; width:100%; }
+.mdiff-col  { background:var(--surf); border:1px solid var(--border); border-radius:10px; padding:11px 14px; }
+.mdiff-h    { font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:7px; }
+.mdiff-out  { font-family:"SF Mono",monospace; font-size:clamp(10px,.88vw,12px); line-height:1.75; color:var(--fg2); }
+
+/* ── J-score routing bar ────────────────────────── */
+.j-bar{ display:flex; align-items:stretch; width:100%; max-width:640px;
+        border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.j-zone{ flex:1; padding:10px 12px; text-align:center; }
+.j-zone+.j-zone{ border-left:1px solid var(--bdr2); }
+.j-zone-lbl{ font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:3px; }
+.j-zone-val{ font-size:clamp(13px,1.5vw,18px); font-weight:700; font-family:"SF Mono",monospace; }
+.j-zone-act{ font-size:10px; color:var(--fg3); margin-top:2px; }
+
+/* ── Results rows ───────────────────────────────── */
+.res-wrap{ display:flex; flex-direction:column; width:100%; max-width:860px; }
+.res-row { display:flex; justify-content:space-between; align-items:center;
+           padding:9px 0; border-bottom:1px solid var(--bdr2);
+           opacity:0; transform:translateY(5px);
+           transition:opacity .36s ease, transform .36s ease; }
+.res-row.show{ opacity:1; transform:none; }
+.res-title{ font-size:clamp(12px,1.15vw,15px); font-weight:500; color:var(--fg); }
+.res-sub  { font-size:10px; color:var(--fg3); margin-top:2px; }
+.res-nums { display:flex; align-items:center; gap:5px; font-family:"SF Mono",monospace;
+            flex-shrink:0; padding-left:16px; }
+.rn-b { color:var(--fg2); font-size:clamp(12px,1.25vw,16px); font-weight:500; }  /* before = neutral gray */
+.rn-g { color:var(--green); font-size:clamp(12px,1.25vw,16px); font-weight:700; }
+.rn-a { color:var(--fg3); font-size:11px; }
+.rn-u { color:#3a3a3e; font-size:9px; margin-left:2px; }
+
+/* ── MCP tools grid ─────────────────────────────── */
+.mcp-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; width:100%; max-width:780px; }
+.mcp-col { background:var(--surf); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
+.mcp-h   { font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+           margin-bottom:8px; }
+.mcp-item{ font-size:clamp(9px,.85vw,11px); color:var(--fg3); font-family:"SF Mono",monospace;
+           line-height:1.9; }
+
+/* ── Memory comparison ──────────────────────────── */
+.mem-diff{ display:grid; grid-template-columns:1fr 1fr; gap:13px; width:100%; max-width:760px; }
+.mem-col { background:var(--surf); border:1px solid var(--border); border-radius:12px; padding:14px 17px; }
+.mem-h   { font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; margin-bottom:9px; }
+.mem-row { display:flex; gap:9px; padding:4px 0; border-bottom:1px solid var(--bdr2); }
+.mem-row:last-child{ border-bottom:none; }
+.mem-k   { color:var(--fg3); min-width:72px; flex-shrink:0; font-size:clamp(10px,.88vw,12px); }
+.mem-v   { color:var(--fg2); font-size:clamp(10px,.88vw,12px); line-height:1.4; }
+.mem-v.hi{ color:var(--green); font-weight:600; }
 </style>
 </head>
 <body>
-
 <canvas id="bg"></canvas>
 <div id="bar"></div>
 <div id="act"></div>
-
 <div id="stage">
 
-<!-- ══ 0 · TITLE ══════════════════════════════════════════════════ -->
-<div class="sc full on" data-lbl="">
-  <div class="a d1" style="margin-bottom:16px">
-    <div class="tag"><span class="blink"></span>Built with Claude Opus 4.7 · Claude Code</div>
+<!-- ═══════════════════════════════════════════════════════
+  0 · THE FAILURE
+══════════════════════════════════════════════════════════ -->
+<div class="sc full on" data-lbl="The Failure">
+ <div style="width:100%;max-width:1040px;display:flex;flex-direction:column;gap:13px;align-items:center">
+
+  <!-- CREDENCE title -->
+  <div class="a d1" style="display:flex;flex-direction:column;align-items:center;gap:4px">
+   <div style="font-size:clamp(44px,7.5vw,90px);font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--fg)">CREDENCE</div>
+   <div style="font-size:clamp(11px,1.1vw,14px);color:var(--fg3);font-weight:400;letter-spacing:.02em">
+    The same logic that made type checking mandatory &nbsp;·&nbsp; applied to epistemic state &nbsp;·&nbsp; built with Claude Code, for Claude Code
+   </div>
   </div>
-  <div class="display a d2" style="margin-bottom:18px">Credence</div>
-  <div class="body-l a d3" style="max-width:480px;margin:0 auto 34px">
-    Epistemic enforcement for Claude Code sessions
+
+  <div class="eyebrow a d2">You told Claude you weren't sure — twelve turns later, it shipped certainty</div>
+
+  <!-- Before / After -->
+  <div class="ba-wrap a d3">
+   <div class="ba-col">
+    <div class="ba-lbl">Turn 3 — what you said</div>
+    <div class="code-card" style="border-color:rgba(255,255,255,.07)">
+     <div class="cc-d">"I think the rate limit is around <span class="cc-n">50</span> req/min —</div>
+     <div class="cc-d">&nbsp;<span style="color:#5aaaff">but I'm not certain.</span> Their docs are unclear.</div>
+     <div class="cc-d">&nbsp;Token expiry is approximately <span class="cc-n">3600</span>s —</div>
+     <div class="cc-d">&nbsp;<span style="color:#5aaaff">tentative, haven't confirmed with vendor."</span></div>
+    </div>
+    <div style="font-size:11px;color:var(--fg3);font-family:'SF Mono',monospace;text-align:left;margin-top:4px">
+     4 uncertainty signals detected · <span style="color:#5aaaff">classified: hedged, unverified</span>
+    </div>
+   </div>
+   <div class="ba-arr a d4">→</div>
+   <div class="ba-col">
+    <div class="ba-lbl" style="color:var(--gold)">Turn 12 — what Claude wrote</div>
+    <div class="code-card" style="border-color:rgba(255,214,10,.18);background:rgba(255,214,10,.02)">
+     <div><span class="cc-k">RATE_LIMIT</span>&nbsp;&nbsp;<span class="cc-d">=</span>&nbsp;<span class="cc-n">50</span>&nbsp;&nbsp;&nbsp;<span class="cc-d"># req/min</span></div>
+     <div><span class="cc-k">TOKEN_EXPIRY</span>&nbsp;<span class="cc-d">=</span>&nbsp;<span class="cc-n">3600</span>&nbsp;<span class="cc-d"># seconds</span></div>
+     <div style="margin-top:10px;color:#3a3a3e;font-size:10px">No warning. No flag. No qualifier.</div>
+    </div>
+    <div style="font-size:11px;color:var(--gold);font-family:'SF Mono',monospace;text-align:left;margin-top:4px">
+     <span style="color:var(--gold)">⚠ All uncertainty stripped — shipped as confirmed fact</span>
+    </div>
+   </div>
   </div>
-  <div class="pills a d4">
-    <div class="pill"><span class="c-green">178</span>&nbsp;tests</div>
-    <div class="pill"><span class="c-blue">22</span>&nbsp;MCP tools</div>
-    <div class="pill"><span class="c-orange">Rust</span>&nbsp;gate</div>
-    <div class="pill"><span class="c-purple">Opus 4.7</span></div>
+
+  <!-- Compression pipeline mini -->
+  <div class="pipe-wrap a d5" style="max-width:820px">
+   <div class="pipe-node hl-orange" style="flex:1.2">
+    <div class="pipe-lbl c-orange">Haiku Compression</div>
+    <div class="pipe-sub">claude-haiku-4-5</div>
+    <div class="pipe-stat">"I think 50 req/min" → "50 req/min"<br>qualifier = collateral loss</div>
+   </div>
+   <div class="pipe-sep">→</div>
+   <div class="pipe-node" style="flex:.9">
+    <div class="pipe-lbl c-gold">68% stripped</div>
+    <div class="pipe-sub" style="color:var(--fg3)">qualifiers silently lost</div>
+    <div class="pipe-stat">compression collateral loss</div>
+   </div>
+   <div class="pipe-sep">→</div>
+   <div class="pipe-node" style="flex:.9">
+    <div class="pipe-lbl c-gold">74% confirmed</div>
+    <div class="pipe-sub" style="color:var(--fg3)">stated as fact downstream</div>
+    <div class="pipe-stat">no warning · no flag</div>
+   </div>
+   <div class="pipe-sep">→</div>
+   <div class="pipe-node hl-teal" style="flex:1.2">
+    <div class="pipe-lbl c-teal">Shipped</div>
+    <div class="pipe-sub" style="color:var(--fg3)">TOKEN_EXPIRY = 3600</div>
+    <div class="pipe-stat">silent · no annotation · no block</div>
+   </div>
   </div>
+
+  <div class="a d6" style="font-size:clamp(13px,1.6vw,18px);color:var(--fg3)">
+   Claude didn't invent that number.&nbsp;
+   <span style="color:var(--fg2)">It just forgot</span>&nbsp;
+   <span style="color:var(--fg)">you weren't sure.</span>
+  </div>
+
+ </div>
 </div>
 
-<!-- ══ 1 · HUMAN HOOK ══════════════════════════════════════════════ -->
-<div class="sc full" data-lbl="The Problem">
-  <div class="a d1" style="max-width:680px">
-    <div class="head" style="line-height:1.25">
-      I kept seeing Claude do<br>something subtle—
-      <br><span class="c-red">and dangerous.</span>
-    </div>
+
+<!-- ═══════════════════════════════════════════════════════
+  1 · WE NAMED THIS — EQL / EQLR
+══════════════════════════════════════════════════════════ -->
+<div class="sc full" data-lbl="We Named This">
+ <div style="width:100%;max-width:800px;display:flex;flex-direction:column;gap:19px;align-items:center">
+
+  <div class="a d1" style="font-size:clamp(14px,1.7vw,22px);color:var(--fg3);font-weight:400">We coined the terms.</div>
+
+  <div class="a d2" style="display:flex;flex-direction:column;gap:9px;align-items:center">
+   <div style="display:flex;align-items:baseline;gap:14px">
+    <span class="display" style="font-size:clamp(54px,8vw,96px)">EQL</span>
+    <span style="font-size:clamp(13px,1.5vw,19px);color:var(--fg3);font-weight:400">Epistemic Qualifier Loss</span>
+   </div>
+   <div style="display:flex;align-items:baseline;gap:14px">
+    <span class="display c-blue" style="font-size:clamp(38px,6vw,72px)">EQLR</span>
+    <span style="font-size:clamp(13px,1.5vw,19px);color:var(--fg3);font-weight:400">EQL Rate — fraction of hedged claims losing qualifier after compression</span>
+   </div>
   </div>
+
+  <!-- Failure chain: neutral → gold → gold → shipped -->
+  <div class="chain-wrap a d3">
+   <div class="chain-box" style="border-color:rgba(255,255,255,.07)">
+    <div class="chain-lbl">You said</div>
+    <div class="chain-val c-dim" style="font-size:clamp(11px,1.1vw,14px);line-height:1.4">"I think 50 req/min"<br>"approximately 3600s"</div>
+    <div class="chain-sub" style="color:#5aaaff">clearly uncertain</div>
+   </div>
+   <div class="chain-arr">→</div>
+   <div class="chain-box" style="border-color:rgba(255,159,10,.22)">
+    <div class="chain-lbl c-orange">AI compresses history</div>
+    <div class="chain-val c-gold" style="font-size:clamp(13px,1.5vw,18px)">"I think" dropped</div>
+    <div class="chain-sub">68% of qualifiers lost silently</div>
+   </div>
+   <div class="chain-arr">→</div>
+   <div class="chain-box" style="border-color:rgba(255,214,10,.22)">
+    <div class="chain-lbl c-gold">Next response</div>
+    <div class="chain-val c-gold" style="font-size:clamp(13px,1.5vw,18px)">74% ship as fact</div>
+    <div class="chain-sub">no warning · no flag</div>
+   </div>
+  </div>
+
+  <div class="divider a d4" style="width:44px;margin:2px auto"></div>
+
+  <div class="a d5" style="font-size:clamp(12px,1.15vw,14px);color:var(--fg3);text-align:center;line-height:1.8;max-width:560px">
+   We coined both terms to describe a failure nobody had named or measured.<br>
+   198 canonical uncertainty markers · 7 hedging categories.<br>
+   <span style="color:var(--fg2)">Silent errors cost more than enforcement.</span> <span style="color:var(--fg3)">Epistemic errors — same cost structure.</span><br>
+   <span style="color:var(--blue)">The fix: a deterministic frozenset scan · 0.011ms · zero API calls · 100% block rate.</span>
+  </div>
+
+ </div>
 </div>
 
-<!-- ══ 2 · TURN 3 ═════════════════════════════════════════════════ -->
-<div class="sc full" data-lbl="The Failure">
-  <div style="display:flex;flex-direction:column;align-items:center;gap:24px;width:100%">
-    <div class="eyebrow a d1">Turn 3 — what you said</div>
-    <div class="code-card a d2" style="max-width:700px">
-      <div class="cc-d">"I think the auth token expires in <span class="cc-n">3600</span> seconds —</div>
-      <div class="cc-d">&nbsp;but it might be <span class="cc-n">86400</span>, I haven't confirmed</div>
-      <div class="cc-d">&nbsp;with the vendor yet."</div>
-    </div>
+
+<!-- ═══════════════════════════════════════════════════════
+  2 · THE NUMBER
+══════════════════════════════════════════════════════════ -->
+<div class="sc full" data-lbl="The Number">
+ <div style="width:100%;max-width:900px;display:flex;flex-direction:column;gap:22px;align-items:center">
+
+  <div class="a d1" style="font-size:clamp(13px,1.4vw,18px);color:var(--fg3);font-weight:400;letter-spacing:.04em">
+   When an AI compresses your conversation history —
   </div>
+
+  <!-- Big 74% → 0% -->
+  <div class="a d2" style="display:flex;align-items:center;justify-content:center;gap:clamp(20px,5vw,64px);width:100%">
+   <div style="text-align:center">
+    <div style="font-size:clamp(80px,14vw,160px);font-weight:900;color:var(--gold);line-height:1;font-family:'SF Mono',monospace;letter-spacing:-.04em">74%</div>
+    <div style="font-size:clamp(13px,1.5vw,18px);color:var(--fg3);margin-top:6px">without Credence</div>
+    <div style="font-size:clamp(11px,1.1vw,14px);color:var(--fg3);margin-top:3px">uncertain facts shipped as confirmed truth</div>
+   </div>
+   <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+    <div style="font-size:clamp(28px,4vw,52px);color:var(--fg3);font-weight:300">→</div>
+    <div style="font-size:clamp(10px,.85vw,12px);color:var(--fg3);font-family:'SF Mono',monospace;white-space:nowrap">Credence probe</div>
+   </div>
+   <div style="text-align:center">
+    <div style="font-size:clamp(80px,14vw,160px);font-weight:900;color:var(--green);line-height:1;font-family:'SF Mono',monospace;letter-spacing:-.04em">0%</div>
+    <div style="font-size:clamp(13px,1.5vw,18px);color:var(--fg3);margin-top:6px">with Credence</div>
+    <div style="font-size:clamp(11px,1.1vw,14px);color:var(--fg3);margin-top:3px">0.011ms · zero API calls · deterministic</div>
+   </div>
+  </div>
+
+  <!-- FCR label -->
+  <div class="a d3" style="font-size:clamp(12px,1.15vw,15px);color:var(--fg2);text-align:center;letter-spacing:.01em">
+   False Certainty Rate &nbsp;·&nbsp; n=50 &nbsp;·&nbsp; LLMLingua-inspired compression &nbsp;·&nbsp; corrected scorer v2
+  </div>
+
+  <!-- Chain failure -->
+  <div class="a d4" style="display:flex;align-items:center;gap:28px;background:rgba(41,151,255,.04);
+    border:1px solid rgba(41,151,255,.12);border-radius:12px;padding:14px 24px;max-width:680px;width:100%">
+   <div style="text-align:center;flex-shrink:0">
+    <div style="font-size:clamp(24px,3.5vw,44px);font-weight:800;color:var(--gold);font-family:'SF Mono',monospace">65%</div>
+    <div style="font-size:10px;color:var(--fg3);font-family:'SF Mono',monospace;margin-top:2px">chain failure</div>
+    <div style="font-size:9px;color:var(--fg3);margin-top:1px">10 hops · 10% per-hop</div>
+   </div>
+   <div style="width:1px;background:rgba(255,255,255,.07);flex-shrink:0;align-self:stretch"></div>
+   <div style="font-size:clamp(12px,1.1vw,15px);color:var(--fg2);line-height:1.8">
+    Type checking became mandatory not because bugs were new —<br>
+    but because typed systems <em>compelled</em> correctness at scale.<br>
+    <span style="color:var(--fg)">Epistemic enforcement follows the same trajectory.</span>
+   </div>
+  </div>
+
+  <div class="a d5" style="font-size:clamp(15px,1.8vw,22px);font-weight:600;color:var(--blue)">We measured it. We fixed it.</div>
+
+ </div>
 </div>
 
-<!-- ══ 3 · THE SILENCE ════════════════════════════════════════════ -->
-<div class="sc full" data-lbl="The Failure" style="background:radial-gradient(ellipse at center,rgba(255,69,58,.04) 0%,transparent 65%)">
-  <div style="display:flex;flex-direction:column;align-items:center;gap:22px;width:100%">
-    <div class="eyebrow a d1">Turn 12 — what Claude wrote</div>
-    <div class="code-card c a d2" style="max-width:580px">
-      <div style="font-size:clamp(16px,1.9vw,23px)">
-        <span class="cc-k">TOKEN_EXPIRY</span> = <span class="cc-n">3600</span>
-        <span class="cc-d">&nbsp;&nbsp;# auth token expiry</span>
-      </div>
+
+<!-- ═══════════════════════════════════════════════════════
+  3 · MEASUREMENT TABLE
+══════════════════════════════════════════════════════════ -->
+<div class="sc full" data-lbl="The Measurement">
+ <div style="width:100%;max-width:830px;display:flex;flex-direction:column;gap:16px;align-items:center">
+
+  <div class="eyebrow a d1">Compression Faithfulness Study · n=50 · corrected scorer v2 · 198 markers</div>
+
+  <div class="cmp-wrap a d2">
+   <div class="cmp-head">
+    <div class="cmp-th">Condition</div>
+    <div class="cmp-th">Qualifiers<br>Stripped</div>
+    <div class="cmp-th">Shipped as<br>Confirmed Fact</div>
+    <div class="cmp-th">95% CI</div>
+   </div>
+   <div class="cmp-row" id="cmp0" style="opacity:0;transition:opacity .5s .1s">
+    <div class="cmp-td">
+     <div class="cmp-lbl">LLMLingua-inspired compression</div>
+     <div class="cmp-sub">aggressive token reduction · ≤19-char qualifiers always dropped</div>
+     <div class="cmp-bar" style="width:74%;background:var(--gold)"></div>
     </div>
-    <div class="a d3"><span class="body c-dimmer">No warning. No flag. You shipped it.</span></div>
+    <div class="cmp-td td-lo">68%</div>
+    <div class="cmp-td td-lo">74%</div>
+    <div class="cmp-td td-dim">[59.7%, 85.4%]</div>
+   </div>
+   <div class="cmp-row" id="cmp1" style="opacity:0;transition:opacity .5s .34s">
+    <div class="cmp-td">
+     <div class="cmp-lbl">Naive Haiku compression</div>
+     <div class="cmp-sub">standard summarisation · self-audit: false certainty was 34% → corrected to 6%</div>
+     <div class="cmp-bar" style="width:6%;background:var(--amber)"></div>
+    </div>
+    <div class="cmp-td td-md">46%</div>
+    <div class="cmp-td td-md">6%</div>
+    <div class="cmp-td td-dim">[1.3%, 16.5%]</div>
+   </div>
+   <div class="cmp-row" id="cmp2" style="opacity:0;transition:opacity .5s .58s">
+    <div class="cmp-td">
+     <div class="cmp-lbl">Credence — faithfulness probe</div>
+     <div class="cmp-sub">frozenset scan · 0.011ms · blocks Haiku before it runs · 0 API calls</div>
+     <div class="cmp-bar" style="width:1%;background:var(--green)"></div>
+    </div>
+    <div class="cmp-td td-hi">0%</div>
+    <div class="cmp-td td-hi">0%</div>
+    <div class="cmp-td" style="color:var(--green);font-size:11px">[0%, 7.1%]</div>
+   </div>
   </div>
+
+  <div class="a d3" style="display:flex;gap:0;width:100%;max-width:830px;
+    background:var(--surf);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+   <div style="flex:1;padding:13px 16px;text-align:center;border-right:1px solid var(--bdr2)">
+    <div style="font-size:clamp(17px,2vw,26px);font-weight:800;color:var(--green)">0.011ms</div>
+    <div style="font-size:10px;color:var(--fg3);margin-top:2px">Probe latency p50</div>
+   </div>
+   <div style="flex:1;padding:13px 16px;text-align:center;border-right:1px solid var(--bdr2)">
+    <div style="font-size:clamp(17px,2vw,26px);font-weight:800;color:var(--blue)">0</div>
+    <div style="font-size:10px;color:var(--fg3);margin-top:2px">API calls</div>
+   </div>
+   <div style="flex:1;padding:13px 16px;text-align:center;border-right:1px solid var(--bdr2)">
+    <div style="font-size:clamp(17px,2vw,26px);font-weight:800;color:var(--green)">100%</div>
+    <div style="font-size:10px;color:var(--fg3);margin-top:2px">Block rate n=50</div>
+   </div>
+   <div style="flex:1;padding:13px 16px;text-align:center;border-right:1px solid var(--bdr2)">
+    <div style="font-size:clamp(17px,2vw,26px);font-weight:800;color:var(--purple)">198</div>
+    <div style="font-size:10px;color:var(--fg3);margin-top:2px">Uncertainty markers</div>
+   </div>
+   <div style="flex:1;padding:13px 16px;text-align:center">
+    <div style="font-size:clamp(17px,2vw,26px);font-weight:800;color:var(--teal)">98×</div>
+    <div style="font-size:10px;color:var(--fg3);margin-top:2px">Rust vs Python</div>
+   </div>
+  </div>
+
+  <div class="a d4" style="font-size:11px;color:var(--fg3);text-align:center;max-width:680px;line-height:1.7">
+   Self-audit: found own scorer inflation · naive false certainty was 34% → corrected to 6% after finding 14/17 "certain" responses used out-of-vocabulary hedging · correction reasoning in repo
+  </div>
+
+ </div>
 </div>
 
-<!-- ══ 4 · THE SCALE — universality hook ══════════════════════════ -->
-<div class="sc full" data-lbl="">
-  <div style="max-width:720px;display:flex;flex-direction:column;gap:18px;align-items:center">
-    <div class="head c-dim a d1" style="line-height:1.3">Every long Claude Code session.</div>
-    <div class="head c-dim a d2" style="line-height:1.3">Every multi-agent pipeline.</div>
-    <div class="head c-dim a d3" style="line-height:1.3">Every constraint you said you'd confirm later.</div>
-    <div style="height:1px;width:60px;background:var(--bdr2);margin:12px 0" class="a d4"></div>
-    <div class="sub c-red a d5" style="font-weight:500">All of them. Silently.</div>
+
+<!-- ═══════════════════════════════════════════════════════
+  4 · MULTI-AGENT PIPELINE + J-SCORE ROUTING
+══════════════════════════════════════════════════════════ -->
+<div class="sc full" data-lbl="Multi-Agent Pipeline">
+ <div style="width:100%;max-width:1040px;display:flex;flex-direction:column;gap:14px;align-items:center">
+
+  <div class="eyebrow a d1">Haiku compresses &nbsp;·&nbsp; Opus reasons &nbsp;·&nbsp; the gate enforces</div>
+
+  <!-- Pipeline -->
+  <div class="pipe-wrap a d2">
+   <div class="pipe-node hl-green" style="flex:.85">
+    <div class="pipe-lbl c-green">Registry</div>
+    <div class="pipe-sub">SQLite · Python</div>
+    <div class="pipe-stat">confidence · zone · decay<br>1.79ms · 0 API</div>
+   </div>
+   <div class="pipe-sep">→</div>
+   <div class="pipe-node hl-orange" style="flex:1.1">
+    <div class="pipe-lbl c-orange">Probe + Haiku</div>
+    <div class="pipe-sub c-orange">claude-haiku-4-5</div>
+    <div class="pipe-stat">frozenset scan 0.011ms<br>BLOCK if markers present<br>Haiku only on HIGH-J</div>
+   </div>
+   <div class="pipe-sep">→</div>
+   <div class="pipe-node hl-purple" style="flex:1.15">
+    <div class="pipe-lbl c-purple">Opus 4.7</div>
+    <div class="pipe-sub c-purple">claude-opus-4-7</div>
+    <div class="pipe-stat">main reasoning<br>+ ghost detection<br>+ contradiction scan<br>+ adaptive thinking</div>
+   </div>
+   <div class="pipe-sep">→</div>
+   <div class="pipe-node hl-blue" style="flex:1">
+    <div class="pipe-lbl c-blue">GTS</div>
+    <div class="pipe-sub c-dim">Gen-Time Scanner</div>
+    <div class="pipe-stat">code + prose scan<br>3 tiers: RISK/WARN/CHECK<br>~0.08ms · 0 API</div>
+   </div>
+   <div class="pipe-sep">→</div>
+   <div class="pipe-node hl-teal" style="flex:.9">
+    <div class="pipe-lbl c-teal">Rust Gate</div>
+    <div class="pipe-sub c-teal">credence-gate binary</div>
+    <div class="pipe-stat">PreToolUse hook<br>3.4ms · exit code 2<br>98× vs Python</div>
+   </div>
   </div>
+
+  <!-- Routing logic compact strip -->
+  <div class="a d3" style="display:flex;gap:0;width:100%;max-width:1040px;background:var(--surf);
+    border:1px solid var(--border);border-radius:10px;overflow:hidden">
+   <div style="flex:1;padding:10px 16px;text-align:center;border-right:1px solid var(--bdr2)">
+    <div style="font-size:clamp(13px,1.4vw,17px);font-weight:700;color:var(--orange)">HIGH</div>
+    <div style="font-size:10px;color:var(--fg3);margin-top:2px">→ Haiku compresses</div>
+   </div>
+   <div style="flex:1;padding:10px 16px;text-align:center;border-right:1px solid var(--bdr2)">
+    <div style="font-size:clamp(13px,1.4vw,17px);font-weight:700;color:var(--blue)">MEDIUM</div>
+    <div style="font-size:10px;color:var(--fg3);margin-top:2px">→ trim window</div>
+   </div>
+   <div style="flex:1;padding:10px 16px;text-align:center;border-right:1px solid var(--bdr2)">
+    <div style="font-size:clamp(13px,1.4vw,17px);font-weight:700;color:var(--green)">LOW</div>
+    <div style="font-size:10px;color:var(--fg3);margin-top:2px">→ preserve verbatim</div>
+   </div>
+   <div style="flex:2;padding:10px 16px;text-align:center">
+    <div style="font-size:10px;color:var(--fg3);line-height:1.55">J scores each turn by how resolved it is.<br>Uncertain turns: always LOW → always PRESERVE.</div>
+   </div>
+  </div>
+
+  <!-- Three agent cards -->
+  <div class="trio a d4">
+   <div class="trio-card">
+    <div class="trio-badge c-orange">① Haiku — Compression Agent</div>
+    <div class="trio-head">Fast. Cheap. Blind to epistemic weight.</div>
+    <div class="trio-body">
+     Compresses resolved context at &lt;$0.001/turn. Cannot distinguish "I think 50"
+     from "50" — identical token distribution. Qualifier is collateral loss.
+     <span class="c-orange">Probe fires before Haiku ever sees uncertain text.</span>
+    </div>
+    <div class="trio-stat">$0.80/$4 per 1M tok · called only on HIGH-J turns<br>skipped when uncertainty markers present in user turns</div>
+   </div>
+   <div class="trio-card">
+    <div class="trio-badge c-purple">② Opus 4.7 — Reasoning Agent</div>
+    <div class="trio-head">The ghost detector is why it must be Opus 4.7.</div>
+    <div class="trio-body">
+     <b>Ghost Detector</b> — no hedging markers, sounds certain. Haiku returns [].
+     Opus 4.7 reasons about provenance: <em>where each claim came from, not just what it says.</em>
+     Catches the case every other layer misses.<br><br>
+     Also: main generation · contradiction scan · adaptive thinking in uncertain territory.
+     <span class="c-purple">None of this is replaceable with a smaller model.</span>
+    </div>
+    <div class="trio-stat">ghost detect: ~$0.002/call · n=10 gauntlet · 100% detection<br>Haiku misclassifies ghost constraints · Opus catches all 10</div>
+   </div>
+   <div class="trio-card">
+    <div class="trio-badge c-teal">③ Rust Gate — Enforcement Agent</div>
+    <div class="trio-head">No model. No API. 3.4ms. Deterministic.</div>
+    <div class="trio-body">
+     Compiled Rust binary. PreToolUse hook in Claude Code. Blocks Write/Edit/Bash
+     when arguments keyword-overlap unverified constraints via 32 synonym clusters.
+     <span class="c-teal">Model-independent enforcement is the guarantee.</span>
+    </div>
+    <div class="trio-stat">3.0MB binary · LTO-optimized · stripped<br>Python hook: 331ms · Rust: 3.4ms · 100 calls: 33s vs 0.34s</div>
+   </div>
+  </div>
+
+ </div>
 </div>
 
-<!-- ══ 5 · REALISATION + WHY WORSE ════════════════════════════════ -->
-<div class="sc full" data-lbl="">
-  <div style="max-width:740px;display:flex;flex-direction:column;gap:16px;align-items:center">
-    <div class="head a d1">Claude didn't make up that number.</div>
-    <div class="head c-dim a d2">You gave it that number.</div>
-    <div class="head c-dimmer a d3" style="margin-bottom:16px">It just forgot you weren't sure.</div>
-    <div class="divider a d4" style="margin:4px auto 16px"></div>
-    <div class="sub c-dim a d5" style="font-weight:400">
-      Not hallucination. Your own uncertainty,&nbsp;<span class="c-red">quietly erased</span>.
-    </div>
+
+<!-- ═══════════════════════════════════════════════════════
+  5 · PROBE + GHOST DETECTION
+══════════════════════════════════════════════════════════ -->
+<div class="sc split" data-lbl="Probe + Ghost Detector">
+ <div class="main">
+
+  <div class="eyebrow a d1">We tested the obvious fix first</div>
+  <div class="head a d2" style="font-size:clamp(20px,3.2vw,44px);margin-bottom:13px">
+   System prompt gets you <span class="c-amber">90%.</span><br>
+   <span style="font-size:clamp(14px,2.2vw,30px)">The probe gets you <span class="c-green">100%.</span></span>
   </div>
+
+  <!-- Null hypothesis -->
+  <div class="a d3" style="width:100%;max-width:390px;margin-bottom:12px">
+   <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);margin-bottom:7px">Qualifier survival rate · "preserve uncertainty qualifiers" instruction · n=30</div>
+   <div class="prob-wrap">
+    <div class="prob-row">
+     <div class="prob-lbl">No instruction</div>
+     <div class="prob-bg"><div class="prob-bar" style="width:46%;background:var(--amber)"></div></div>
+     <div class="prob-val c-amber">46%</div>
+    </div>
+    <div class="prob-row">
+     <div class="prob-lbl">"Preserve qualifiers" prompt</div>
+     <div class="prob-bg"><div class="prob-bar" style="width:90%;background:var(--blue)"></div></div>
+     <div class="prob-val c-blue">90%</div>
+    </div>
+    <div class="prob-row">
+     <div class="prob-lbl">Credence probe</div>
+     <div class="prob-bg"><div class="prob-bar" style="width:100%;background:var(--green)"></div></div>
+     <div class="prob-val c-green">100%</div>
+    </div>
+   </div>
+  </div>
+
+  <!-- Ghost comparison -->
+  <div class="a d4" style="width:100%;max-width:390px">
+   <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);margin-bottom:7px">Ghost constraint — zero hedging markers</div>
+   <div style="font-family:'SF Mono',monospace;font-size:clamp(10px,.9vw,12px);color:var(--fg2);
+     background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:8px">
+    "The Stripe API enforces 100 req/min on our plan."<br>
+    <span style="color:var(--fg3)">sounds certain · <span class="c-gold">zero hedging markers</span> — but it's vendor-stated, unverified</span>
+   </div>
+   <div class="mdiff">
+    <div class="mdiff-col">
+     <div class="mdiff-h c-amber">Haiku extraction</div>
+     <div class="mdiff-out">output: []<br><span style="color:var(--amber)">✗ misses it</span><br><span style="color:var(--fg3);font-size:9px">no provenance signal</span></div>
+    </div>
+    <div class="mdiff-col" style="border-color:rgba(191,90,242,.25)">
+     <div class="mdiff-h c-purple">Opus 4.7 ghost detector</div>
+     <div class="mdiff-out">conf: 0.84<br><span style="color:var(--green)">✓ catches it</span><br><span style="color:var(--fg3);font-size:9px">"where this came from — vendor-stated, unverified"</span></div>
+    </div>
+   </div>
+  </div>
+
+  <div class="a d5" style="margin-top:11px;font-size:clamp(11px,1vw,13px);color:var(--fg3);font-style:italic;max-width:390px">
+   Prompt instructions are probabilistic.<br>Enforcement is not. Opus sees what Haiku cannot.
+  </div>
+
+ </div>
+
+ <div class="aside">
+  <div class="cp a d2">
+   <div class="cp-t">Faithfulness Probe · Output</div>
+   <div class="cp-r"><span class="cp-k">markers</span><span class="cp-v">["i'm not certain",<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"approximately",<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"haven't confirmed",<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"tentative"]</span></div>
+   <div class="cp-r" style="margin-top:3px"><span class="cp-k">decision</span><span class="cp-b">BLOCK</span></div>
+   <div class="cp-r"><span class="cp-k">haiku called</span><span class="cp-v">NO</span></div>
+   <div class="cp-r"><span class="cp-k">latency</span><span class="cp-g">0.011ms</span></div>
+   <div class="cp-r"><span class="cp-k">api calls</span><span class="cp-g">0</span></div>
+  </div>
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:13px 15px" class="a d3">
+   <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);margin-bottom:7px">198 markers · 7 categories</div>
+   <div class="mkr-grid">
+    <div class="mkr-row"><div class="mkr-cat">canonical hedges</div><div class="mkr-eg">"i think", "not sure", "uncertain"</div></div>
+    <div class="mkr-row"><div class="mkr-cat">past-tense variants</div><div class="mkr-eg">"assumed", "estimated", "thought"</div></div>
+    <div class="mkr-row"><div class="mkr-cat">impersonal hedging</div><div class="mkr-eg">"pending verification", "ambiguous"</div></div>
+    <div class="mkr-row"><div class="mkr-cat">vendor / source</div><div class="mkr-eg">"the docs say", "we were told"</div></div>
+    <div class="mkr-row"><div class="mkr-cat">numerical hedging</div><div class="mkr-eg">"approximately", "roughly", "~"</div></div>
+    <div class="mkr-row"><div class="mkr-cat">conditional uncert.</div><div class="mkr-eg">"might be", "could be", "depends"</div></div>
+    <div class="mkr-row"><div class="mkr-cat">code comments</div><div class="mkr-eg">"# TODO verify", "# unconfirmed"</div></div>
+   </div>
+  </div>
+ </div>
 </div>
 
-<!-- ══ 6 · EQL NAMED ══════════════════════════════════════════════ -->
-<div class="sc full" data-lbl="The Name">
-  <div style="max-width:700px;display:flex;flex-direction:column;gap:26px;align-items:center;text-align:center">
-    <div class="eyebrow a d1">We named it</div>
-    <div class="display a d2" style="font-size:clamp(52px,8.5vw,104px)">EQL</div>
-    <div class="sub a d3" style="font-weight:500">Epistemic Qualifier Loss</div>
-    <div class="body a d4 c-dimmer" style="max-width:460px">
-      The silent stripping of uncertainty markers<br>during LLM context compression
-    </div>
-    <div class="divider a d5"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+  6 · ENFORCEMENT STACK
+══════════════════════════════════════════════════════════ -->
+<div class="sc split" data-lbl="Enforcement Stack">
+ <div class="main">
+
+  <div class="eyebrow a d1">Query overlaps · enforcement escalates · the gate fires</div>
+  <div class="head a d2" style="font-size:clamp(18px,2.8vw,38px);margin-bottom:12px">
+   Five layers the fact<br><span class="c-blue">cannot slip through.</span>
   </div>
+
+  <div class="enf-list a d3">
+   <div class="enf-row">
+    <div class="enf-badge eb-blue">detect</div>
+    <div style="min-width:0;flex:1">
+     <div class="enf-title">Truth Buffer</div>
+     <div class="enf-desc">All unverified constraints injected into system prompt before every turn. Sorted by confidence decay — stalest constraints first. Cap: 10 constraints.</div>
+    </div>
+    <div class="enf-nums"><div class="enf-n c-blue">~0ms</div><div class="enf-u">SQLite read</div></div>
+   </div>
+   <div class="enf-row">
+    <div class="enf-badge eb-purp">enforce</div>
+    <div style="min-width:0;flex:1">
+     <div class="enf-title">Consistency Enforcer</div>
+     <div class="enf-desc">32 synonym clusters — "rate" → {throttle, quota, frequency, throughput}. ≥2 overlap with user query → imperative injection escalates from advisory to MUST.</div>
+    </div>
+    <div class="enf-nums"><div class="enf-n c-purple">~0ms</div><div class="enf-u">set ops only</div></div>
+   </div>
+   <div class="enf-row">
+    <div class="enf-badge eb-orange">annotate</div>
+    <div style="min-width:0;flex:1">
+     <div class="enf-title">Generation-Time Scanner</div>
+     <div class="enf-desc">Scans generated code + prose. 3 tiers by effective confidence: HIGH RISK / UNVERIFIED / CHECK. Fires regardless of whether the model complied with injection.</div>
+    </div>
+    <div class="enf-nums"><div class="enf-n c-orange">~0.08ms</div><div class="enf-u">regex scan</div></div>
+   </div>
+   <div class="enf-row">
+    <div class="enf-badge eb-teal">block</div>
+    <div style="min-width:0;flex:1">
+     <div class="enf-title">Rust PreToolUse Gate</div>
+     <div class="enf-desc">Blocks Write/Edit/Bash when tool arguments overlap unverified constraints. Exit code 2. 98× faster than Python hook. 100 calls: 0.34s vs 33s overhead.</div>
+    </div>
+    <div class="enf-nums"><div class="enf-n c-teal">3.4ms</div><div class="enf-u">Rust binary</div></div>
+   </div>
+   <div class="enf-row">
+    <div class="enf-badge eb-green">memory</div>
+    <div style="min-width:0;flex:1">
+     <div class="enf-title">Cross-Session Memory</div>
+     <div class="enf-desc">Uncertainty travels across sessions with confidence + decay. Session 2 inherits epistemic registry. Mem0/Zep store facts — Credence stores facts with epistemic weight.</div>
+    </div>
+    <div class="enf-nums"><div class="enf-n c-green">&lt;1ms</div><div class="enf-u">SQLite snap</div></div>
+   </div>
+  </div>
+
+  <div class="a d4" style="display:flex;align-items:baseline;gap:20px;margin-top:10px;padding-top:16px;border-top:2px solid rgba(90,200,250,.18)">
+   <span style="font-size:clamp(22px,3.2vw,44px);font-weight:700;color:var(--fg2);letter-spacing:-.01em">Not advisory.</span>
+   <span style="font-size:clamp(36px,6vw,80px);font-weight:900;color:var(--teal);letter-spacing:-.03em;line-height:1">Blocked.</span>
+   <span style="font-size:clamp(10px,.9vw,12px);color:var(--fg3);font-family:'SF Mono',monospace;margin-left:2px;align-self:center">exit code 2<br>Edit/Write/Bash halted</span>
+  </div>
+
+ </div>
+
+ <div class="aside">
+  <div class="gate a d2">
+   <div class="gate-h">CREDENCE GATE — TOOL BLOCKED</div>
+   <div class="gate-r"><span class="gate-k">Tool</span><span class="gate-v" style="font-size:13px;font-weight:700;color:var(--fg)">Edit</span></div>
+   <div class="gate-r"><span class="gate-k">File</span><span class="gate-v">config.py</span></div>
+   <div class="gate-r" style="margin-top:6px"><span class="gate-k">Overlap</span><span class="gate-a" style="font-size:13px;font-weight:700">token, expires, auth</span></div>
+   <div class="gate-r"><span class="gate-k">Constraint</span><span class="gate-v">TOKEN_EXPIRY ~3600s — unconfirmed</span></div>
+   <div class="gate-r" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(90,200,250,.15)">
+    <span class="gate-k">Exit</span>
+    <span style="color:var(--teal);font-weight:800;font-size:14px;font-family:'SF Mono',monospace">2 · BLOCKED</span>
+   </div>
+  </div>
+
+  <div class="code-card a d3" style="font-size:11px;padding:11px 15px">
+   <span class="cc-l">GTS annotation tiers</span>
+   <div><span class="cc-k">TOKEN_EXPIRY</span> = <span class="cc-n">3600</span></div>
+   <div class="gts-risk" style="font-size:10px">&nbsp;&nbsp;# ⚠⚠ CREDENCE[HIGH RISK, conf=0.15]</div>
+   <div style="margin-top:7px"><span class="cc-k">RATE_LIMIT</span>&nbsp;&nbsp;= <span class="cc-n">50</span></div>
+   <div class="gts-warn" style="font-size:10px">&nbsp;&nbsp;# ⚠ CREDENCE[unverified, conf=0.28]</div>
+   <div style="margin-top:7px"><span class="cc-k">MAX_RETRIES</span> = <span class="cc-n">3</span></div>
+   <div class="gts-chk" style="font-size:10px">&nbsp;&nbsp;# CREDENCE[check, conf=0.44]</div>
+  </div>
+
+  <!-- Claude Code hooks config -->
+  <div class="code-card a d4" style="font-size:10px;padding:11px 15px">
+   <span class="cc-l">.claude/settings.json — 2-minute install</span>
+   <div style="color:var(--fg3)">{</div>
+   <div style="color:var(--fg3)">&nbsp;"hooks": {</div>
+   <div style="color:var(--fg3)">&nbsp;&nbsp;"PreToolUse": [{</div>
+   <div>&nbsp;&nbsp;&nbsp;"matcher": <span style="color:var(--green)">"Write|Edit|Bash"</span>,</div>
+   <div>&nbsp;&nbsp;&nbsp;"hooks": [{"type": <span style="color:var(--green)">"command"</span>,</div>
+   <div>&nbsp;&nbsp;&nbsp;&nbsp;"command": <span style="color:var(--teal)">"credence-gate"</span>}]</div>
+   <div style="color:var(--fg3)">&nbsp;&nbsp;}]</div>
+   <div style="color:var(--fg3)">&nbsp;}}</div>
+  </div>
+
+  <div class="a d5" style="background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:10px;color:var(--fg3);line-height:1.75;font-family:'SF Mono',monospace">
+   <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);margin-bottom:5px;font-family:inherit">Confidence Decay</div>
+   conf(t) = j₀ × 0.95^turns<br>
+   j₀ = 0.28 → turn 10: 0.171<br>
+   <span style="color:var(--gold)">→ &lt; 0.20 → HIGH RISK tier</span><br>
+   → ⚠⚠ escalates automatically
+  </div>
+ </div>
 </div>
 
-<!-- ══ 7 · THE NUMBER ═════════════════════════════════════════════ -->
-<div class="sc full" data-lbl="The Measurement" style="background:radial-gradient(ellipse at 50% 55%,rgba(8,8,18,.95) 0%,transparent 68%)">
-  <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
-    <div class="eyebrow a d1">Under LLMLingua compression · n=50</div>
-    <div class="stat-pair a d2">
-      <div class="stat-blk">
-        <div class="stat-n r">74%</div>
-        <div class="stat-lbl">False Certainty Rate<br>LLMLingua</div>
-      </div>
-      <div class="stat-arr">→</div>
-      <div class="stat-blk">
-        <div class="stat-n g">0%</div>
-        <div class="stat-lbl">False Certainty Rate<br>Credence</div>
-      </div>
-    </div>
-    <div class="body a d3 c-dimmer" style="margin-top:6px;text-align:center">
-      We measured it. We fixed it.
-    </div>
-  </div>
-</div>
 
-<!-- ══ 8 · THE PIPELINE ═══════════════════════════════════════════ -->
-<div class="sc full" data-lbl="The Architecture" id="scene-pipe">
-  <div style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%">
-    <div class="eyebrow a d1">Five enforcement layers · Zero API calls · Sub-millisecond</div>
-
-    <div class="pipe-row a d1" id="pipe-row">
-      <!-- node: input -->
-      <div class="pn" id="pn0">
-        <div class="pn-badge">INPUT</div>
-        <div class="pn-title">Your<br>Message</div>
-        <div class="pn-stat"></div>
-      </div>
-      <div class="pc" id="pc0"><div class="pc-line"></div><div class="pc-fill"></div><div class="pc-arrow">▸</div></div>
-
-      <!-- node: probe -->
-      <div class="pn" id="pn1">
-        <div class="pn-badge">CP 2</div>
-        <div class="pn-title">Faithfulness<br>Probe</div>
-        <div class="pn-stat">0.011ms<br>198 markers · 0 API</div>
-      </div>
-      <div class="pc" id="pc1"><div class="pc-line"></div><div class="pc-fill"></div><div class="pc-arrow">▸</div></div>
-
-      <!-- node: truth buffer -->
-      <div class="pn" id="pn2">
-        <div class="pn-badge">CP 3</div>
-        <div class="pn-title">Truth<br>Buffer</div>
-        <div class="pn-stat">Injects unverified<br>constraints</div>
-      </div>
-      <div class="pc" id="pc2"><div class="pc-line"></div><div class="pc-fill"></div><div class="pc-arrow">▸</div></div>
-
-      <!-- node: consistency enforcer -->
-      <div class="pn" id="pn3">
-        <div class="pn-badge">CP 4</div>
-        <div class="pn-title">Consistency<br>Enforcer</div>
-        <div class="pn-stat">Imperative injection<br>on query overlap</div>
-      </div>
-      <div class="pc" id="pc3"><div class="pc-line"></div><div class="pc-fill"></div><div class="pc-arrow">▸</div></div>
-
-      <!-- node: opus -->
-      <div class="pn opus" id="pn4">
-        <div class="pn-badge">MODEL</div>
-        <div class="pn-title">Opus 4.7</div>
-        <div class="pn-stat">Generation +<br>Ghost detection</div>
-      </div>
-      <div class="pc" id="pc4"><div class="pc-line"></div><div class="pc-fill"></div><div class="pc-arrow">▸</div></div>
-
-      <!-- node: gts + gate -->
-      <div class="pn" id="pn5">
-        <div class="pn-badge">CP 5</div>
-        <div class="pn-title">GTS + Rust<br>Gate</div>
-        <div class="pn-stat">Annotate + block<br>3.4ms enforcement</div>
-      </div>
-      <div class="pc" id="pc5"><div class="pc-line"></div><div class="pc-fill"></div><div class="pc-arrow">▸</div></div>
-
-      <!-- node: output -->
-      <div class="pn" id="pn6">
-        <div class="pn-badge">OUTPUT</div>
-        <div class="pn-title">Safe<br>Response</div>
-        <div class="pn-stat">0% FCR<br>Epistemic state preserved</div>
-      </div>
-    </div>
-
-    <div class="a d2" id="pipe-note" style="opacity:0;transition:opacity .6s;color:var(--fg3);font-size:13px;text-align:center">
-      Every message. Every tool call. Every generation.
-    </div>
-  </div>
-</div>
-
-<!-- ══ 9 · PROBE IN ACTION ════════════════════════════════════════ -->
-<div class="sc split" data-lbl="Checkpoint 2">
-  <div class="main">
-    <div class="eyebrow a d1">Faithfulness Probe — How it fires</div>
-    <div class="cp a d2">
-      <div class="cp-t">▶ FAITHFULNESS PROBE — FIRED</div>
-      <div class="cp-r"><span class="cp-k">Found</span><span class="cp-v">"unconfirmed" in user turn</span></div>
-      <div class="cp-r"><span class="cp-k">Decision</span><span class="cp-b">BLOCK</span><span style="color:#444;margin-left:10px">→ preserve verbatim</span></div>
-      <div class="cp-r"><span class="cp-k">Latency</span><span class="cp-g">0.011ms</span></div>
-      <div class="cp-r"><span class="cp-k">API calls</span><span class="cp-g">0</span></div>
-      <div class="cp-r"><span class="cp-k">Block rate</span><span class="cp-g">100% (50/50)</span></div>
-    </div>
-    <div class="a d3" style="margin-top:24px">
-      <div class="sub" style="font-size:clamp(16px,2vw,28px);font-weight:500;line-height:1.5">
-        Prompt instructions are <span class="c-dimmer">probabilistic.</span>
-        <br>Enforcement is <span class="c-green">not</span>.
-      </div>
-    </div>
-  </div>
-  <div class="aside">
-    <div class="ep a d2">
-      <div class="ep-h">Epistemic State</div>
-      <div class="ep-s"><div class="ep-l">Constraint</div><div class="ep-v">TOKEN_EXPIRY</div></div>
-      <div class="ep-d"></div>
-      <div class="ep-s">
-        <div class="ep-l">Status</div>
-        <div class="ep-row"><div class="ep-dot o"></div><div class="ep-v u">UNVERIFIED</div></div>
-      </div>
-      <div class="ep-d"></div>
-      <div class="ep-s">
-        <div class="ep-l">Confidence</div>
-        <div class="ep-v u">0.15</div>
-        <div class="ep-bar"><div class="ep-fill" style="width:15%"></div></div>
-      </div>
-      <div class="ep-d"></div>
-      <div class="ep-s">
-        <div class="ep-l">Active</div>
-        <div class="ep-row"><div class="ep-dot r"></div><div class="ep-v b">PROBE → BLOCKED</div></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ 10 · GTS ═══════════════════════════════════════════════════ -->
-<div class="sc split" data-lbl="Checkpoint 5">
-  <div class="main">
-    <div class="eyebrow a d1">Generation-Time Scanner — Inline annotation</div>
-    <div class="code-card a d2">
-      <div class="cc-l">Generated code — annotated before you see it</div>
-      <div>
-        <span class="cc-k">TOKEN_EXPIRY</span> = <span class="cc-n">3600</span>
-        <span class="cc-w">&nbsp;&nbsp;# ⚠⚠ CREDENCE[HIGH RISK, conf=0.15]</span>
-      </div>
-      <div><span class="cc-w">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# unconfirmed — vendor not contacted</span></div>
-    </div>
-    <div class="a d3" style="margin-top:22px">
-      <div class="body-l">Unverified values flagged inline
-        <span class="c-dimmer"><br>before the user sees the code.</span>
-      </div>
-    </div>
-  </div>
-  <div class="aside">
-    <div class="ep a d2">
-      <div class="ep-h">Epistemic State</div>
-      <div class="ep-s"><div class="ep-l">Constraint</div><div class="ep-v">TOKEN_EXPIRY</div></div>
-      <div class="ep-d"></div>
-      <div class="ep-s">
-        <div class="ep-l">Risk Tier</div>
-        <div class="ep-row"><div class="ep-dot r"></div><div class="ep-v b">HIGH RISK</div></div>
-      </div>
-      <div class="ep-d"></div>
-      <div class="ep-s">
-        <div class="ep-l">Effective Confidence</div>
-        <div class="ep-v u">0.15</div>
-        <div class="ep-bar"><div class="ep-fill" style="width:15%;background:var(--red)"></div></div>
-      </div>
-      <div class="ep-d"></div>
-      <div class="ep-s">
-        <div class="ep-l">Scanner</div>
-        <div class="ep-row"><div class="ep-dot r"></div><div class="ep-v b">ANNOTATED</div></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ 11 · GATE ══════════════════════════════════════════════════ -->
-<div class="sc split" data-lbl="The Gate">
-  <div class="main">
-    <div class="gate a d1">
-      <div class="gate-h">╔═════════════════════════════════╗<br>║&nbsp;&nbsp;CREDENCE GATE — TOOL BLOCKED&nbsp;&nbsp;&nbsp;║<br>╚═════════════════════════════════╝</div>
-      <div class="gate-r"><span class="gate-k">Tool</span><span class="gate-v">Edit</span></div>
-      <div class="gate-r"><span class="gate-k">⚠</span><span class="gate-a">auth token expires in 3600s — unconfirmed</span></div>
-      <div class="gate-r"><span class="gate-k">Overlap</span><span class="gate-v">token, expires, auth</span></div>
-      <div class="gate-r" style="margin-top:12px"><span class="gate-k">Latency</span><span class="c-green">3.4ms (Rust)</span></div>
-      <div class="gate-r"><span class="gate-k">vs Python</span><span class="c-dimmer">331ms → 98× faster</span></div>
-    </div>
-    <div class="a d2" style="margin-top:26px">
-      <div class="sub" style="font-size:clamp(20px,2.6vw,38px)">
-        Not advisory.&nbsp;<span class="c-red">Blocked.</span>
-      </div>
-    </div>
-  </div>
-  <div class="aside">
-    <div class="ep a d1">
-      <div class="ep-h">Epistemic State</div>
-      <div class="ep-s"><div class="ep-l">Constraint</div><div class="ep-v">TOKEN_EXPIRY</div></div>
-      <div class="ep-d"></div>
-      <div class="ep-s"><div class="ep-l">Tool Attempted</div><div class="ep-v c-dim">Edit</div></div>
-      <div class="ep-d"></div>
-      <div class="ep-s">
-        <div class="ep-l">Status</div>
-        <div class="ep-row"><div class="ep-dot o"></div><div class="ep-v u">UNVERIFIED</div></div>
-      </div>
-      <div class="ep-d"></div>
-      <div class="ep-s">
-        <div class="ep-l">Gate Decision</div>
-        <div class="ep-row"><div class="ep-dot r"></div><div class="ep-v b">BLOCKED</div></div>
-      </div>
-      <div class="ep-d"></div>
-      <div class="ep-s"><div class="ep-l">Rust Latency</div><div class="ep-v c-green">3.4ms</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ 12 · BUILT WITH OPUS 4.7 ══════════════════════════════════ -->
-<div class="sc full" data-lbl="Opus 4.7">
-  <div style="display:flex;flex-direction:column;align-items:center;gap:26px;width:100%">
-    <div class="eyebrow a d1">Opus 4.7 — Three distinct roles in this system</div>
-
-    <div class="trio a d2">
-      <div class="trio-card">
-        <div class="trio-badge c-green">Generation</div>
-        <div class="trio-head">Main reasoning model</div>
-        <div class="trio-body">Every session runs on Opus 4.7. Every response, every generation. No mixed-model shortcuts.</div>
-      </div>
-      <div class="trio-card">
-        <div class="trio-badge c-purple">Classification</div>
-        <div class="trio-head">Ghost constraint detector</div>
-        <div class="trio-body">Ghost constraints — implicit uncertainty with no hedging markers — require Opus 4.7 to classify. Haiku misclassifies them as confirmed facts. Opus reasons about the distinction.</div>
-      </div>
-      <div class="trio-card">
-        <div class="trio-badge c-blue">Evaluation</div>
-        <div class="trio-head">All 7 evaluations</div>
-        <div class="trio-body">Every number in this demo. Every n=50 trial. Every gauntlet session. All Opus 4.7. No mixed models. Every result reproducible.</div>
-      </div>
-    </div>
-
-    <div class="a d3" style="margin-top:4px">
-      <div class="pill" style="gap:10px">
-        <span class="blink"></span>
-        Built using Claude Code &nbsp;·&nbsp; Protects Claude Code sessions
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ 13 · EVIDENCE ══════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════
+  7 · ALL RESULTS
+══════════════════════════════════════════════════════════ -->
 <div class="sc full" data-lbl="The Evidence">
-  <div style="display:flex;flex-direction:column;align-items:center;width:100%">
-    <div class="eyebrow a d1" style="margin-bottom:28px">Seven independent evaluations · All Opus 4.7 · All reproducible</div>
-    <div class="res-wrap" id="res-wrap">
-      <div class="res-row" id="r0">
-        <div><div class="res-title">Compression faithfulness</div><div class="res-sub">n=50 · LLMLingua-inspired compression</div></div>
-        <div class="res-nums"><span class="rn-b">74%</span><span class="rn-ar">→</span><span class="rn-g">0%</span><span class="rn-u">FCR</span></div>
-      </div>
-      <div class="res-row" id="r1">
-        <div><div class="res-title">Long session recall</div><div class="res-sub">n=23 · multi-trial E6</div></div>
-        <div class="res-nums"><span class="rn-b">19.6%</span><span class="rn-ar">→</span><span class="rn-g">100%</span><span class="rn-u">recall</span></div>
-      </div>
-      <div class="res-row" id="r2">
-        <div><div class="res-title">Multi-hop chain</div><div class="res-sub">n=1 · 3-hop dependency test</div></div>
-        <div class="res-nums"><span class="rn-b">0/3</span><span class="rn-ar">→</span><span class="rn-g">3/3</span><span class="rn-u">hops</span></div>
-      </div>
-      <div class="res-row" id="r3">
-        <div><div class="res-title">Ghost constraints</div><div class="res-sub">n=10 · implicit uncertainty, no hedging language</div></div>
-        <div class="res-nums"><span class="rn-b">0.200</span><span class="rn-ar">→</span><span class="rn-g">1.000</span><span class="rn-u">BothRate</span></div>
-      </div>
+ <div style="width:100%;max-width:880px;display:flex;flex-direction:column;gap:13px;align-items:center">
+
+  <div class="eyebrow a d1">Seven evaluations · All Opus 4.7 · Self-audited · 178 tests passing</div>
+
+  <div class="res-wrap">
+   <div class="res-row" id="r0">
+    <div><div class="res-title">Compression faithfulness — primary evidence</div>
+    <div class="res-sub">n=50 · LLMLingua simulation · corrected scorer v2 · 198 markers · user-only probe</div></div>
+    <div class="res-nums">
+     <span class="rn-b">74%</span><span class="rn-a">→</span><span class="rn-g">0%</span><span class="rn-u">false certainty</span>
+     &nbsp;<span class="rn-b">68%</span><span class="rn-a">→</span><span class="rn-g">0%</span><span class="rn-u">qualifiers stripped</span>
     </div>
-    <div id="audit" style="margin-top:26px;opacity:0;transition:opacity .6s;color:var(--fg3);font-size:13px;text-align:center">
-      178 tests · We found our own scorer inflation and corrected it. Those corrections are in the repo.
+   </div>
+   <div class="res-row" id="r1">
+    <div><div class="res-title">Long-session recall — E6 repeated</div>
+    <div class="res-sub">n=23 trials · uncertain constraint at T3 · 6 filler turns · callback at T11 · all Opus 4.7</div></div>
+    <div class="res-nums">
+     <span class="rn-b">19.6%</span><span class="rn-a">→</span><span class="rn-g">100%</span><span class="rn-u">correction recall</span>
     </div>
+   </div>
+   <div class="res-row" id="r2">
+    <div><div class="res-title">Multi-hop chain — E7 categorical</div>
+    <div class="res-sub">Project Falcon → Nexus config → CVE/v5 · 3-hop dependency · 6 filler turns force naive drop</div></div>
+    <div class="res-nums">
+     <span class="rn-b">0/3</span><span class="rn-a">→</span><span class="rn-g">3/3</span><span class="rn-u">hops recalled</span>
+    </div>
+   </div>
+   <div class="res-row" id="r3">
+    <div><div class="res-title">Real debugging session — E8</div>
+    <div class="res-sub">12-turn session · uncertain hypothesis at T4 · 6 filler turns · fix + callback at T12</div></div>
+    <div class="res-nums">
+     <span class="rn-b">51%</span><span class="rn-a">→</span><span class="rn-g">100%</span><span class="rn-u">recall</span>
+    </div>
+   </div>
+   <div class="res-row" id="r4">
+    <div><div class="res-title">Ghost constraints — Opus 4.7 vs Haiku</div>
+    <div class="res-sub">n=10 sessions · implicit uncertainty · zero hedging markers · Haiku: [] · Opus: catches</div></div>
+    <div class="res-nums">
+     <span class="rn-b">20%</span><span class="rn-a">→</span><span class="rn-g">100%</span><span class="rn-u">detection rate</span>
+    </div>
+   </div>
+   <div class="res-row" id="r5">
+    <div><div class="res-title">Cross-session memory — epistemic provenance</div>
+    <div class="res-sub">n=20 callbacks · no_memory vs naive_summary vs credence_memory · all Opus 4.7</div></div>
+    <div class="res-nums">
+     <span class="rn-b">40%</span><span class="rn-a">→</span><span class="rn-g">0%</span><span class="rn-u">cross-session false certainty</span>
+    </div>
+   </div>
+   <div class="res-row" id="r6">
+    <div><div class="res-title">Conversation benchmark — 10 sessions × 3 conditions</div>
+    <div class="res-sub">debugging · design · code review · research · constraint recall + chain complete metric</div></div>
+    <div class="res-nums">
+     <span class="rn-b">20%</span><span class="rn-a">→</span><span class="rn-g">80%</span><span class="rn-u">chain complete</span>
+    </div>
+   </div>
   </div>
+
+  <div id="audit-note" style="opacity:0;transition:opacity .6s;font-size:11px;color:var(--fg3);text-align:center;line-height:1.7">
+   <span style="color:var(--fg2)">Most projects overclaim.</span> We found our own scorer inflation — false certainty was 34% → corrected to 6% · correction reasoning in repo<br>
+   adversarial tests 5/5 · stress tests 6/6 · probe FP rate 0% on n=200 non-uncertain phrases
+  </div>
+
+ </div>
 </div>
 
-<!-- ══ 14 · CLOSE ════════════════════════════════════════════════ -->
-<div class="sc full" data-lbl="">
-  <div style="max-width:760px;display:flex;flex-direction:column;gap:34px;align-items:center;text-align:center">
-    <div class="code-card a d1" style="max-width:360px;padding:20px 28px;text-align:left;font-size:clamp(13px,1.3vw,16px)">
-      <div class="cc-l" style="margin-bottom:8px">Install</div>
-      <div><span class="c-blue">$</span> pip install -e .</div>
-      <div><span class="c-blue">$</span> python quickstart.py</div>
-    </div>
-    <div class="head a d2" style="font-size:clamp(26px,4vw,56px);line-height:1.25">
-      Claude didn't hallucinate.
-      <br>It just forgot you weren't sure.
-      <br><span class="c-green">We fixed that.</span>
-    </div>
-    <div class="pills a d3">
-      <div class="pill"><span class="blink"></span>&nbsp;2 min install</div>
-      <div class="pill"><span class="c-blue">22</span>&nbsp;MCP tools</div>
-      <div class="pill"><span class="c-green">Rust</span>&nbsp;enforcement</div>
-      <div class="pill">Claude Code native</div>
-    </div>
+
+<!-- ═══════════════════════════════════════════════════════
+  8 · THE PRINCIPLE
+══════════════════════════════════════════════════════════ -->
+<div class="sc full" data-lbl="The Principle">
+ <div style="width:100%;max-width:860px;display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center">
+
+  <div class="head a d1" style="font-size:clamp(20px,3.4vw,48px);line-height:1.2">
+   Every AI system passes facts.<br>
+   <span class="c-blue">Nobody passes epistemic weight alongside them.</span>
   </div>
+
+  <!-- ETP -->
+  <div class="a d2" style="width:100%;max-width:780px;background:rgba(41,151,255,.03);
+    border:1px solid rgba(41,151,255,.13);border-radius:12px;padding:13px 20px;text-align:left">
+   <div style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin-bottom:9px">The same trajectory type checking followed</div>
+   <div style="font-size:clamp(11px,1.05vw,14px);color:var(--fg2);line-height:1.75">
+    Type checking didn't eliminate bugs — it made a class of errors impossible to ignore.<br>
+    Epistemic enforcement follows the same path: every fact in a pipeline carries the confidence level
+    it had when it was stated. That confidence level is as important as the fact itself.<br>
+    <span style="color:var(--fg)">Credence is the first working implementation of that principle, built for Claude Code.</span>
+   </div>
+  </div>
+
+  <!-- MCP tools grid -->
+  <div class="mcp-grid a d3">
+   <div class="mcp-col">
+    <div class="mcp-h c-blue">Chat · Stats</div>
+    <div class="mcp-item">credence_chat<br>credence_inspect<br>credence_stats<br>credence_risk</div>
+   </div>
+   <div class="mcp-col">
+    <div class="mcp-h c-green">Registry</div>
+    <div class="mcp-item">credence_register<br>credence_verify<br>credence_list_uncertain<br>credence_trajectory</div>
+   </div>
+   <div class="mcp-col">
+    <div class="mcp-h c-teal">Enforcement</div>
+    <div class="mcp-item">credence_gate<br>credence_scan_output<br>credence_check_contradiction<br>credence_propagate</div>
+   </div>
+   <div class="mcp-col">
+    <div class="mcp-h c-purple">Memory · Session</div>
+    <div class="mcp-item">credence_memory_snapshot<br>credence_memory_recall<br>credence_memory_status<br>credence_save / load / reset</div>
+   </div>
+  </div>
+
+  <!-- Memory comparison + install side by side -->
+  <div class="a d4" style="display:flex;gap:13px;width:100%;max-width:780px;align-items:stretch">
+   <div class="mem-diff" style="flex:1;max-width:none">
+    <div class="mem-col">
+     <div class="mem-h c-dimmer">Mem0 / Zep / Graphiti</div>
+     <div class="mem-row"><div class="mem-k">stores</div><div class="mem-v">"rate limit = 50"</div></div>
+     <div class="mem-row"><div class="mem-k">confidence</div><div class="mem-v">not tracked</div></div>
+     <div class="mem-row"><div class="mem-k">session 2</div><div class="mem-v">RATE_LIMIT = 50 // no flag</div></div>
+     <div class="mem-row"><div class="mem-k">epistemic debt</div><div class="mem-v">invisible</div></div>
+    </div>
+    <div class="mem-col" style="border-color:rgba(48,209,88,.2)">
+     <div class="mem-h c-green">Credence Memory</div>
+     <div class="mem-row"><div class="mem-k">stores</div><div class="mem-v">"rate limit ~50" + conf=0.28</div></div>
+     <div class="mem-row"><div class="mem-k">confidence</div><div class="mem-v hi">tracked + decays</div></div>
+     <div class="mem-row"><div class="mem-k">session 2</div><div class="mem-v hi">⚠⚠ CREDENCE[HIGH RISK]</div></div>
+     <div class="mem-row"><div class="mem-k">epistemic debt</div><div class="mem-v hi">measurable</div></div>
+    </div>
+   </div>
+  </div>
+
+  <!-- Pills + install -->
+  <div class="pills a d5">
+   <div class="pill"><span class="blink"></span>&nbsp;2 min install</div>
+   <div class="pill"><span class="c-blue">22</span>&nbsp;MCP tools</div>
+   <div class="pill"><span class="c-teal">Rust</span>&nbsp;gate · 3.4ms</div>
+   <div class="pill"><span class="c-purple">Opus 4.7</span>&nbsp;· 3 distinct uses</div>
+   <div class="pill"><span class="c-green">178</span>&nbsp;tests · 0 failing</div>
+   <div class="pill"><span class="c-gold">98×</span>&nbsp;faster enforcement</div>
+   <div class="pill"><span class="c-green">100%</span>&nbsp;block rate n=50</div>
+  </div>
+
+  <div class="code-card a d6" style="max-width:290px;padding:12px 18px;font-size:clamp(11px,1vw,13px)">
+   <span class="cc-l">2 minutes to start</span>
+   <div><span class="c-blue">$</span> pip install -e .</div>
+   <div><span class="c-blue">$</span> python quickstart.py</div>
+  </div>
+
+ </div>
 </div>
 
 </div><!-- /stage -->
-
 <div id="dots"></div>
 <div id="hint">space / → to advance</div>
 
 <script>
-// ── Pipeline background ──────────────────────────────────────────
-const canvas = document.getElementById('bg');
-const cx = canvas.getContext('2d');
+// ── Background canvas ──────────────────────────────────────────────
+const canvas=document.getElementById('bg'), cx=canvas.getContext('2d');
 function rsz(){ canvas.width=innerWidth; canvas.height=innerHeight; }
-rsz(); addEventListener('resize', rsz);
+rsz(); addEventListener('resize',rsz);
 
-const BG_NODES = [
-  {id:'user',   x:.07, y:.50, r:22},
-  {id:'probe',  x:.21, y:.26, r:17},
-  {id:'buffer', x:.21, y:.74, r:17},
-  {id:'ce',     x:.38, y:.50, r:19},
-  {id:'opus',   x:.56, y:.50, r:27},
-  {id:'gts',    x:.72, y:.30, r:15},
-  {id:'gate',   x:.72, y:.70, r:15},
-  {id:'out',    x:.90, y:.50, r:22},
+const NODES=[
+  {id:'user',  x:.05,y:.50,r:17,col:'#2997ff'},
+  {id:'reg',   x:.15,y:.50,r:11,col:'#30d158'},
+  {id:'probe', x:.26,y:.28,r:13,col:'#30d158'},
+  {id:'haiku', x:.26,y:.72,r:11,col:'#ff9f0a'},
+  {id:'tb',    x:.38,y:.50,r:11,col:'#bf5af2'},
+  {id:'ce',    x:.48,y:.30,r:13,col:'#bf5af2'},
+  {id:'opus',  x:.48,y:.70,r:22,col:'#bf5af2'},
+  {id:'gts',   x:.63,y:.30,r:11,col:'#2997ff'},
+  {id:'gate',  x:.63,y:.70,r:13,col:'#5ac8fa'},
+  {id:'mem',   x:.78,y:.50,r:11,col:'#30d158'},
+  {id:'out',   x:.92,y:.50,r:17,col:'#2997ff'},
 ];
-const BG_EDGES = [[0,1],[0,2],[1,3],[2,3],[3,4],[4,5],[4,6],[5,7],[6,7]];
-const SCENE_HL = {9:'probe', 10:'gts', 11:'gate'};
-
-const bgPts = BG_EDGES.flatMap(([a,b])=>
-  [0,1].map(()=>({e:[a,b],t:Math.random(),s:.0018+Math.random()*.003}))
-);
-let tick=0, curScene=0;
-
+const EDGES=[[0,1],[1,2],[1,3],[2,4],[3,4],[4,5],[4,6],[5,7],[6,8],[6,7],[5,6],[7,10],[8,9],[9,10]];
+const SCENE_HL={5:'probe',6:'gate'};
+const pts=EDGES.flatMap(([a,b])=>[0,1,2].map(()=>({e:[a,b],t:Math.random(),s:.0012+Math.random()*.0024})));
+let tick=0,curScene=0;
+function hx(c){const n=parseInt(c.slice(1),16);return[(n>>16)&255,(n>>8)&255,n&255];}
 function drawBg(){
   cx.clearRect(0,0,canvas.width,canvas.height);
-  const W=canvas.width, H=canvas.height, hi=SCENE_HL[curScene]||null;
-  BG_EDGES.forEach(([a,b])=>{
-    const A=BG_NODES[a],B=BG_NODES[b];
-    cx.beginPath(); cx.moveTo(A.x*W,A.y*H); cx.lineTo(B.x*W,B.y*H);
-    cx.strokeStyle='rgba(255,255,255,.03)'; cx.lineWidth=1;
-    cx.setLineDash([3,10]); cx.stroke(); cx.setLineDash([]);
+  const W=canvas.width,H=canvas.height,hi=SCENE_HL[curScene]||null;
+  EDGES.forEach(([a,b])=>{
+    const A=NODES[a],B=NODES[b];
+    cx.beginPath();cx.moveTo(A.x*W,A.y*H);cx.lineTo(B.x*W,B.y*H);
+    cx.strokeStyle='rgba(255,255,255,.02)';cx.lineWidth=.7;
+    cx.setLineDash([2,9]);cx.stroke();cx.setLineDash([]);
   });
-  bgPts.forEach(p=>{
+  pts.forEach(p=>{
     p.t=(p.t+p.s)%1;
-    const A=BG_NODES[p.e[0]],B=BG_NODES[p.e[1]];
-    const px=(A.x+(B.x-A.x)*p.t)*W, py=(A.y+(B.y-A.y)*p.t)*H;
-    const al=.15+Math.sin(tick*.04+p.t*7)*.07;
-    cx.beginPath(); cx.arc(px,py,1.8,0,Math.PI*2);
-    cx.fillStyle=`rgba(41,151,255,${al})`; cx.fill();
+    const A=NODES[p.e[0]],B=NODES[p.e[1]];
+    const px=(A.x+(B.x-A.x)*p.t)*W,py=(A.y+(B.y-A.y)*p.t)*H;
+    const [r,g,bv]=hx(A.col);
+    cx.beginPath();cx.arc(px,py,1.4,0,Math.PI*2);
+    cx.fillStyle=`rgba(${r},${g},${bv},${.09+Math.sin(tick*.03+p.t*6)*.04})`;cx.fill();
   });
-  BG_NODES.forEach(n=>{
-    const x=n.x*W, y=n.y*H, lit=n.id===hi;
-    const g=cx.createRadialGradient(x,y,0,x,y,n.r*(lit?3.8:2));
-    g.addColorStop(0,`rgba(41,151,255,${lit?.14:.03})`);
-    g.addColorStop(1,'rgba(41,151,255,0)');
-    cx.beginPath(); cx.arc(x,y,n.r*(lit?3.8:2),0,Math.PI*2);
-    cx.fillStyle=g; cx.fill();
-    cx.beginPath(); cx.arc(x,y,n.r,0,Math.PI*2);
-    cx.strokeStyle=`rgba(41,151,255,${lit?.4:.07})`;
-    cx.lineWidth=lit?1.5:.6; cx.stroke();
+  NODES.forEach(n=>{
+    const x=n.x*W,y=n.y*H,lit=n.id===hi;
+    const [r,g,bv]=hx(n.col);
+    const gr=cx.createRadialGradient(x,y,0,x,y,n.r*(lit?4.2:2.3));
+    gr.addColorStop(0,`rgba(${r},${g},${bv},${lit?.13:.02})`);
+    gr.addColorStop(1,`rgba(${r},${g},${bv},0)`);
+    cx.beginPath();cx.arc(x,y,n.r*(lit?4.2:2.3),0,Math.PI*2);cx.fillStyle=gr;cx.fill();
+    cx.beginPath();cx.arc(x,y,n.r,0,Math.PI*2);
+    cx.strokeStyle=`rgba(${r},${g},${bv},${lit?.4:.055})`;cx.lineWidth=lit?1.4:.5;cx.stroke();
   });
-  tick++; requestAnimationFrame(drawBg);
+  tick++;requestAnimationFrame(drawBg);
 }
 drawBg();
 
-// ── Pipeline scene animation ─────────────────────────────────────
-function animatePipeline(){
-  const nodes = document.querySelectorAll('.pn');
-  const conns = document.querySelectorAll('.pc');
-
-  // Reset
-  nodes.forEach(n=>n.classList.remove('active'));
-  conns.forEach(c=>{ c.classList.remove('active'); c.querySelector('.pc-fill').style.width='0'; });
-  const note = document.getElementById('pipe-note');
-  if(note) note.style.opacity='0';
-
-  const STEP = 1300; // ms per node
-
-  nodes.forEach((nd,i)=>{
-    // Activate connector before node
-    if(i>0){
-      setTimeout(()=>{
-        const pc = document.getElementById('pc'+(i-1));
-        if(pc){
-          const fill = pc.querySelector('.pc-fill');
-          const arrow = pc.querySelector('.pc-arrow');
-          const lineW = pc.querySelector('.pc-line');
-          if(fill) fill.style.width='calc(100% - 14px)';
-          if(arrow) arrow.style.color='var(--blue)';
-          pc.classList.add('active');
-        }
-      }, i*STEP - 500);
-    }
-    // Activate node
-    setTimeout(()=>nd.classList.add('active'), i*STEP);
-  });
-
-  // Show note after last node
-  setTimeout(()=>{ if(note) note.style.opacity='1'; }, nodes.length*STEP + 400);
-}
-
-// ── Scene engine ─────────────────────────────────────────────────
-const scenes = document.querySelectorAll('.sc');
-const N = scenes.length;
-let cur = 0;
-
-// Build dots
-const dotsEl = document.getElementById('dots');
+// ── Scene engine ──────────────────────────────────────────────────
+const scenes=document.querySelectorAll('.sc'), N=scenes.length;
+let cur=0;
+const dotsEl=document.getElementById('dots');
 scenes.forEach((_,i)=>{
   const d=document.createElement('div');
-  d.className='dot'+(i===0?' on':'');
-  dotsEl.appendChild(d);
+  d.className='dot'+(i===0?' on':'');dotsEl.appendChild(d);
 });
-
-function syncDots(i){ document.querySelectorAll('.dot').forEach((d,j)=>d.classList.toggle('on',j===i)); }
-function syncBar(i) { document.getElementById('bar').style.width=(i/(N-1)*100)+'%'; }
-function syncLabel(i){
-  const el=document.getElementById('act');
-  const lbl=scenes[i].dataset.lbl||'';
-  el.style.opacity=lbl?'1':'0'; el.textContent=lbl;
-}
-
-function resetAnims(sc){
-  sc.querySelectorAll('.a').forEach(el=>{
-    el.style.animation='none'; void el.offsetHeight; el.style.animation='';
-  });
-}
-
+const syncDots=i=>document.querySelectorAll('.dot').forEach((d,j)=>d.classList.toggle('on',j===i));
+const syncBar =i=>{ document.getElementById('bar').style.width=(i/(N-1)*100)+'%'; };
+const syncLbl =i=>{ const el=document.getElementById('act'),lbl=scenes[i].dataset.lbl||''; el.style.opacity=lbl?'1':'0'; el.textContent=lbl; };
+function resetAnims(sc){ sc.querySelectorAll('.a').forEach(el=>{el.style.animation='none';void el.offsetHeight;el.style.animation='';}); }
 function onEnter(i){
   curScene=i;
-  if(i===8) setTimeout(animatePipeline, 900);
-  if(i===13){
-    ['r0','r1','r2','r3'].forEach((id,k)=>{
-      const el=document.getElementById(id);
-      if(!el) return;
-      el.classList.remove('show');
-      setTimeout(()=>el.classList.add('show'), 220+k*370);
+  if(i===3){
+    ['cmp0','cmp1','cmp2'].forEach((id,k)=>{
+      const el=document.getElementById(id);if(el){el.style.opacity='0';setTimeout(()=>el.style.opacity='1',220+k*310);}
     });
-    const audit=document.getElementById('audit');
-    if(audit){ audit.style.opacity='0'; setTimeout(()=>audit.style.opacity='1', 220+4*370+260); }
+  }
+  if(i===7){
+    ['r0','r1','r2','r3','r4','r5','r6'].forEach((id,k)=>{
+      const el=document.getElementById(id);if(!el)return;
+      el.classList.remove('show');setTimeout(()=>el.classList.add('show'),130+k*210);
+    });
+    const n=document.getElementById('audit-note');
+    if(n){n.style.opacity='0';setTimeout(()=>n.style.opacity='1',130+7*210+320);}
   }
 }
-
 function goTo(i){
-  if(i<0||i>=N) return;
-  const prev=scenes[cur], next=scenes[i];
-  prev.style.opacity='0'; prev.style.pointerEvents='none';
+  if(i<0||i>=N)return;
+  const prev=scenes[cur],next=scenes[i];
+  prev.style.opacity='0';prev.style.pointerEvents='none';
   setTimeout(()=>{
-    prev.classList.remove('on');
-    resetAnims(next);
-    next.classList.add('on');
-    requestAnimationFrame(()=>{ next.style.opacity='1'; next.style.pointerEvents='all'; });
-    cur=i; syncDots(i); syncBar(i); syncLabel(i); onEnter(i);
-  }, 300);
+    prev.classList.remove('on');resetAnims(next);next.classList.add('on');
+    requestAnimationFrame(()=>{next.style.opacity='1';next.style.pointerEvents='all';});
+    cur=i;syncDots(i);syncBar(i);syncLbl(i);onEnter(i);
+  },250);
 }
-
-// ── Input ─────────────────────────────────────────────────────────
-document.addEventListener('keydown', e=>{
-  if(e.key==='ArrowRight'||e.key===' '){ e.preventDefault(); goTo(cur+1); }
-  if(e.key==='ArrowLeft')              { e.preventDefault(); goTo(cur-1); }
-  if(e.key==='f'||e.key==='F') document.documentElement.requestFullscreen?.();
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();goTo(cur+1);}
+  if(e.key==='ArrowLeft'){e.preventDefault();goTo(cur-1);}
+  if(e.key==='f'||e.key==='F')document.documentElement.requestFullscreen?.();
   document.getElementById('hint').style.opacity='0';
 });
-document.addEventListener('click', e=>{
-  if(e.target.closest('#dots')) return;
-  goTo(e.clientX>innerWidth/2 ? cur+1 : cur-1);
+document.addEventListener('click',e=>{
+  if(e.target.closest('#dots'))return;
+  goTo(e.clientX>innerWidth/2?cur+1:cur-1);
   document.getElementById('hint').style.opacity='0';
 });
-dotsEl.addEventListener('click', e=>{
-  const d=e.target.closest('.dot'); if(!d) return;
+dotsEl.addEventListener('click',e=>{
+  const d=e.target.closest('.dot');if(!d)return;
   goTo([...dotsEl.children].indexOf(d));
 });
-
-// ── Init ──────────────────────────────────────────────────────────
-syncBar(0); syncLabel(0); onEnter(0);
+syncBar(0);syncLbl(0);onEnter(0);
 </script>
 </body>
 </html>

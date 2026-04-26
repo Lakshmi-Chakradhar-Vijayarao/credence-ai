@@ -763,11 +763,16 @@ class CredenceRegistry:
         """
         Return all unverified memory-tagged constraints for a project,
         sorted by j_score ascending (least certain first — most important to re-inject).
+
+        Excludes cross_session_memory copies — those are injected into new sessions
+        for Truth Buffer use, but should not appear in the canonical memory list.
         """
         rows = self._conn.execute(
             """
             SELECT * FROM constraints
-            WHERE project_id=? AND is_memory=1 AND (verified=0 OR validation_status='disputed')
+            WHERE project_id=? AND is_memory=1
+            AND source != 'cross_session_memory'
+            AND (verified=0 OR validation_status='disputed')
             ORDER BY j_score ASC
             """,
             (project_id,),

@@ -153,8 +153,12 @@ class CredenceMemory:
         """
         Summary of all epistemic memory for a project.
         Returns counts of verified vs unverified constraints across all sessions.
+        Excludes cross_session_memory copies — counts originals only.
         """
-        all_constraints = self._reg.get_all_project_constraints(project)
+        all_constraints = [
+            c for c in self._reg.get_all_project_constraints(project)
+            if c.get("source") != "cross_session_memory"
+        ]
         verified = [c for c in all_constraints if c.get("verified") == 1]
         unverified = [c for c in all_constraints if c.get("verified") == 0
                       and c.get("validation_status") != "disputed"]
@@ -197,6 +201,8 @@ class CredenceMemory:
         for m in memories:
             zone = m.get("zone", "LOW")
             content = m.get("content", "")
+            if len(content) > 80:
+                content = content[:77] + "…"
             j = m.get("j_score", 0.0)
             session = m.get("session_id", "unknown")[:12]
             lines.append(f"  ⚠ [{zone}, conf={j:.2f}, from={session}] {content}")

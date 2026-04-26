@@ -51,7 +51,7 @@ Core system. Manages conversation history and all compression decisions.
 - `_NOVELTY_MIN_ENTITIES = 5`  — minimum absolute new entities required
 - `_NOVELTY_MIN_VOCAB = 10`    — don't fire until vocab is established
 - `_MIN_COMPRESS_TOKENS = 150` — skip Haiku if old segment is smaller than this
-- `_UNCERTAINTY_MARKERS` — frozenset of 21 uncertainty phrases (faithfulness guard)
+- `_UNCERTAINTY_MARKERS` — frozenset of 198 uncertainty phrases across 7 categories (faithfulness guard)
 
 **Session constants** (class-level on `ContextManager`):
 - `COMPRESS_AFTER = 3` — keep last N turn-pairs on COMPRESS; fires when n_turns > COMPRESS_AFTER*2=6

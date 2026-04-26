@@ -440,10 +440,33 @@ Stating this as confirmed fact is an epistemic error.
 ### J-Score — Compression Scheduler (Not Epistemic Signal)
 
 ```
-J = 0.35×(1−hedging) + 0.25×anchor + 0.20×(1−correction) + 0.05×brevity + 0.15×specificity
+J = 0.35×(1−hedging) + 0.25×anchor + 0.20×(1−correction) + 0.05×length + 0.15×specificity
 ```
 
-J decides WHEN to compress (HIGH = text is resolved, safe to compress). **J is not an epistemic signal.** ρ = −0.034 with factual correctness. The epistemic intelligence is in the guard rails: faithfulness probe, Truth Buffer, GTS. J is the scheduler.
+**What each component measures** (all computed from raw text, zero API calls):
+
+| Factor | Weight | Signal | Computation |
+|---|---|---|---|
+| `hedging` | 0.35 | Inverse confidence | Count of hedging phrases ("i think", "perhaps", "might be", 34 total) ÷ response length. More hedges → lower J. |
+| `anchor` | 0.25 | Direct confidence | Count of assertive anchors ("specifically", "the answer is", "definitively", 24 total) ÷ length. More anchors → higher J. |
+| `correction` | 0.20 | Stability signal | Detects self-correction markers ("actually,", "wait,", "i was wrong", 15 total). One correction → −0.60 to J. |
+| `length` | 0.05 | Response grounding | Peaks at 60 words (1.0), neutral at 120 words (0.5), floors at 0.1 for 400+ words. Short assertive answers score higher. |
+| `specificity` | 0.15 | Factual grounding | Count of numeric literals + proper nouns (×0.4) ÷ length. Numbers and named entities suggest grounded claims. |
+
+**Concrete examples:**
+```
+"The rate limit is 50 req/min."
+ → hedging=0, anchors=0, corrections=0, nums=2 → J ≈ 0.82 (HIGH → compress)
+
+"I think the rate limit might be ~50 req/min, but I haven't confirmed with the vendor."
+ → hedging=3, anchors=0, corrections=0, nums=1 → J ≈ 0.31 (LOW → preserve)
+```
+
+**Type Prior:** Code blocks (```` ``` ````), error traces (`Traceback`), and math (LaTeX) receive a J floor that keeps them in MEDIUM/LOW zones — these content types carry cascade risk if compressed. Code floor=0.30 → cap at 0.64 (MEDIUM maximum); error floor=0.20 → cap at 0.54.
+
+**Calibration:** θ_high=0.70, θ_low=0.45 calibrated on 26 labelled samples (AUARC=0.7526, OOF accuracy=68.7%). Adaptive variant computes P75/P25 of a rolling 20-turn buffer — no per-model recalibration needed.
+
+**Why J is not epistemic:** J measures linguistic form, not factual truth. A model confidently stating a wrong fact scores HIGH-J. This is expected and correct — J's job is to detect whether a response is *resolved* (safe to compress), not whether it is *correct*. ρ = −0.034 with factual correctness is a feature, not a bug: discarding factually-correct confident turns is safe; discarding uncertain turns is not. The epistemic intelligence is entirely in the guard rails (faithfulness probe, Truth Buffer, GTS). J is the scheduler.
 
 ---
 
