@@ -2,9 +2,9 @@
 
 ## Written Summary (paste into submission form)
 
-Every day, developers trust Claude with decisions that matter. They share what they know — and more importantly, what they *don't* know. "I'm not sure about the rate limit — maybe around 50?" That's how people talk. Honest. Uncertain. Asking for help, not declaring a fact.
+Every day, developers trust Claude with decisions that matter. They share what they know — and what they're still figuring out. *"The rate limit is probably around 50, I haven't confirmed it yet."* A small admission. An honest one. The kind every engineer makes when they're moving fast and the documentation is incomplete.
 
-Then the session grows. Context gets compressed. And silently, without warning, `RATE_LIMIT = 50` ships to production. The doubt was real. The code doesn't remember.
+Then the session grows. Context gets compressed. And silently, without warning, `RATE_LIMIT = 50` ships to production. Nobody changed the number. Nobody made it up. The model just forgot you weren't sure.
 
 We named this **Epistemic Qualifier Loss (EQL)**, measured it across 50 compression scenarios, and built Credence to prevent it.
 
