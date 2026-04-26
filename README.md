@@ -11,13 +11,15 @@ Fifteen turns of coding later, Claude writes:
 RATE_LIMIT = 50  # rate limit
 ```
 
-No warning. No flag. The uncertainty is gone. You ship it. An incident follows.
+No warning. No flag. The uncertainty is gone. You ship it.
+The API rejects every request at 2am. The real limit was 10 — not 50.
+Nobody lied. Claude just forgot you weren't sure.
 
 This failure has a name. We defined it, measured it, and fixed it.
 
----
+![Credence gate blocking in real time](demo/gate_demo.gif)
 
-**Demo video:** [youtube.com/watch?v=zKEf2k2bIsU](https://youtu.be/zKEf2k2bIsU)
+**Demo video:** [youtu.be/zKEf2k2bIsU](https://youtu.be/zKEf2k2bIsU) · **3 min**
 
 ---
 
@@ -33,7 +35,13 @@ We measured it across 50 compression scenarios:
 | LLMLingua-style scoring | 68% | 70% |
 | Credence (faithfulness probe) | **0%** | **0%** |
 
-Credence is a five-layer epistemic enforcement system built natively into Claude Code. It preserves uncertainty through compression, generation, code output, tool execution, and across session boundaries — deterministically, with no extra API calls.
+Credence is a five-layer epistemic enforcement system built natively into Claude Code. It preserves uncertainty through compression, generation, code output, tool execution, and across session boundaries — deterministically, with no extra API calls for four of the five layers.
+
+Every engineering team using Claude Code today is producing ghost constraints they don't know about. Every sprint. This is what it looks like in your codebase right now.
+
+> Credence was built with Claude Code, deployed as a Claude Code plugin, to protect Claude Code users from Claude Code's own failure mode. Opus 4.7 built a system to guard against Opus 4.7's blind spot.
+
+*This project grew from prior research into Fisher information signals and KV-cache adaptive compression — where we hit a roadblock that turned into this insight: compression is not just a resource decision, it is an epistemic one. Full story in [VISION.md](VISION.md).*
 
 ---
 
@@ -157,6 +165,14 @@ ALGORITHM = "RS256"   # ⚠  CREDENCE[unverified, conf=0.28]: encryption algo �
 
   Use credence_verify(<id>, <confirmed_value>) to resolve.
 ```
+
+Once verified, the constraint clears, the gate unblocks, and Claude writes the code. The full loop:
+
+```
+uncertain → registered → enforced → verified → released
+```
+
+**What it costs:** zero extra API calls for layers 1, 3, 4, and 5. One Opus 4.7 call per ghost constraint (Ghost Detector only). 3.4ms per tool call at the gate. That is the entire overhead.
 
 ---
 
