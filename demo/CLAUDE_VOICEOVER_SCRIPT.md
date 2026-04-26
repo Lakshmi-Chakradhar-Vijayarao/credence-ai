@@ -1,7 +1,7 @@
 # Claude Voiceover Script — LOCKED
 
 **Voice**: George (ElevenLabs) · Stability 62 · Similarity 78 · Style 0 · Speed 0.95
-**Runtime**: ~1:55
+**Runtime**: ~2:00
 **Status**: LOCKED — do not edit
 
 ---
@@ -14,15 +14,19 @@ You told me you weren't sure.<break time="0.4s"/> Twelve turns later — I shipp
 
 I didn't invent that number.<break time="0.3s"/> I just forgot that you weren't sure.<break time="2.5s"/>
 
-We coined the terms: EQL — Epistemic Qualifier Loss, uncertainty stripped silently during compression. EQLR — the rate at which it happens.<break time="0.8s"/>
+We coined the terms: EQL — Epistemic Qualifier Loss, uncertainty stripped silently during compression. EQLR — the rate at which it happens.<break time="0.6s"/>
+
+Standard evals check whether the value survived. We checked whether the doubt survived. Nobody had measured that.<break time="1.0s"/>
 
 One number: 74 percent false certainty rate under aggressive compression.<break time="0.4s"/> Credence makes it zero.<break time="1.0s"/>
 
 Three conditions tested.<break time="0.4s"/> Aggressive compression — 74 percent.<break time="0.3s"/> Standard Haiku — we found our own inflated scorer, corrected it from 34 percent down to 6.<break time="0.6s"/> Credence — zero, both columns.<break time="0.5s"/> The confidence intervals don't touch.<break time="1.0s"/>
 
-Three agents. Each doing only what it can do.<break time="0.6s"/>
+Three agents.<break time="0.3s"/> Each assigned the problem only it can solve.<break time="0.6s"/>
 
-46 percent survival without instruction. 90 percent with a prompt. 100 percent with enforcement.<break time="0.6s"/>
+Haiku's compression is semantically correct.<break time="0.3s"/> The qualifier carries no informational weight — that's why a prompt can't fix it.<break time="0.4s"/> The probe intercepts before Haiku decides.<break time="0.8s"/>
+
+46 percent survival without instruction.<break time="0.3s"/> 90 percent with a prompt.<break time="0.3s"/> 100 percent with enforcement.<break time="0.6s"/>
 
 Prompt instructions are probabilistic.<break time="0.4s"/> Enforcement is not.<break time="0.8s"/>
 
@@ -30,11 +34,13 @@ The probe fires before Haiku ever sees uncertain text — 0.011 milliseconds, ze
 
 The harder case: no markers, sounds certain. Haiku sees nothing.<break time="0.3s"/> Opus 4.7 reasons about provenance — where each claim came from.<break time="1.0s"/>
 
+Five layers.<break time="0.3s"/> Each one closes the gap the layer above it couldn't.<break time="0.6s"/>
+
 Query overlaps constraint — enforcement escalates to imperative.<break time="0.4s"/> Unverified value in generated code — annotated inline.<break time="0.4s"/> Tool: Edit. Overlap: token, expires, auth. Exit code 2.<break time="0.8s"/>
 
 Not advisory.<break time="1.2s"/> Blocked.<break time="3.0s"/>
 
-Seven evaluations. All Opus 4.7.<break time="0.4s"/> Most projects overclaim — we ran adversarial audits on our own results.<break time="1.0s"/>
+Seven evaluations. All Opus 4.7.<break time="0.4s"/> Most projects overclaim — we ran adversarial audits on our own results and shipped the lower number.<break time="1.0s"/>
 
 Every AI system passes facts between agents.<break time="0.4s"/> Nobody passes epistemic weight alongside them.<break time="1.0s"/>
 
@@ -42,16 +48,21 @@ Credence is the first working implementation of that principle, built for Claude
 
 ---
 
-## What Changed From Previous Version
+## What Changed From v1
 
-- **Type-checking frame moved to opening** (was closing argument): Boris Cherny hears the architectural analogy as the lens, not the footnote
-- **"Three agents" replaces "Three layers"**: matches the trio cards on slide 4, more concrete
-- **"46 percent survival" replaces "46 percent loss"**: numerically correct — chart shows survival rate, not loss rate
-- **Slide 5 reordered**: bar chart numbers (46/90/100%) + "probabilistic vs enforcement" now precede "The probe fires" — script now follows slide top-to-bottom visual order
-- **Slide 3 (Measurement Table) deleted**: had no narration counterpart; details absorbed into earlier slides
-- **Ghost detector expanded**: "where each claim came from" — direct answer to the Opus 4.7 use question for the Claude team judges
-- **"Most projects overclaim"** added before self-audit: frames it as character, not just a data correction
-- **Type-checking closing line removed**: no longer needed at the end since it opens the script
+- **EQL/EQLR paragraph extended**: added "Standard evals check whether the value survived. We checked whether the doubt survived. Nobody had measured that." — positions the measurement contribution before the 74% headline
+- **"Three agents" updated**: "Each assigned the problem only it can solve" (was "doing only what it can do")
+- **New paragraph before bar chart**: "Haiku's compression is semantically correct. The qualifier carries no informational weight — that's why a prompt can't fix it. The probe intercepts before Haiku decides." — explains the 90%→100% gap
+- **"Five layers" paragraph added**: "Each one closes the gap the layer above it couldn't." — frames enforcement stack as a chain of necessity before the gate-blocked sequence
+- **Self-audit line strengthened**: "shipped the lower number" added — signals integrity
+
+## What Was Kept From v1
+
+- Type-checking opening frame (Boris Cherny lens)
+- 2.5s emotional beat after "I just forgot that you weren't sure"
+- 3.0s dead silence after "Blocked."
+- Ghost detector line ("Opus 4.7 reasons about provenance")
+- Final cold ending — no trailing pause
 
 ## Timing Notes
 - Single dial: `<break time="3.0s"/>` after **Blocked.** — shorten to 2.5s if ElevenLabs runs long
