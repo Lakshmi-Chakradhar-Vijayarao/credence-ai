@@ -17,7 +17,7 @@ This failure has a name. We defined it, measured it, and fixed it.
 
 > **Epistemic Qualifier Loss (EQL)** — the loss of user-stated uncertainty markers during context window summarization, causing downstream models to treat explicitly uncertain claims as confirmed facts.
 >
-> **EQL Rate (EQLR)** — the fraction of explicitly hedged user claims that lose their qualifier after context compression. Measured: **46% under Haiku, 68% under LLMLingua-style scoring** (n=50).
+> **EQL Rate (EQLR)** — the fraction of explicitly hedged user claims that lose their qualifier after context compression. Measured across two independent runs: **26–30% under Haiku, 68–80% under LLMLingua-style scoring** (n=30 and n=50).
 
 Practitioners have described this for years — Factory.ai calls it "false certainty," SwirlAI calls it "semantic drift." Nobody had a number. Nobody had a fix. No prior paper defines or measures EQL.
 
@@ -48,18 +48,22 @@ We ran two studies. Both conditions are Opus 4.7 — no different models, no sho
 **Study 1 — Compression (n=50):** 50 conversations with one uncertain constraint each.
 Compressed by Haiku or LLMLingua-inspired scorer. Queried by Opus 4.7.
 
-| Condition | EQL Rate (EQLR) | False Certainty Rate (FCR) | 95% CI (FCR) |
-|---|---|---|---|
-| Naive Haiku (n=50) | **46.0%** | **6.0%** | [1.3%, 16.5%] |
-| LLMLingua-inspired sim (n=50) | **68.0%** | **74.0%** | [59.7%, 85.4%] |
-| Haiku + "preserve qualifiers" instruction (n=30) | 10.0% | n/a¹ | — |
-| Credence (faithfulness probe, n=50) | **0%** | **0%** | [0%, 7.1%] |
+| Condition | n | EQLR | FCR | 95% CI (FCR) |
+|---|---|---|---|---|
+| Naive Haiku | 30 | 30.0% | **23.3%** | [11.8%, 40.9%] |
+| Naive Haiku | 50 | 26.0% | **12.0%** | [5.6%, 23.8%] |
+| LLMLingua-inspired sim | 30 | 80.0% | **83.3%** | [66.4%, 92.6%] |
+| LLMLingua-inspired sim | 50 | 68.0% | **70.0%** | [56.2%, 80.9%] |
+| Haiku + "preserve qualifiers" instruction | 30 | 10.0% | n/a¹ | — |
+| Credence (faithfulness probe) | 30 | **0%** | **0%** | [0%, 11.3%] |
+| Credence (faithfulness probe) | 50 | **0%** | **0%** | [0%, 7.1%] |
 
 ¹ Null hypothesis tests qualifier survival through compression, not downstream FCR.
 Prompt instructions get you to 90.0% qualifier survival. The probe is **deterministic** — 100% block rate, zero API calls.
-LLMLingua-style importance scoring causes **12× more false certainty** than naive Haiku (74.0% vs 6.0%).
+LLMLingua-style importance scoring causes **3–6× more false certainty** than naive Haiku across both runs.
 FCR uses corrected scorer v2 (198 markers, markdown-stripped). Original v1 naive FCR was 34.0%; audit found 14/17 "certain" responses used hedging outside the v1 vocabulary.
-Run: `python -m evals.compression_faithfulness` or `python -m evals.null_hypothesis`
+Confidence intervals do not touch across both sample sizes: LLMLingua lower bound (56.2%) vs Credence upper bound (7.1%).
+Run: `python -m evals.compression_faithfulness --n 30` or `--n 50` · `python -m evals.null_hypothesis`
 
 **Study 2 — Long session (n=23 trials, all Opus 4.7):** 12-turn session. Uncertain
 constraints at T3-T4. 8 HIGH-J filler turns. Callback at T13-T14.
@@ -81,9 +85,9 @@ User states uncertain claim: "I think rate limit is ~50 — unconfirmed"
                 ↓
   Context window summarization fires        ← EQL event occurs here
                 ↓
-  Qualifier stripped from summary           ← EQLR measures this (46% Haiku, 68% LLMLingua)
+  Qualifier stripped from summary           ← EQLR measures this (26% Haiku, 68% LLMLingua)
                 ↓
-  Downstream model answers with certainty   ← FCR measures this (6% Haiku, 74% LLMLingua sim)
+  Downstream model answers with certainty   ← FCR measures this (12% Haiku, 70% LLMLingua sim)
                 ↓
   RATE_LIMIT = 50 ships to production       ← Real cost
 ```
@@ -96,7 +100,7 @@ User states uncertain claim: "I think rate limit is ~50 — unconfirmed"
 
 **Two distinct failure modes require two different mitigations:**
 
-**1. Compression EQL.** Haiku treats *"I think the rate limit is ~50 req/min — unconfirmed"* and *"the rate limit is 50 req/min"* as semantically equivalent summaries. The qualifier is collateral loss — EQLR 46% under Haiku, 68% under LLMLingua. FCR downstream: 6% (Haiku) and 74% (LLMLingua sim).
+**1. Compression EQL.** Haiku treats *"I think the rate limit is ~50 req/min — unconfirmed"* and *"the rate limit is 50 req/min"* as semantically equivalent summaries. The qualifier is collateral loss — EQLR 26% under Haiku, 68% under LLMLingua. FCR downstream: 12% (Haiku) and 70% (LLMLingua sim).
 
 **2. Reasoning EQL.** Even with the qualifier in full context, Opus 4.7 ignores epistemic weight in ~50% of long-session callbacks. Context presence ≠ epistemic attention.
 

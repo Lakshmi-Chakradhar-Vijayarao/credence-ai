@@ -13,3 +13,9 @@ credence_gate/target/
 credence_gate/epistemic_registry.db
 credence_gate/epistemic_registry.db.bak
 /tmp/credence_test*.db
+
+# Test and IDE artifacts
+.pytest_cache/
+.claude/scheduled_tasks.lock
+*.db
+*.db.bak
