@@ -445,9 +445,10 @@ html,body {
   <div class="divider a d4" style="width:44px;margin:2px auto"></div>
 
   <div class="a d5" style="font-size:clamp(12px,1.15vw,14px);color:var(--fg3);text-align:center;line-height:1.8;max-width:560px">
-   We coined both terms to describe a failure nobody had named or measured.<br>
-   198 canonical uncertainty markers · 7 hedging categories.<br>
-   <span style="color:var(--fg2)">Silent errors cost more than enforcement.</span> <span style="color:var(--fg3)">Epistemic errors — same cost structure.</span><br>
+   Nobody measured this because standard evals check whether the <em>value</em> survived compression.<br>
+   We checked whether the <em>doubt</em> survived. That distinction is the contribution.<br>
+   198 canonical uncertainty markers · 7 hedging categories · measured on n=50 Opus 4.7 conversations.<br>
+   <span style="color:var(--fg2)">Silent type errors cost more than type enforcement.</span> <span style="color:var(--fg3)">Epistemic errors — same cost structure.</span><br>
    <span style="color:var(--blue)">The fix: a deterministic frozenset scan · 0.011ms · zero API calls · 100% block rate.</span>
   </div>
 
@@ -548,7 +549,7 @@ html,body {
    <div class="cmp-row" id="cmp2" style="opacity:0;transition:opacity .5s .58s">
     <div class="cmp-td">
      <div class="cmp-lbl">Credence — faithfulness probe</div>
-     <div class="cmp-sub">frozenset scan · 0.011ms · blocks Haiku before it runs · 0 API calls</div>
+     <div class="cmp-sub">probe fires first · Haiku is <em>never called</em> · original text reaches Opus unchanged · 0% is not better compression — it's no compression · 0 API calls</div>
      <div class="cmp-bar" style="width:1%;background:var(--green)"></div>
     </div>
     <div class="cmp-td td-hi">0%</div>
@@ -582,7 +583,7 @@ html,body {
   </div>
 
   <div class="a d4" style="font-size:11px;color:var(--fg3);text-align:center;max-width:680px;line-height:1.7">
-   Self-audit: found own scorer inflation · naive false certainty was 34% → corrected to 6% after finding 14/17 "certain" responses used out-of-vocabulary hedging · correction reasoning in repo
+   <span style="color:var(--fg2);font-weight:600">We audited ourselves:</span> found own scorer inflation — naive FCR was 34%, corrected to 6% after finding 14/17 "certain" responses used out-of-vocabulary hedging outside our marker set. Most teams would have shipped the 34% number. Correction reasoning and all raw data are in the repo.
   </div>
 
  </div>
@@ -595,7 +596,7 @@ html,body {
 <div class="sc full" data-lbl="Multi-Agent Pipeline">
  <div style="width:100%;max-width:1040px;display:flex;flex-direction:column;gap:14px;align-items:center">
 
-  <div class="eyebrow a d1">Haiku compresses &nbsp;·&nbsp; Opus reasons &nbsp;·&nbsp; the gate enforces</div>
+  <div class="eyebrow a d1">Three agents · each assigned the problem only it can solve</div>
 
   <!-- Pipeline -->
   <div class="pipe-wrap a d2">
@@ -646,7 +647,7 @@ html,body {
     <div style="font-size:10px;color:var(--fg3);margin-top:2px">→ preserve verbatim</div>
    </div>
    <div style="flex:2;padding:10px 16px;text-align:center">
-    <div style="font-size:10px;color:var(--fg3);line-height:1.55">J scores each turn by how resolved it is.<br>Uncertain turns: always LOW → always PRESERVE.</div>
+    <div style="font-size:10px;color:var(--fg3);line-height:1.55">J measures linguistic assertiveness — hedging density, anchor phrases, self-correction. HIGH = resolved text, safe to discard. LOW = uncertain text, always preserved verbatim. J is a scheduling signal, not a truth signal (ρ=−0.034 with factual correctness). The epistemic work is done by the guard rails.</div>
    </div>
   </div>
 
@@ -654,33 +655,35 @@ html,body {
   <div class="trio a d4">
    <div class="trio-card">
     <div class="trio-badge c-orange">① Haiku — Compression Agent</div>
-    <div class="trio-head">Fast. Cheap. Blind to epistemic weight.</div>
+    <div class="trio-head">Fast. Cheap. Semantically correct. Epistemically blind.</div>
     <div class="trio-body">
-     Compresses resolved context at &lt;$0.001/turn. Cannot distinguish "I think 50"
-     from "50" — identical token distribution. Qualifier is collateral loss.
-     <span class="c-orange">Probe fires before Haiku ever sees uncertain text.</span>
+     Haiku's compression objective is semantic fidelity — preserve the informational core.
+     "I think 50 req/min" and "50 req/min" have identical informational content.
+     The qualifier carries no information about the value. Epistemic metadata is collateral loss.
+     This is not a bug. <span class="c-orange">The probe intercepts before Haiku decides.</span>
     </div>
     <div class="trio-stat">$0.80/$4 per 1M tok · called only on HIGH-J turns<br>skipped when uncertainty markers present in user turns</div>
    </div>
    <div class="trio-card">
     <div class="trio-badge c-purple">② Opus 4.7 — Reasoning Agent</div>
-    <div class="trio-head">The ghost detector is why it must be Opus 4.7.</div>
+    <div class="trio-head">Ghost constraints score HIGH-J. The probe sees nothing. Opus does.</div>
     <div class="trio-body">
-     <b>Ghost Detector</b> — no hedging markers, sounds certain. Haiku returns [].
-     Opus 4.7 reasons about provenance: <em>where each claim came from, not just what it says.</em>
-     Catches the case every other layer misses.<br><br>
-     Also: main generation · contradiction scan · adaptive thinking in uncertain territory.
-     <span class="c-purple">None of this is replaceable with a smaller model.</span>
+     "The Stripe API enforces 100 req/min." — no hedging markers. Haiku extracts [].
+     The probe sees nothing. Four other layers miss it.<br>
+     Opus 4.7 reasons about <em>provenance</em> — where the claim came from, not what it says.
+     "Vendor-stated limit from a sales call. Not independently confirmed." Conf: 0.84.<br>
+     <span class="c-purple">Ghost detection requires reasoning. No smaller model can do this reliably.</span>
     </div>
     <div class="trio-stat">ghost detect: ~$0.002/call · n=10 gauntlet · 100% detection<br>Haiku misclassifies ghost constraints · Opus catches all 10</div>
    </div>
    <div class="trio-card">
     <div class="trio-badge c-teal">③ Rust Gate — Enforcement Agent</div>
-    <div class="trio-head">No model. No API. 3.4ms. Deterministic.</div>
+    <div class="trio-head">The only enforcement that cannot be overridden by model behavior.</div>
     <div class="trio-body">
-     Compiled Rust binary. PreToolUse hook in Claude Code. Blocks Write/Edit/Bash
-     when arguments keyword-overlap unverified constraints via 32 synonym clusters.
-     <span class="c-teal">Model-independent enforcement is the guarantee.</span>
+     Model-dependent enforcement fails when context pressure overrides the instruction.
+     The Rust gate runs before any model decision — compiled binary, PreToolUse hook,
+     exit code 2. <em>Claude Code halts the tool call.</em> 32 synonym clusters handle paraphrase.
+     <span class="c-teal">This is the guarantee. Everything else is best-effort.</span>
     </div>
     <div class="trio-stat">3.0MB binary · LTO-optimized · stripped<br>Python hook: 331ms · Rust: 3.4ms · 100 calls: 33s vs 0.34s</div>
    </div>
@@ -696,10 +699,13 @@ html,body {
 <div class="sc split" data-lbl="Probe + Ghost Detector">
  <div class="main">
 
-  <div class="eyebrow a d1">We tested the obvious fix first</div>
-  <div class="head a d2" style="font-size:clamp(20px,3.2vw,44px);margin-bottom:13px">
+  <div class="eyebrow a d1">Haiku's compression is semantically correct · the qualifiers carry no informational weight · that's why a prompt can't fix this</div>
+  <div class="head a d2" style="font-size:clamp(20px,3.2vw,44px);margin-bottom:6px">
    System prompt gets you <span class="c-amber">90%.</span><br>
    <span style="font-size:clamp(14px,2.2vw,30px)">The probe gets you <span class="c-green">100%.</span></span>
+  </div>
+  <div class="a d2" style="font-size:clamp(11px,1vw,13px);color:var(--fg3);max-width:390px;margin-bottom:8px;line-height:1.6">
+   A prompt asks Haiku to preserve qualifiers. Haiku tries. 10% non-compliance is irreducible — "I think 50" and "50" share the same informational core. The probe doesn't try to compress while preserving. It <span style="color:var(--fg2)">blocks compression entirely</span> when uncertainty is present.
   </div>
 
   <!-- Before/After evidence strip -->
@@ -793,7 +799,7 @@ html,body {
 <div class="sc split" data-lbl="Enforcement Stack">
  <div class="main">
 
-  <div class="eyebrow a d1">Query overlaps · enforcement escalates · the gate fires</div>
+  <div class="eyebrow a d1">The probe closes the compression gap · each layer below closes the next gap in the chain</div>
   <div class="head a d2" style="font-size:clamp(18px,2.8vw,38px);margin-bottom:12px">
    Five layers the fact<br><span class="c-blue">cannot slip through.</span>
   </div>
@@ -803,7 +809,7 @@ html,body {
     <div class="enf-badge eb-blue">detect</div>
     <div style="min-width:0;flex:1">
      <div class="enf-title">Truth Buffer</div>
-     <div class="enf-desc">All unverified constraints injected into system prompt before every turn — advisory framing, stalest first. Even without CE firing, Claude sees: <span style="color:var(--blue);font-family:'SF Mono',monospace;font-size:9.5px">⚠ [LOW, conf=0.28] rate limit ~50 req/min — unverified</span>.</div>
+     <div class="enf-desc"><span style="color:var(--fg2)">Gap closed: attention fades over long sessions.</span> Even when compression is blocked, uncertain claims buried in conversation body receive less attention than system prompt content. Truth Buffer injects all unverified constraints into system prompt position — where Opus attends most — before every generation. Sorted by confidence decay; stalest first.</div>
     </div>
     <div class="enf-nums"><div class="enf-n c-blue">~0ms</div><div class="enf-u">SQLite read</div></div>
    </div>
@@ -811,7 +817,7 @@ html,body {
     <div class="enf-badge eb-purp">enforce</div>
     <div style="min-width:0;flex:1">
      <div class="enf-title">Consistency Enforcer</div>
-     <div class="enf-desc">32 synonym clusters. "How fast can we call the endpoint?" matches "rate limit ~50 req/min" via <span style="color:var(--purple);font-family:'SF Mono',monospace;font-size:9.5px">'fast'→'rate' · 'token' direct · 'expire'→'expiry'</span>. ≥2 overlap → advisory upgrades to MUST.</div>
+     <div class="enf-desc"><span style="color:var(--fg2)">Gap closed: advisory framing can be overridden.</span> When the user's query directly overlaps a registered uncertainty (≥2 non-stopword terms after synonym expansion), the injection escalates from advisory to imperative. "How fast can we call the endpoint?" → <span style="color:var(--purple);font-family:'SF Mono',monospace;font-size:9.5px">'fast'→'rate' · 'token' direct · 'expire'→'expiry'</span> → MUST.</div>
     </div>
     <div class="enf-nums"><div class="enf-n c-purple">~0ms</div><div class="enf-u">set ops only</div></div>
    </div>
@@ -819,7 +825,7 @@ html,body {
     <div class="enf-badge eb-orange">annotate</div>
     <div style="min-width:0;flex:1">
      <div class="enf-title">Generation-Time Scanner</div>
-     <div class="enf-desc">Scans generated code + prose. 3 tiers by effective confidence: HIGH RISK / UNVERIFIED / CHECK. Fires regardless of whether the model complied with injection.</div>
+     <div class="enf-desc"><span style="color:var(--fg2)">Gap closed: model compliance is not guaranteed.</span> Even when Claude hedges in prose, generated code silently embeds the numeric value. GTS scans code blocks and prose in the output, annotating unverified literals with 3 tiers by effective confidence: <span style="color:var(--gold)">HIGH RISK</span> / <span style="color:var(--orange)">UNVERIFIED</span> / CHECK. Fires on the output regardless of whether the model complied with injection.</div>
     </div>
     <div class="enf-nums"><div class="enf-n c-orange">~0.08ms</div><div class="enf-u">regex scan</div></div>
    </div>
@@ -827,7 +833,7 @@ html,body {
     <div class="enf-badge eb-teal">block</div>
     <div style="min-width:0;flex:1">
      <div class="enf-title">Rust PreToolUse Gate</div>
-     <div class="enf-desc">Blocks Write/Edit/Bash when tool arguments overlap unverified constraints. Exit code 2. 98× faster than Python hook. 100 calls: 0.34s vs 33s overhead.</div>
+     <div class="enf-desc"><span style="color:var(--fg2)">Gap closed: annotated code can still be written.</span> Even with GTS annotations visible, Claude Code can call Edit and write the unverified value to disk. The Rust gate runs before the tool executes — not after. Exit code 2 halts the call. 98× faster than Python hook: 3.4ms vs 331ms. At 100 tool calls per session: 0.34s vs 33s.</div>
     </div>
     <div class="enf-nums"><div class="enf-n c-teal">3.4ms</div><div class="enf-u">Rust binary</div></div>
    </div>
@@ -835,7 +841,7 @@ html,body {
     <div class="enf-badge eb-green">memory</div>
     <div style="min-width:0;flex:1">
      <div class="enf-title">Cross-Session Memory</div>
-     <div class="enf-desc">Uncertainty travels across sessions with confidence + decay. Session 2 inherits epistemic registry. Mem0/Zep store facts — Credence stores facts with epistemic weight.</div>
+     <div class="enf-desc"><span style="color:var(--fg2)">Gap closed: sessions end, epistemic state doesn't.</span> Mem0/Zep store "rate limit: 50 req/min" — the qualifier is stripped at write time. Session 2 inherits a confident fact. Credence stores j_score + zone + verified=False alongside the fact. Session 2 inherits the uncertainty.</div>
     </div>
     <div class="enf-nums"><div class="enf-n c-green">&lt;1ms</div><div class="enf-u">SQLite snap</div></div>
    </div>
@@ -906,7 +912,7 @@ html,body {
 <div class="sc full" data-lbl="The Evidence">
  <div style="width:100%;max-width:880px;display:flex;flex-direction:column;gap:13px;align-items:center">
 
-  <div class="eyebrow a d1">Seven evaluations · All Opus 4.7 · Self-audited · 178 tests passing</div>
+  <div class="eyebrow a d1">Seven evaluations · All Opus 4.7 · 178 tests passing · we found and corrected our own scorer inflation</div>
 
   <div class="res-wrap">
    <div class="res-row" id="r0">
@@ -962,8 +968,8 @@ html,body {
   </div>
 
   <div id="audit-note" style="opacity:0;transition:opacity .6s;font-size:11px;color:var(--fg3);text-align:center;line-height:1.7">
-   <span style="color:var(--fg2)">Most projects overclaim.</span> We found our own scorer inflation — false certainty was 34% → corrected to 6% · correction reasoning in repo<br>
-   adversarial tests 5/5 · stress tests 6/6 · probe FP rate 0% on n=200 non-uncertain phrases
+   <span style="color:var(--fg2);font-weight:600">Self-audit discipline:</span> naive FCR was 34% in our first scorer. We ran adversarial audits, found 14/17 "certain" responses used out-of-vocabulary hedging, expanded markers from 108→198, corrected to 6%. We shipped the lower number.<br>
+   adversarial tests 5/5 · stress tests 6/6 · probe FP rate 0% on n=200 non-uncertain phrases · E6 run 23 times for bootstrap CI
   </div>
 
  </div>
