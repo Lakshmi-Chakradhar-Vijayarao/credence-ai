@@ -2,15 +2,19 @@
 
 ## Written Summary (paste into submission form)
 
-When you tell Claude you're not certain about something, that uncertainty rarely survives a long session. Context compression strips the qualifiers silently — *"I think the rate limit is around 50 req/min — unconfirmed"* becomes `RATE_LIMIT = 50` in production code. No warning. No qualifier. The value survived. The doubt was erased.
+Every day, developers trust Claude with decisions that matter. They share what they know — and more importantly, what they *don't* know. "I think the rate limit is around 50 — unconfirmed." That qualifier is not noise. It is the most important thing in the sentence. It is the moment a developer chose honesty over assumption.
+
+Then the session grows. Context gets compressed. And silently, without warning, `RATE_LIMIT = 50` ships to production. The doubt was real. The code doesn't remember.
 
 We named this **Epistemic Qualifier Loss (EQL)**, measured it across 50 compression scenarios, and built Credence to prevent it.
 
-Credence is a five-layer epistemic enforcement system built natively into Claude Code. A sub-millisecond faithfulness probe blocks compression when uncertainty is present. A Truth Buffer re-injects all unverified constraints before every generation. A Consistency Enforcer adds imperative guardrails when a query directly matches a registered uncertain value. A Generation-Time Scanner annotates unverified literals before they ship to code. A Rust-native PreToolUse gate blocks irreversible tool calls — 98× faster than Python.
+Credence is a five-layer epistemic enforcement system built natively into Claude Code. A sub-millisecond faithfulness probe blocks compression when uncertainty is present. A Truth Buffer re-injects all unverified constraints before every generation. A Consistency Enforcer adds imperative guardrails when a query directly overlaps a registered uncertain value. A Generation-Time Scanner annotates unverified literals before they ship. A Rust-native PreToolUse gate blocks irreversible tool calls — 98× faster than Python.
 
-The Ghost Detector — powered by Opus 4.7's reasoning — catches implicit uncertainty with no hedging markers at all. Something no rule-based system can do.
+The Ghost Detector — powered by Opus 4.7 — catches implicit uncertainty with no hedging markers at all. Something no rule-based system can do.
 
-Deployed as a 22-tool MCP server. 178 tests. Built entirely with Claude Code.
+As AI agents take longer sessions and make higher-stakes decisions, uncertainty is not a weakness to be hidden — it is the most honest signal a system can carry. Credence is the first enforcement layer built around that principle.
+
+22-tool MCP server. 178 tests. Built entirely with Claude Code.
 
 ---
 
