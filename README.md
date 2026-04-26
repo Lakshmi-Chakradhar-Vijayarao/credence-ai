@@ -37,11 +37,9 @@ We measured it across 50 compression scenarios:
 
 Credence is a five-layer epistemic enforcement system built natively into Claude Code. It preserves uncertainty through compression, generation, code output, tool execution, and across session boundaries — deterministically, with zero extra API calls across all five enforcement layers.
 
-Every engineering team using Claude Code today is producing ghost constraints they don't know about. Every sprint. This is what it looks like in your codebase right now.
+Every engineering team using Claude Code today is producing ghost constraints they don't know about. Every sprint.
 
 > Credence was built with Claude Code, deployed as a Claude Code plugin, to protect Claude Code users from Claude Code's own failure mode. Opus 4.7 built a system to guard against Opus 4.7's blind spot.
-
-*This project grew from prior research into Fisher information signals and KV-cache adaptive compression — where we hit a roadblock that turned into this insight: compression is not just a resource decision, it is an epistemic one. Full story in [VISION.md](VISION.md).*
 
 ---
 
@@ -55,11 +53,6 @@ python demo/live_demo.py      # trace one uncertain claim through the full pipel
 streamlit run demo/app.py     # interactive demo
 ```
 
-Reproduce the headline result:
-```bash
-python -m evals.compression_faithfulness --n 50   # ~$3, n=50
-```
-
 ---
 
 ## The Opus 4.7 Story — Ghost Detector
@@ -71,7 +64,7 @@ But what about:
 
 No hedging. Stated as fact. Actually from a sales call, never confirmed. The probe sees nothing. This is a **ghost constraint** — and it is the harder, more dangerous failure.
 
-Only Opus 4.7 can distinguish "established fact" from "vendor claim stated as fact" by reasoning about the *origin and reliability* of a claim — not its surface text. Haiku sees the same characters. Opus 4.7 reasons about provenance. A single structured Opus 4.7 call classifies each constraint. Ghost constraints then flow through all five enforcement layers identically to explicit ones.
+Only Opus 4.7 can distinguish "established fact" from "vendor claim stated as fact" by reasoning about the *origin and reliability* of a claim — not its surface text. A single structured Opus 4.7 call classifies each constraint. Ghost constraints then flow through all five enforcement layers identically to explicit ones.
 
 ```
 Ghost Gauntlet — n=10 sessions × 3 conditions, all Opus 4.7
@@ -137,8 +130,8 @@ User states uncertain claim
 │  session. New sessions inherit uncertainty.  │
 └──────────────────────────────────────────────┘
 
-Total overhead: ~0.56ms in-session + 3.4ms gate. Zero extra API calls.
-(Ghost Detector is opt-in: one Opus 4.7 call per constraint classification, on registration only.)
+Total: ~0.56ms in-session + 3.4ms gate. Zero extra API calls.
+Ghost Detector is opt-in — one Opus 4.7 call per constraint, on registration only.
 ```
 
 ---
@@ -167,13 +160,11 @@ ALGORITHM = "RS256"   # ⚠  CREDENCE[unverified, conf=0.28]: encryption algo �
   Use credence_verify(<id>, <confirmed_value>) to resolve.
 ```
 
-Once verified, the constraint clears, the gate unblocks, and Claude writes the code. The full loop:
+Once verified, the constraint clears, the gate unblocks, Claude writes the code:
 
 ```
 uncertain → registered → enforced → verified → released
 ```
-
-**What it costs:** zero extra API calls for layers 1, 3, 4, and 5. One Opus 4.7 call per ghost constraint (Ghost Detector only). 3.4ms per tool call at the gate. That is the entire overhead.
 
 ---
 
@@ -228,34 +219,26 @@ Build the Rust gate: `cargo build --release` in `credence_gate/`.
 
 **No API key — free, runs in seconds:**
 ```bash
-python3 tests.py                        # 178 unit tests (S1–S26 suites)
+python3 tests.py                        # 178 unit tests
 python3 test_claims.py                  # validates all submission claims offline
 python -m evals.precision_eval          # CE / GTS / probe false-positive rates
 python -m evals.stress_test             # n=1000 probe latency, n=200 precision/recall
 python -m evals.adversarial_tests       # 5 adversarial robustness tests
-python quickstart.py                    # live demo of all 5 layers, no API key
+python quickstart.py                    # live demo — no API key
 python demo/live_demo.py                # trace a single claim through the pipeline
 ```
 
-**With API key — core evidence (~$5 total):**
+**With API key — core evidence (~$7 total):**
 ```bash
 python -m evals.compression_faithfulness --n 50   # headline: 26%→0% EQLR, 12%→0% FCR  (~$3)
-python -m evals.null_hypothesis                   # prompt instruction baseline (90% not 100%) (~$1)
-python -m evals.ghost_gauntlet                    # BothRate 0.200→1.000, implicit uncertainty (~$2)
+python -m evals.null_hypothesis                   # prompt instruction baseline: 90% not 100% (~$1)
+python -m evals.ghost_gauntlet                    # BothRate 0.200→1.000 (~$2)
 python -m evals.experiments --exp E6              # long session recall: 100% vs 19.6% (~$0.50)
 python -m evals.experiments --exp E7              # 3-hop chain: 3/3 vs 0/3 (~$0.20)
 python -m evals.experiments --exp E8              # real debugging session recall (~$0.30)
 ```
 
-**Extended suite (~$15–20):**
-```bash
-python -m evals.e6_ablation                       # layer isolation: which checkpoint matters?
-python -m evals.ghost_detector_ablation           # Ghost Detector mechanism isolation
-python -m evals.cross_session_eval                # cross-session FCR, n=20 callbacks
-python -m evals.conversation_benchmark            # 10-session × 3-condition benchmark
-```
-
-All results are already saved in `evals/*.json` — no API key needed to read them.
+All results already saved in `evals/*.json` — no API key needed to read them.
 
 ---
 
@@ -263,46 +246,36 @@ All results are already saved in `evals/*.json` — no API key needed to read th
 
 | What you want to know | Where to find it |
 |---|---|
-| Why does this matter — research origin and vision | [VISION.md](VISION.md) |
-| Full methodology, related work, evaluation design | [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md) |
+| Research origin, vision, honest assessment | [VISION.md](VISION.md) |
+| Full methodology, related work, eval design | [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md) |
 | Every number, every run command, all evidence | [SUBMISSION.md](SUBMISSION.md) |
-| Layer-by-layer design decisions and J-score | [ARCHITECTURE.md](ARCHITECTURE.md) |
-| Single authoritative results table | [BENCHMARKS.md](BENCHMARKS.md) |
+| Layer-by-layer design decisions | [ARCHITECTURE.md](ARCHITECTURE.md) |
 
 ---
 
 ## Project Structure
 
 ```
-credence/               Core package
-  context_manager.py    Enforcement engine — all 5 layers
-  registry.py           SQLite constraint store + confidence decay + trajectory
+credence/               Core enforcement package
+  context_manager.py    All 5 layers — probe, buffer, scanner, memory
+  registry.py           SQLite constraint store + confidence decay
   confidence_proxy.py   J-score (zero API, zero latency)
   memory.py             Cross-session epistemic persistence
   mcp_server.py         FastMCP server — 22 tools
-  pipeline_monitor.py   Multi-agent middleware
-  hooks.py              Python PreToolUse fallback
-  semantic_entropy.py   SE probe (optional Tier 2 signal)
-  envelope.py           Multi-agent provenance wrapper
-  agent.py              CredenceAgent for long tasks
 
-evals/                  Full evidence suite (12 studies)
+evals/                  Evidence suite (12 studies)
   compression_faithfulness.py   Primary result (n=50)
   ghost_gauntlet.py             Implicit uncertainty benchmark
   experiments.py                E1–E9 ablation experiments
-  cross_session_eval.py         Cross-session FCR
 
 demo/
   app.py                Streamlit UI
   live_demo.py          Terminal demo (no API key needed)
-  presentation.html     Full slide deck
 
-credence_gate/          Rust enforcement binary
-  src/main.rs           credence-gate: 3.4ms PreToolUse hook
-
-tests.py                178 unit tests (S1–S26)
-quickstart.py           First-run demo
-etp-v1.json             Epistemic Transport Protocol schema
+credence_gate/src/main.rs   Rust PreToolUse hook — 3.4ms
+tests.py                    178 unit tests
+quickstart.py               First-run demo
+etp-v1.json                 Epistemic Transport Protocol schema
 ```
 
 ---
