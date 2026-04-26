@@ -219,8 +219,8 @@ Build the Rust gate: `cargo build --release` in `credence_gate/`.
 
 **No API key — free, runs in seconds:**
 ```bash
-python3 tests.py                        # 178 unit tests
-python3 test_claims.py                  # validates all submission claims offline
+python3 tests/tests.py                  # 178 unit tests
+python3 tests/test_claims.py           # validates all submission claims offline
 python -m evals.precision_eval          # CE / GTS / probe false-positive rates
 python -m evals.stress_test             # n=1000 probe latency, n=200 precision/recall
 python -m evals.adversarial_tests       # 5 adversarial robustness tests
@@ -246,10 +246,10 @@ All results already saved in `evals/*.json` — no API key needed to read them.
 
 | What you want to know | Where to find it |
 |---|---|
-| Research origin, vision, honest assessment | [VISION.md](VISION.md) |
-| Full methodology, related work, eval design | [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md) |
-| Every number, every run command, all evidence | [SUBMISSION.md](SUBMISSION.md) |
-| Layer-by-layer design decisions | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Research origin, vision, honest assessment | [VISION.md](docs/VISION.md) |
+| Full methodology, related work, eval design | [TECHNICAL_REPORT.md](docs/TECHNICAL_REPORT.md) |
+| Every number, every run command, all evidence | [SUBMISSION.md](docs/SUBMISSION.md) |
+| Layer-by-layer design decisions | [ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 
 ---
 
@@ -273,9 +273,9 @@ demo/
   live_demo.py          Terminal demo (no API key needed)
 
 credence_gate/src/main.rs   Rust PreToolUse hook — 3.4ms
-tests.py                    178 unit tests
+tests/tests.py              178 unit tests
 quickstart.py               First-run demo
-etp-v1.json                 Epistemic Transport Protocol schema
+docs/etp-v1.json            Epistemic Transport Protocol schema
 ```
 
 ---
