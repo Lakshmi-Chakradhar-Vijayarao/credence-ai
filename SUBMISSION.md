@@ -2,7 +2,7 @@
 
 ## Written Summary (paste into submission form)
 
-Every day, developers trust Claude with decisions that matter. They share what they know — and more importantly, what they *don't* know. "I think the rate limit is around 50 — unconfirmed." That qualifier is not noise. It is the most important thing in the sentence. It is the moment a developer chose honesty over assumption.
+Every day, developers trust Claude with decisions that matter. They share what they know — and more importantly, what they *don't* know. "I'm not sure about the rate limit — maybe around 50?" That's how people talk. Honest. Uncertain. Asking for help, not declaring a fact.
 
 Then the session grows. Context gets compressed. And silently, without warning, `RATE_LIMIT = 50` ships to production. The doubt was real. The code doesn't remember.
 
