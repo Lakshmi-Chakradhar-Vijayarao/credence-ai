@@ -6,7 +6,7 @@ LLMs forget epistemic state. When a conversation compresses or a pipeline passes
 
 ## From FAIL-CHAIN to Credence
 
-FAIL-CHAIN (Vijayarao 2025) measured how confident-but-wrong model outputs propagate through multi-step LLM pipelines. The core finding: compression decisions made without reference to epistemic state convert uncertain claims into apparent facts, and the confidence of downstream agents on those facts is indistinguishable from genuinely resolved knowledge. The fix is not better models — it is epistemic-aware memory management.
+FAIL-CHAIN (Vijayarao 2025) https://github.com/Lakshmi-Chakradhar-Vijayarao/fail-chain measured how confident-but-wrong model outputs propagate through multi-step LLM pipelines. The core finding: compression decisions made without reference to epistemic state convert uncertain claims into apparent facts, and the confidence of downstream agents on those facts is indistinguishable from genuinely resolved knowledge. The fix is not better models — it is epistemic-aware memory management.
 
 Credence is the memory governor that closes this loop. It operates at the context-management layer, between the user and the model, and makes a single policy decision for each turn: **compress only what is epistemically resolved**.
 
