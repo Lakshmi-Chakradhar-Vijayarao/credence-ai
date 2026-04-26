@@ -1,12 +1,16 @@
 # Credence — Hackathon Submission
 
-## 150-Word Summary (paste into submission form)
+## Written Summary (paste into submission form)
 
-**We define Epistemic Qualifier Loss (EQL)** — the loss of user-stated uncertainty markers during context window summarization, causing downstream models to treat explicitly uncertain claims as confirmed facts. When a user says *"I think the rate limit is ~50 req/min — unconfirmed"* and Haiku compresses it to *"rate limit: 50 req/min,"* the model writes `RATE_LIMIT = 50` to production code with zero warning. This is not hallucination. The value survived. The doubt was erased.
+When you tell Claude you're not certain about something, that uncertainty rarely survives a long session. Context compression strips the qualifiers silently — *"I think the rate limit is around 50 req/min — unconfirmed"* becomes `RATE_LIMIT = 50` in production code. No warning. No qualifier. The value survived. The doubt was erased.
 
-We measured it: **EQL Rate (EQLR) 26%** under Haiku compression; **68%** under a simulated LLMLingua-style importance scorer. Downstream False Certainty Rate (corrected scorer v2): **12%** and **70%** respectively (n=50 fresh rerun, Wilson CIs; n=30 rerun: 23% / 83%). No prior paper names or measures this failure mode. Practitioners have described it for years with no number.
+We named this **Epistemic Qualifier Loss (EQL)**, measured it across 50 compression scenarios, and built Credence to prevent it.
 
-**Credence eliminates EQL at five deterministic checkpoints** — pre-compression probe (0.011ms, 198 markers, 0% FP), Truth Buffer, Consistency Enforcer, Generation-Time Scanner, Rust PreToolUse gate (3.4ms, 98× faster than Python). EQLR 68%→0%. FCR 70%→0% (LLMLingua sim). FCR 12%→0% (Haiku). Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions). 178 tests. 22-tool MCP server. 2-minute Claude Code install.
+Credence is a five-layer epistemic enforcement system built natively into Claude Code. A sub-millisecond faithfulness probe blocks compression when uncertainty is present. A Truth Buffer re-injects all unverified constraints before every generation. A Consistency Enforcer adds imperative guardrails when a query directly matches a registered uncertain value. A Generation-Time Scanner annotates unverified literals before they ship to code. A Rust-native PreToolUse gate blocks irreversible tool calls — 98× faster than Python.
+
+The Ghost Detector — powered by Opus 4.7's reasoning — catches implicit uncertainty with no hedging markers at all. Something no rule-based system can do.
+
+Deployed as a 22-tool MCP server. 178 tests. Built entirely with Claude Code.
 
 ---
 

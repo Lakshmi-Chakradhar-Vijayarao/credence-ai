@@ -60,6 +60,22 @@ The Rust gate is the key infrastructure signal. The PreToolUse hook pattern — 
 
 ---
 
+## Honest Assessment of the Contribution
+
+The problem is real. Context compression does silently strip uncertainty qualifiers — not because models are broken, but because to a compression model, "I think the rate limit is ~50 req/min — unconfirmed" and "the rate limit is 50 req/min" have identical informational cores. The qualifier is collateral loss. Measuring it with methodology — naming it EQL, defining FCR, running n=50 studies — is a genuine contribution. Nobody had a number for this before.
+
+The engineering is serious. A Rust gate at 3.4ms, a faithfulness probe at 0.07ms, a working MCP server, 178 tests, and a Ghost Detector that uses Opus 4.7's reasoning to classify the *origin and reliability* of claims — not just their surface text — is a real system, not a demo with a fake backend. The Ghost Detector insight specifically is non-obvious: Haiku sees the same characters as Opus; only Opus reasons about epistemic provenance.
+
+**What kind of contribution this is.** Credence is a proof-of-concept that a real problem exists and is solvable, with a working reference implementation. The lasting value is the concept and the measurement. EQL, EQLR, and FCR as defined metrics will age well. The framing that "compression is also an epistemic event" is the insight. Whether *this* implementation is the one that survives in production, or whether it proves the concept for someone to build it natively into the platform — both are good outcomes. Both mean the idea mattered.
+
+**The honest limitation.** The generation-side layers — Truth Buffer and Consistency Enforcer — inject constraints and instruct the model to treat them as unverified. That is a strong suggestion, not a mechanical guarantee. The probe and the Rust gate are fully deterministic. The generation side is deterministic injection with probabilistic compliance. This distinction matters for anyone evaluating production guarantees. CP1 and CP4 make a class of errors structurally impossible. CP2 and CP3 make a class of errors much less likely.
+
+**The absorption scenario is the best outcome.** The biggest risk to Credence as middleware is that Anthropic or a similar platform builds epistemic state tracking natively into the context management layer — making third-party enforcement unnecessary. If that happens, it is not a failure. It is evidence that the problem was real enough to be worth solving at the infrastructure level. Credence would then be remembered as the proof of concept that made the case. The type-checking analogy is exact: many early type-checkers were third-party tools before type systems became native to compilers and languages. The concept survived; the middleware didn't need to.
+
+**Why the concept survives regardless.** As AI agents take longer autonomous sessions and make more real-world decisions — committing code, deploying infrastructure, executing financial transactions — the question "was this value actually confirmed?" becomes existential. The compounding math is unambiguous: at 10 agent hops with even a 10% per-hop false certainty rate, the probability that at least one agent in the chain acts on an unverified value exceeds 65%. Epistemic metadata is not optional in agentic systems. Someone will build this. This project names the problem, measures it, and shows it is solvable. That is the contribution that persists.
+
+---
+
 ## The Standard
 
 `etp-v1.json` is a model-agnostic JSON Schema for epistemic metadata transport. It defines four primitives: `EpistemicConstraint` (a tracked uncertain claim), `EpistemicEnvelope` (a provenance wrapper for AI-generated content with trust decay per hop), `EpistemicLedger` (full session state), and `AlignmentWarning` (fired when a response is more confident than the ledger warrants).
