@@ -1,16 +1,23 @@
 """
 credence/agent.py
 =============
-CredenceAgent: Claude Managed Agent with confidence-adaptive memory.
+CredenceAgent: Claude Managed Agent with full epistemic enforcement.
 
 Designed for long-running, multi-step tasks that would otherwise exhaust
 Claude's context window — document analysis, research Q&A, iterative
-reasoning chains. Credence memory management keeps the agent running
-efficiently across all turns without hitting context limits.
+reasoning chains. The full Credence stack fires on every turn:
+
+  - Faithfulness probe: blocks compression when uncertainty is present
+  - Truth Buffer: re-injects all unverified constraints before each generation
+  - Consistency Enforcer: imperative injection when query overlaps uncertain fact
+  - Generation-Time Scanner: annotates unverified literals in generated code
+  - Ghost Detector (optional): catches implicit uncertain claims via Opus 4.7
+  - Claim extraction: auto-registers uncertain claims from user messages
 
 Pattern: Claude as both the reasoner AND the memory manager.
   - Opus 4.7 answers each sub-task
-  - Opus 4.7 compresses its own history when confident
+  - Opus 4.7 compresses its own history when confident (HIGH-J turns only)
+  - Uncertain turns are never compressed — epistemic state survives every turn
   - The agent survives contexts that would break a naive implementation
 
 Compatible with Claude Managed Agents infrastructure for production
@@ -19,6 +26,7 @@ deployment of long-running tasks.
 
 import os
 import time
+import uuid
 from dataclasses import dataclass, field
 from typing import Optional, Callable
 
@@ -30,6 +38,7 @@ except ImportError:
 
 from .confidence_proxy import CredenceProxy
 from .context_manager import ContextManager, _cost
+from .registry import CredenceRegistry
 
 
 # ---------------------------------------------------------------------------
@@ -102,11 +111,15 @@ class CredenceAgent:
 
     def __init__(
         self,
-        api_key:    Optional[str] = None,
-        theta_high: float = 0.65,
-        theta_low:  float = 0.35,
-        max_tokens: int   = 512,
-        on_turn:    Optional[Callable] = None,   # progress callback
+        api_key:             Optional[str] = None,
+        theta_high:          float = 0.65,
+        theta_low:           float = 0.35,
+        max_tokens:          int   = 512,
+        on_turn:             Optional[Callable] = None,   # progress callback
+        registry:            Optional[CredenceRegistry] = None,
+        session_id:          Optional[str] = None,
+        use_ghost_detector:  bool = False,
+        use_semantic_entropy: bool = False,
     ):
         if not _ANTHROPIC_AVAILABLE:
             raise ImportError("pip install anthropic")
@@ -117,16 +130,25 @@ class CredenceAgent:
         self.proxy   = CredenceProxy(theta_high, theta_low)
         self.on_turn = on_turn   # called after each sub-task with SubTaskResult
 
+        # Use provided registry or create a fresh in-memory one so the full
+        # enforcement stack (Truth Buffer, CE, GTS, claim extraction) fires.
+        self._registry   = registry or CredenceRegistry(":memory:")
+        self._session_id = session_id or f"agent-{uuid.uuid4().hex[:8]}"
+
         self._mgr = ContextManager(
-            api_key    = api_key,
-            theta_high = theta_high,
-            theta_low  = theta_low,
-            max_tokens = max_tokens,
-            system_prompt = (
+            api_key              = api_key,
+            theta_high           = theta_high,
+            theta_low            = theta_low,
+            max_tokens           = max_tokens,
+            system_prompt        = (
                 "You are a precise research assistant working through a "
                 "long document. Answer each question using only information "
                 "from the document. Be concise and specific."
             ),
+            registry             = self._registry,
+            session_id           = self._session_id,
+            use_ghost_detector   = use_ghost_detector,
+            use_semantic_entropy = use_semantic_entropy,
         )
 
     # ------------------------------------------------------------------
