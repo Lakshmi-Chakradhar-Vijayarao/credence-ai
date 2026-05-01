@@ -147,37 +147,90 @@ fn load_constraints(session_id: &Option<String>) -> Vec<Constraint> {
         Err(_) => return vec![],  // no registry = no constraints = ALLOW
     };
 
-    let query = if let Some(sid) = session_id {
-        format!(
-            "SELECT constraint_id, content, zone, j_score FROM constraints \
-             WHERE verified=0 AND (validation_status='unverified' OR validation_status IS NULL) \
-             AND (session_id='{}' OR (is_memory=1 AND project_id IS NOT NULL))",
-            sid.replace('\'', "''")
-        )
+    // Use parameterized queries throughout — never interpolate session_id into SQL.
+    let rows: Vec<Constraint> = if let Some(sid) = session_id {
+        // Two separate queries ORed in Rust to keep parameterization clean.
+        // Query A: constraints for this specific session.
+        let mut a_results: Vec<Constraint> = {
+            let sql = "SELECT constraint_id, content, zone, j_score FROM constraints \
+                       WHERE verified=0 \
+                       AND (validation_status='unverified' OR validation_status IS NULL) \
+                       AND session_id=?1";
+            let mut stmt = match conn.prepare(sql) {
+                Ok(s) => s,
+                Err(_) => return vec![],
+            };
+            let iter = match stmt.query_map(params![sid], |row| {
+                Ok(Constraint {
+                    constraint_id: row.get(0)?,
+                    content:       row.get(1)?,
+                    zone:          row.get(2)?,
+                    j_score:       row.get(3)?,
+                })
+            }) {
+                Ok(i) => i,
+                Err(_) => return vec![],
+            };
+            iter.filter_map(|r| r.ok()).collect()
+        };
+
+        // Query B: cross-session memories (is_memory=1) — project-scoped, no sid filter.
+        let b_results: Vec<Constraint> = {
+            let sql = "SELECT constraint_id, content, zone, j_score FROM constraints \
+                       WHERE verified=0 \
+                       AND (validation_status='unverified' OR validation_status IS NULL) \
+                       AND is_memory=1 AND project_id IS NOT NULL";
+            let mut stmt = match conn.prepare(sql) {
+                Ok(s) => s,
+                Err(_) => return a_results,  // best-effort: return session constraints at minimum
+            };
+            let iter = match stmt.query_map([], |row| {
+                Ok(Constraint {
+                    constraint_id: row.get(0)?,
+                    content:       row.get(1)?,
+                    zone:          row.get(2)?,
+                    j_score:       row.get(3)?,
+                })
+            }) {
+                Ok(i) => i,
+                Err(_) => return a_results,
+            };
+            iter.filter_map(|r| r.ok()).collect()
+        };
+
+        // Deduplicate by constraint_id before returning.
+        let mut seen = std::collections::HashSet::new();
+        a_results.retain(|c| seen.insert(c.constraint_id.clone()));
+        let mut combined = a_results;
+        for c in b_results {
+            if seen.insert(c.constraint_id.clone()) {
+                combined.push(c);
+            }
+        }
+        combined
     } else {
-        "SELECT constraint_id, content, zone, j_score FROM constraints \
-         WHERE verified=0 AND (validation_status='unverified' OR validation_status IS NULL)"
-            .to_string()
+        let sql = "SELECT constraint_id, content, zone, j_score FROM constraints \
+                   WHERE verified=0 \
+                   AND (validation_status='unverified' OR validation_status IS NULL)";
+        let mut stmt = match conn.prepare(sql) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let iter = match stmt.query_map([], |row| {
+            Ok(Constraint {
+                constraint_id: row.get(0)?,
+                content:       row.get(1)?,
+                zone:          row.get(2)?,
+                j_score:       row.get(3)?,
+            })
+        }) {
+            Ok(i) => i,
+            Err(_) => return vec![],
+        };
+        iter.filter_map(|r| r.ok()).collect()
     };
 
-    let mut stmt = match conn.prepare(&query) {
-        Ok(s) => s,
-        Err(_) => return vec![],
-    };
-
-    let rows = stmt.query_map([], |row| {
-        Ok(Constraint {
-            constraint_id: row.get(0)?,
-            content:       row.get(1)?,
-            zone:          row.get(2)?,
-            j_score:       row.get(3)?,
-        })
-    });
-
-    match rows {
-        Ok(iter) => iter.filter_map(|r| r.ok()).collect(),
-        Err(_) => vec![],
-    }
+    rows
 }
 
 fn extract_arguments_text(tool_input: &Option<serde_json::Value>) -> String {

@@ -1,0 +1,1079 @@
+{
+  "schema_version": "1.0",
+  "n": 52,
+  "domains": [
+    "api",
+    "compliance",
+    "debug",
+    "design",
+    "finance",
+    "legal",
+    "medical",
+    "multiagent"
+  ],
+  "qualifier_types": [
+    "approximation",
+    "estimate",
+    "preliminary",
+    "unverified_report",
+    "vendor_claim"
+  ],
+  "scenarios": [
+    {
+      "scenario_id": "api-001",
+      "domain": "api",
+      "qualifier_type": "vendor_claim",
+      "uncertain_statement": "The vendor docs say the rate limit is 100 req/s but I've seen throttling at 80 in our tests.",
+      "value_fragments": [
+        "80",
+        "100",
+        "req"
+      ],
+      "qualifier_fragments": [
+        "vendor",
+        "docs",
+        "seen",
+        "testing",
+        "throttl",
+        "might",
+        "unconfirmed"
+      ],
+      "reference_answer": "The documented rate limit is 100 req/s, though testing shows throttling at 80. Treat 80 as the safe operating limit until confirmed with the vendor.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "api-002",
+      "domain": "api",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "Auth tokens seem to expire after about 3600 seconds based on our logs \u2014 I haven't checked the spec.",
+      "value_fragments": [
+        "3600",
+        "hour",
+        "token"
+      ],
+      "qualifier_fragments": [
+        "seem",
+        "about",
+        "log",
+        "haven't",
+        "spec",
+        "unverified",
+        "based on"
+      ],
+      "reference_answer": "Logs suggest a 3600-second token expiry, but this hasn't been verified against the spec. Treat as an estimate.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "api-003",
+      "domain": "api",
+      "qualifier_type": "unverified_report",
+      "uncertain_statement": "Someone on the team heard the batch endpoint accepts up to 50 items \u2014 not in any docs I've seen.",
+      "value_fragments": [
+        "50",
+        "batch"
+      ],
+      "qualifier_fragments": [
+        "heard",
+        "not in docs",
+        "unverified",
+        "someone",
+        "reportedly"
+      ],
+      "reference_answer": "50 items per batch was reported by a team member but isn't documented. Verify before relying on it.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "api-004",
+      "domain": "api",
+      "qualifier_type": "vendor_claim",
+      "uncertain_statement": "Sales told us webhooks deliver within 5 seconds, but the contract says best effort only.",
+      "value_fragments": [
+        "5",
+        "webhook",
+        "second"
+      ],
+      "qualifier_fragments": [
+        "sales",
+        "contract",
+        "best effort",
+        "told",
+        "only",
+        "not guaranteed"
+      ],
+      "reference_answer": "Sales quoted 5-second webhook delivery, but the contract guarantees only best effort. Don't rely on 5s for time-critical flows.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "api-005",
+      "domain": "api",
+      "qualifier_type": "approximation",
+      "uncertain_statement": "Pagination cursors appear to expire \u2014 we've seen errors after about 10 minutes of inactivity, docs are silent.",
+      "value_fragments": [
+        "10",
+        "minute",
+        "cursor"
+      ],
+      "qualifier_fragments": [
+        "appear",
+        "about",
+        "seen",
+        "docs are silent",
+        "silent",
+        "unverified",
+        "infer"
+      ],
+      "reference_answer": "Testing suggests cursors expire after roughly 10 minutes, but this isn't documented. Implement refresh logic and monitor for cursor-expired errors.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "api-006",
+      "domain": "api",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "Our account manager said we have 20 concurrent REST connections \u2014 the portal shows no limit.",
+      "value_fragments": [
+        "20",
+        "concurrent",
+        "connection"
+      ],
+      "qualifier_fragments": [
+        "account manager",
+        "email",
+        "portal",
+        "informal",
+        "not contractual",
+        "said"
+      ],
+      "reference_answer": "An account manager mentioned 20 concurrent connections, but this isn't reflected in the portal or contract. Treat as an informal guideline and verify.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "api-007",
+      "domain": "api",
+      "qualifier_type": "unverified_report",
+      "uncertain_statement": "A Stack Overflow answer from last year says the idempotency key TTL is 24 hours \u2014 no official docs.",
+      "value_fragments": [
+        "24",
+        "hour",
+        "idempotency"
+      ],
+      "qualifier_fragments": [
+        "Stack Overflow",
+        "year ago",
+        "unofficial",
+        "not official",
+        "unreliable",
+        "no official"
+      ],
+      "reference_answer": "A Stack Overflow answer cited 24h idempotency TTL, but there's no official documentation. Don't rely on this; contact the vendor.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "api-008",
+      "domain": "api",
+      "qualifier_type": "vendor_claim",
+      "uncertain_statement": "The integration guide mentions 99.95% uptime for short code delivery but our SLA doesn't mention it.",
+      "value_fragments": [
+        "99.95",
+        "uptime",
+        "SLA",
+        "delivery"
+      ],
+      "qualifier_fragments": [
+        "guide mentions",
+        "SLA doesn't",
+        "not in SLA",
+        "integration guide",
+        "unconfirmed"
+      ],
+      "reference_answer": "The integration guide references 99.95% uptime, but your SLA doesn't include this guarantee. Get it in writing before committing.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "dbg-001",
+      "domain": "debug",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "Heap is growing at roughly 2MB per 1000 requests \u2014 eyeballed from Grafana, not a profiler run.",
+      "value_fragments": [
+        "2MB",
+        "2 MB",
+        "1000",
+        "heap"
+      ],
+      "qualifier_fragments": [
+        "roughly",
+        "eyeballed",
+        "Grafana",
+        "not profiler",
+        "estimate",
+        "approximate"
+      ],
+      "reference_answer": "Grafana shows roughly 2MB growth per 1000 requests \u2014 this is a visual estimate, not a profiling measurement. Run a heap profiler before acting on this figure.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "dbg-002",
+      "domain": "debug",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "The race condition seems to trigger at 8+ concurrent writes \u2014 but our load tests aren't deterministic.",
+      "value_fragments": [
+        "8",
+        "concurrent",
+        "write"
+      ],
+      "qualifier_fragments": [
+        "seem",
+        "non-deterministic",
+        "load test",
+        "lower bound",
+        "might",
+        "could be"
+      ],
+      "reference_answer": "Load tests suggest the race condition triggers at 8+ concurrent writes, but the tests aren't deterministic \u2014 the real threshold could be lower.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "dbg-003",
+      "domain": "debug",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "I think the N+1 query in the user profile loader is causing the p99 regression \u2014 haven't confirmed with tracing.",
+      "value_fragments": [
+        "N+1",
+        "profile",
+        "p99"
+      ],
+      "qualifier_fragments": [
+        "think",
+        "haven't confirmed",
+        "hypothesis",
+        "tracing",
+        "suspect",
+        "might be"
+      ],
+      "reference_answer": "The N+1 query hypothesis is plausible for the p99 regression, but hasn't been confirmed with distributed tracing. Don't revert the deploy until tracing confirms.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "dbg-004",
+      "domain": "debug",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "We think we lost about 0.3% of writes during the outage \u2014 based on log gaps, not a full audit.",
+      "value_fragments": [
+        "0.3%",
+        "0.3 percent",
+        "write"
+      ],
+      "qualifier_fragments": [
+        "think",
+        "about",
+        "log gaps",
+        "not audited",
+        "estimate",
+        "rough"
+      ],
+      "reference_answer": "Log gap analysis suggests ~0.3% write loss, but this is an unaudited estimate. Do a full record reconciliation before reporting to customers.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "dbg-005",
+      "domain": "debug",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "At current growth rate, we'll run out of disk in about 6 weeks \u2014 assuming linear growth.",
+      "value_fragments": [
+        "6 week",
+        "disk"
+      ],
+      "qualifier_fragments": [
+        "about",
+        "assuming",
+        "linear",
+        "could be sooner",
+        "estimate",
+        "extrapolation"
+      ],
+      "reference_answer": "Linear extrapolation gives ~6 weeks until disk exhaustion, but actual usage may accelerate. Plan remediation within 2-3 weeks.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "dbg-006",
+      "domain": "debug",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "The 503s seem to correlate with the nightly ETL at 2am \u2014 but I only have 3 days of data.",
+      "value_fragments": [
+        "2am",
+        "ETL",
+        "503"
+      ],
+      "qualifier_fragments": [
+        "seem",
+        "3 days",
+        "insufficient",
+        "coincidence",
+        "might",
+        "could be"
+      ],
+      "reference_answer": "The ETL correlation is based on 3 data points \u2014 insufficient to establish causation. Capture 2+ weeks before changing the ETL schedule.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "dbg-007",
+      "domain": "debug",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "Deadlocks occur maybe once every 500 transactions in staging \u2014 not sure if this reflects production.",
+      "value_fragments": [
+        "500",
+        "deadlock"
+      ],
+      "qualifier_fragments": [
+        "maybe",
+        "staging",
+        "not sure",
+        "not production",
+        "rough indicator"
+      ],
+      "reference_answer": "1-in-500 deadlock rate is from staging and may not represent production contention. Monitor with production counters before using this for SLA calculations.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "dbg-008",
+      "domain": "debug",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "Queue should clear in about 4 hours at normal processing speed \u2014 but speed varies under backpressure.",
+      "value_fragments": [
+        "4 hour",
+        "queue"
+      ],
+      "qualifier_fragments": [
+        "about",
+        "normal speed",
+        "varies",
+        "backpressure",
+        "estimate",
+        "should"
+      ],
+      "reference_answer": "Estimated 4-hour recovery assumes stable processing speed. Under backpressure, communicate a 4-8 hour range to stakeholders.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "des-001",
+      "domain": "design",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "I think 16 shards will handle 10 million users \u2014 but that's back-of-envelope and the distribution might be skewed.",
+      "value_fragments": [
+        "16",
+        "shard",
+        "10 million"
+      ],
+      "qualifier_fragments": [
+        "think",
+        "back-of-envelope",
+        "skew",
+        "might",
+        "estimate",
+        "model"
+      ],
+      "reference_answer": "16 shards is a reasonable starting estimate for 10M users, but back-of-envelope with unknown distribution. Model actual user_id distribution before committing.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "des-002",
+      "domain": "design",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "Based on one week of logs, we project 85% cache hit rate \u2014 but we haven't accounted for seasonal spikes.",
+      "value_fragments": [
+        "85%",
+        "cache",
+        "hit rate"
+      ],
+      "qualifier_fragments": [
+        "one week",
+        "project",
+        "seasonal",
+        "preliminary",
+        "hasn't",
+        "based on"
+      ],
+      "reference_answer": "85% hit rate is projected from one week of logs \u2014 seasonal spikes could shift this 10-15 points. Size cache for a 70% floor assumption.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "des-003",
+      "domain": "design",
+      "qualifier_type": "vendor_claim",
+      "uncertain_statement": "The service mesh vendor claims 0.5ms overhead per hop, but our benchmarks show 1.2ms.",
+      "value_fragments": [
+        "0.5",
+        "1.2",
+        "ms",
+        "hop"
+      ],
+      "qualifier_fragments": [
+        "vendor claims",
+        "claims",
+        "our benchmarks",
+        "discrepancy",
+        "provisional"
+      ],
+      "reference_answer": "Vendor quotes 0.5ms per hop; your environment measured 1.2ms. Budget 1.2ms as a provisional figure, treat as uncertain until more measurements.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "des-004",
+      "domain": "design",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "At current ingestion rates, 90-day retention costs roughly $12,000/month \u2014 but that assumes current data mix.",
+      "value_fragments": [
+        "12,000",
+        "$12",
+        "retention"
+      ],
+      "qualifier_fragments": [
+        "roughly",
+        "assumes",
+        "current",
+        "could change",
+        "estimate"
+      ],
+      "reference_answer": "~$12,000/month is a rough estimate sensitive to data mix. Recalculate with new data type profiles before budgeting.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "des-005",
+      "domain": "design",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "We estimate GraphQL will reduce average payload size by 40% \u2014 based on analyzing 20 API calls.",
+      "value_fragments": [
+        "40%",
+        "payload",
+        "GraphQL"
+      ],
+      "qualifier_fragments": [
+        "estimate",
+        "20 API calls",
+        "small sample",
+        "based on",
+        "preliminary"
+      ],
+      "reference_answer": "40% reduction estimate is from 20 API calls \u2014 too small a sample. Validate on 200+ real queries before committing to capacity planning.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "des-006",
+      "domain": "design",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "CDN should handle about 80% of requests based on our static-asset ratio \u2014 haven't measured actual offload.",
+      "value_fragments": [
+        "80%",
+        "CDN",
+        "offload"
+      ],
+      "qualifier_fragments": [
+        "about",
+        "should",
+        "haven't measured",
+        "theoretical",
+        "based on"
+      ],
+      "reference_answer": "80% CDN offload is theoretical from static-asset ratio analysis. Measure from CDN analytics after launch before sizing origin.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "des-007",
+      "domain": "design",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "Logs are growing at roughly 50GB per day \u2014 but we're about to onboard three high-volume services.",
+      "value_fragments": [
+        "50GB",
+        "log",
+        "day"
+      ],
+      "qualifier_fragments": [
+        "roughly",
+        "about to onboard",
+        "estimate",
+        "could change",
+        "before onboarding"
+      ],
+      "reference_answer": "50GB/day is pre-onboarding. With three high-volume services, actual growth could be 2-5x. Size log storage for 300GB/day.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "des-008",
+      "domain": "design",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "We think 3 replicas will maintain HA under peak load \u2014 intuition from past projects, not a load test.",
+      "value_fragments": [
+        "3 replica",
+        "HA"
+      ],
+      "qualifier_fragments": [
+        "think",
+        "intuition",
+        "past projects",
+        "not load test",
+        "risky",
+        "run"
+      ],
+      "reference_answer": "3 replicas is intuition-based from past projects, not a load test on this system. Run failure simulation at peak before going to production.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "cmp-001",
+      "domain": "compliance",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "Our legal team believes GDPR deletion must complete within 30 days \u2014 haven't got a formal opinion.",
+      "value_fragments": [
+        "30 day",
+        "deletion"
+      ],
+      "qualifier_fragments": [
+        "believe",
+        "haven't got",
+        "formal opinion",
+        "no formal",
+        "may apply"
+      ],
+      "reference_answer": "30 days aligns with GDPR Article 17, but your legal team's belief isn't a formal opinion. Get legal advice before publishing your SLA.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "cmp-002",
+      "domain": "compliance",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "We believe we have 72 hours to notify under GDPR \u2014 but counsel mentioned new AI-system guidance we haven't reviewed.",
+      "value_fragments": [
+        "72 hour",
+        "notification"
+      ],
+      "qualifier_fragments": [
+        "believe",
+        "haven't reviewed",
+        "new guidance",
+        "don't rely",
+        "until review"
+      ],
+      "reference_answer": "72 hours is standard GDPR breach notification, but new AI-system guidance may change this. Review before your next DR exercise.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "cmp-003",
+      "domain": "compliance",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "We're estimating 1.2 million PHI records in scope \u2014 but some records haven't been classified yet.",
+      "value_fragments": [
+        "1.2 million",
+        "1.2M",
+        "PHI"
+      ],
+      "qualifier_fragments": [
+        "estimating",
+        "unclassified",
+        "undercount",
+        "haven't classified"
+      ],
+      "reference_answer": "1.2M is an undercount \u2014 unclassified records must be included. Use the upper-bound figure for the HIPAA risk assessment.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "cmp-004",
+      "domain": "compliance",
+      "qualifier_type": "vendor_claim",
+      "uncertain_statement": "The SOC 2 audit covers 12 months ending March 2026 \u2014 but the auditor flagged a 3-week logging gap we haven't resolved.",
+      "value_fragments": [
+        "3-week",
+        "gap",
+        "audit"
+      ],
+      "qualifier_fragments": [
+        "flagged",
+        "haven't resolved",
+        "don't know",
+        "depends on",
+        "may be material"
+      ],
+      "reference_answer": "A 3-week logging gap is a control exception \u2014 whether it's material depends on the auditor's assessment. Don't assume it's non-material.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "cmp-005",
+      "domain": "compliance",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "We assume our EU DPA covers UK-resident data too \u2014 but the solicitor mentioned UK/EU GDPR diverged post-Brexit.",
+      "value_fragments": [
+        "DPA",
+        "UK",
+        "EU"
+      ],
+      "qualifier_fragments": [
+        "assume",
+        "mentioned",
+        "diverged",
+        "haven't asked",
+        "formal opinion",
+        "may not"
+      ],
+      "reference_answer": "Post-Brexit UK GDPR is a separate framework. One DPA may not cover both. Get a formal legal opinion before assuming coverage.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "cmp-006",
+      "domain": "compliance",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "We think contractors need only a basic background check for Level 2 data access \u2014 the enterprise contract may require more.",
+      "value_fragments": [
+        "Level 2",
+        "contractor",
+        "background"
+      ],
+      "qualifier_fragments": [
+        "think",
+        "may require",
+        "haven't read",
+        "until reviewed",
+        "don't provision"
+      ],
+      "reference_answer": "Your enterprise contract may require enhanced vetting for Level 2 access. Don't provision until you've reviewed the relevant contract clause.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "cmp-007",
+      "domain": "compliance",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "We plan for 90-day coordinated disclosure \u2014 but the researcher said they'll publish at 60 days if unacknowledged.",
+      "value_fragments": [
+        "60 day",
+        "90 day",
+        "disclosure"
+      ],
+      "qualifier_fragments": [
+        "said they'll",
+        "haven't acknowledged",
+        "may publish",
+        "without formal"
+      ],
+      "reference_answer": "The researcher imposed a 60-day deadline that's shorter than your 90-day policy. Without acknowledgment, they may publish at day 60. Respond formally within 24 hours.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "cmp-008",
+      "domain": "compliance",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "We retain access logs for 1 year per internal policy \u2014 but a prospective client asks for 2 years and we haven't checked insurance.",
+      "value_fragments": [
+        "1 year",
+        "2 year",
+        "log",
+        "retention"
+      ],
+      "qualifier_fragments": [
+        "internal policy",
+        "asks for",
+        "haven't checked",
+        "may be insufficient",
+        "before responding"
+      ],
+      "reference_answer": "1-year retention per internal policy may be insufficient for enterprise clients and cyber insurance. Review both before committing to the vendor questionnaire.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "mag-001",
+      "domain": "multiagent",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "We estimate Haiku will handle 80% of sub-agent tasks and Opus the rest \u2014 based on one demo, not a real distribution.",
+      "value_fragments": [
+        "80%",
+        "Haiku",
+        "Opus"
+      ],
+      "qualifier_fragments": [
+        "estimate",
+        "one demo",
+        "not real",
+        "too thin",
+        "based on"
+      ],
+      "reference_answer": "80/20 split from a single demo is too thin for cost modeling. Profile 100+ representative tasks before committing to this estimate.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "mag-002",
+      "domain": "multiagent",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "We're allocating 8,000 tokens per sub-agent context \u2014 a conservative estimate, not based on profiling.",
+      "value_fragments": [
+        "8,000",
+        "8000",
+        "token"
+      ],
+      "qualifier_fragments": [
+        "conservative estimate",
+        "not profiled",
+        "haven't profiled",
+        "may exceed"
+      ],
+      "reference_answer": "8,000 tokens is a conservative budget, but real tasks vary widely. Profile your task corpus before finalizing \u2014 some reasoning chains exceed 15,000 tokens.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "mag-003",
+      "domain": "multiagent",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "Setting a 30-second tool timeout based on our slowest test call \u2014 but that was under light load.",
+      "value_fragments": [
+        "30",
+        "timeout",
+        "tool"
+      ],
+      "qualifier_fragments": [
+        "light load",
+        "testing",
+        "may be too tight",
+        "can take",
+        "based on slowest"
+      ],
+      "reference_answer": "30s from light-load testing may be too tight for production. Queries under contention can take 2-5x longer. Consider 60-90s with circuit breaker logic.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "mag-004",
+      "domain": "multiagent",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "We're assuming Agent A verified a fact means Agent B can trust it \u2014 but we haven't tested Agent A's verification quality.",
+      "value_fragments": [
+        "Agent A",
+        "Agent B",
+        "verification",
+        "trust"
+      ],
+      "qualifier_fragments": [
+        "assuming",
+        "haven't tested",
+        "reliable",
+        "risk",
+        "only safe if"
+      ],
+      "reference_answer": "Transitive trust is only safe if Agent A's verification is audited and reliable. Verify Agent A's output quality independently before propagating trust.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "mag-005",
+      "domain": "multiagent",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "Our guardrails catch about 95% of policy violations in testing \u2014 but we used 50 hand-crafted cases, not adversarial inputs.",
+      "value_fragments": [
+        "95%",
+        "guardrail",
+        "policy"
+      ],
+      "qualifier_fragments": [
+        "hand-crafted",
+        "50 cases",
+        "not adversarial",
+        "before citing",
+        "systematically miss"
+      ],
+      "reference_answer": "95% on 50 hand-crafted cases is not a reliable effectiveness estimate. Evaluate on adversarial inputs and production samples before citing this number.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "mag-006",
+      "domain": "multiagent",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "Hot-swapping the model should add under 200ms \u2014 from one internal test, not from load conditions.",
+      "value_fragments": [
+        "200ms",
+        "hot-swap",
+        "swap"
+      ],
+      "qualifier_fragments": [
+        "one test",
+        "estimate",
+        "not load",
+        "before publishing",
+        "internal test"
+      ],
+      "reference_answer": "200ms from a single internal test isn't reliable. Model swap latency depends on infra state and concurrent load. Measure under realistic conditions before publishing an SLA.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "mag-007",
+      "domain": "multiagent",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "Running 10 agents in parallel should cost about 10x a single agent \u2014 but that ignores coordination overhead.",
+      "value_fragments": [
+        "10x",
+        "parallel",
+        "agent"
+      ],
+      "qualifier_fragments": [
+        "about",
+        "ignores overhead",
+        "haven't benchmarked",
+        "idealized",
+        "can push"
+      ],
+      "reference_answer": "10x linear scaling ignores coordination overhead and retry cascades. Real cost can be 12-15x. Benchmark at 5 agents first.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "mag-008",
+      "domain": "multiagent",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "We think the v1 handoff schema is backward-compatible with v2 agents \u2014 based on reading the migration guide, not testing.",
+      "value_fragments": [
+        "v1",
+        "v2",
+        "schema",
+        "backward"
+      ],
+      "qualifier_fragments": [
+        "think",
+        "migration guide",
+        "not tested",
+        "haven't tested",
+        "before deploying"
+      ],
+      "reference_answer": "Schema backward-compatibility claims in migration guides aren't always accurate. Do an integration test with real v1 payloads against v2 agents before deploying.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "med-001",
+      "domain": "medical",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "Preliminary data from 12 patients suggests the dosing might need to be 15mg \u2014 not yet statistically significant.",
+      "value_fragments": [
+        "15mg",
+        "15 mg",
+        "dose",
+        "dosing"
+      ],
+      "qualifier_fragments": [
+        "preliminary",
+        "12 patients",
+        "might",
+        "not statistically",
+        "suggests"
+      ],
+      "reference_answer": "Preliminary data from 12 patients suggests 15mg dosing, but this isn't statistically significant. Do not use this as a confirmed dosing recommendation.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "med-002",
+      "domain": "medical",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "The response rate in our pilot was approximately 60% \u2014 but pilot N=20 and selection criteria differed from the full trial.",
+      "value_fragments": [
+        "60%",
+        "response rate"
+      ],
+      "qualifier_fragments": [
+        "approximately",
+        "pilot",
+        "N=20",
+        "selection criteria",
+        "differed",
+        "not generalisable"
+      ],
+      "reference_answer": "~60% response rate from a N=20 pilot with different selection criteria. Not generalisable to the full trial population.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "med-003",
+      "domain": "medical",
+      "qualifier_type": "vendor_claim",
+      "uncertain_statement": "The device manufacturer claims a 98% sensitivity \u2014 but that's from their own internal validation, not an independent study.",
+      "value_fragments": [
+        "98%",
+        "sensitivity"
+      ],
+      "qualifier_fragments": [
+        "manufacturer claims",
+        "internal validation",
+        "not independent",
+        "claims"
+      ],
+      "reference_answer": "Manufacturer's 98% sensitivity claim is from internal validation, not independently verified. Treat as an optimistic estimate pending independent data.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "med-004",
+      "domain": "medical",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "We think the intervention reduces readmission by about 20% based on 3 months of data \u2014 need longer follow-up.",
+      "value_fragments": [
+        "20%",
+        "readmission"
+      ],
+      "qualifier_fragments": [
+        "think",
+        "about",
+        "3 months",
+        "need longer",
+        "preliminary",
+        "based on"
+      ],
+      "reference_answer": "A 20% reduction is preliminary from 3 months of data. Longer follow-up is needed before making clinical recommendations.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "leg-001",
+      "domain": "legal",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "The clause might be unenforceable under the new regulations \u2014 our counsel hasn't reviewed the latest guidance yet.",
+      "value_fragments": [
+        "clause",
+        "unenforceable"
+      ],
+      "qualifier_fragments": [
+        "might",
+        "hasn't reviewed",
+        "latest guidance",
+        "pending review",
+        "counsel"
+      ],
+      "reference_answer": "The clause's enforceability is uncertain pending counsel's review of the new guidance. Don't rely on it until that review is complete.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "leg-002",
+      "domain": "legal",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "We estimate litigation exposure at roughly $2 million \u2014 based on comparable cases, not a formal legal assessment.",
+      "value_fragments": [
+        "2 million",
+        "$2M",
+        "exposure"
+      ],
+      "qualifier_fragments": [
+        "estimate",
+        "roughly",
+        "comparable cases",
+        "not formal",
+        "formal assessment"
+      ],
+      "reference_answer": "~$2M is a rough estimate from comparable cases, not a formal legal assessment. Obtain a proper assessment before disclosing to stakeholders.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "leg-003",
+      "domain": "legal",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "The jurisdiction for disputes is probably New York based on the contract draft \u2014 but final version hasn't been reviewed.",
+      "value_fragments": [
+        "New York",
+        "jurisdiction"
+      ],
+      "qualifier_fragments": [
+        "probably",
+        "draft",
+        "hasn't been reviewed",
+        "final version",
+        "pending"
+      ],
+      "reference_answer": "New York jurisdiction is in the contract draft but final terms haven't been reviewed. Don't rely on this until the executed contract is confirmed.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "leg-004",
+      "domain": "legal",
+      "qualifier_type": "vendor_claim",
+      "uncertain_statement": "The vendor says the IP licensing covers our use case \u2014 but we haven't had our own counsel review the specific terms.",
+      "value_fragments": [
+        "IP",
+        "license",
+        "licensing"
+      ],
+      "qualifier_fragments": [
+        "vendor says",
+        "our counsel",
+        "haven't reviewed",
+        "specific terms",
+        "says"
+      ],
+      "reference_answer": "Vendor claims the IP licensing covers your use case, but you haven't had independent counsel review the terms. Get your own legal review before proceeding.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "fin-001",
+      "domain": "finance",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "We project Q3 revenue at approximately $4.2M \u2014 but the model assumes the partnership closes, which is still in negotiation.",
+      "value_fragments": [
+        "4.2M",
+        "$4.2",
+        "Q3",
+        "revenue"
+      ],
+      "qualifier_fragments": [
+        "approximately",
+        "project",
+        "assumes",
+        "still in negotiation",
+        "contingent"
+      ],
+      "reference_answer": "Q3 revenue projection of ~$4.2M is contingent on the partnership closing, which is still in negotiation. This is a best-case estimate.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "fin-002",
+      "domain": "finance",
+      "qualifier_type": "estimate",
+      "uncertain_statement": "Our burn rate is roughly $380K/month based on last quarter \u2014 but headcount is increasing next month.",
+      "value_fragments": [
+        "380K",
+        "$380",
+        "burn",
+        "month"
+      ],
+      "qualifier_fragments": [
+        "roughly",
+        "based on",
+        "last quarter",
+        "increasing",
+        "estimate",
+        "will change"
+      ],
+      "reference_answer": "~$380K/month burn is from last quarter and will increase with the headcount change next month. Reforecast with the new hires included.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "fin-003",
+      "domain": "finance",
+      "qualifier_type": "vendor_claim",
+      "uncertain_statement": "The analyst report estimates the TAM at $8 billion \u2014 but it's a single third-party report, not a consensus figure.",
+      "value_fragments": [
+        "8 billion",
+        "$8B",
+        "TAM"
+      ],
+      "qualifier_fragments": [
+        "analyst report",
+        "estimates",
+        "single",
+        "third-party",
+        "not consensus"
+      ],
+      "reference_answer": "The $8B TAM estimate is from a single third-party analyst report, not a consensus figure. Use as an order-of-magnitude reference, not a precise claim.",
+      "notes": ""
+    },
+    {
+      "scenario_id": "fin-004",
+      "domain": "finance",
+      "qualifier_type": "preliminary",
+      "uncertain_statement": "Early unit economics show a payback period of about 18 months \u2014 but that's from our first 50 customers, which may not be representative.",
+      "value_fragments": [
+        "18 month",
+        "payback"
+      ],
+      "qualifier_fragments": [
+        "early",
+        "about",
+        "first 50",
+        "may not",
+        "preliminary",
+        "representative"
+      ],
+      "reference_answer": "18-month payback from the first 50 customers is preliminary and may not represent your broader customer base. Monitor as cohort data matures.",
+      "notes": ""
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "total_sentences": 200,
+  "total_fires": 1,
+  "overall_fpr": 0.005,
+  "passed": true,
+  "threshold": 0.05,
+  "verdict": "PASS",
+  "categories": {
+    "technical_facts": {
+      "n": 40,
+      "fires": 1,
+      "fpr": 0.025,
+      "false_positives": [
+        "Base64 encoding increases data size by approximately 33 percent."
+      ]
+    },
+    "api_definitions": {
+      "n": 40,
+      "fires": 0,
+      "fpr": 0.0,
+      "false_positives": []
+    },
+    "code_and_errors": {
+      "n": 40,
+      "fires": 0,
+      "fpr": 0.0,
+      "false_positives": []
+    },
+    "documentation": {
+      "n": 40,
+      "fires": 0,
+      "fpr": 0.0,
+      "false_positives": []
+    },
+    "assertions_and_definitions": {
+      "n": 40,
+      "fires": 0,
+      "fpr": 0.0,
+      "false_positives": []
+    }
+  },
+  "marker_count": 198
+}

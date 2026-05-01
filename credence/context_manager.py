@@ -106,7 +106,7 @@ _REGIME_J_VARIANCE_FLOOR = 0.05  # min variance to signal mixed-confidence sessi
 # Post-compression degradation detection — explicit, tunable constants.
 # These detect whether a compression was harmful AFTER the fact (shadow check).
 # ---------------------------------------------------------------------------
-_SUMMARY_FAITHFUL_THRESHOLD = 0.12  # min fraction of original content words in summary
+_SUMMARY_FAITHFUL_THRESHOLD = 0.30  # min fraction of original content words in summary
 
 # ---------------------------------------------------------------------------
 # Consistency Enforcer — switches from informational Truth Buffer injection
@@ -132,6 +132,11 @@ _CE_STOPWORDS = frozenset({
     "your", "its", "that", "this", "and", "or", "but", "if", "so", "use",
     "used", "using", "get", "set", "now", "just", "also", "need", "want",
     "tell", "know", "think", "make", "give", "take", "see", "say", "go",
+    # Cross-domain words excluded to prevent false enforcement:
+    # "size" spans UI (font size) vs API (batch size); "error" spans general
+    # programming errors vs API retry/error handling. Both are too ambiguous
+    # to participate in overlap scoring — context-specific clusters cover them.
+    "size", "error",
 })
 
 # Domain-aware synonym clusters for the Consistency Enforcer.
@@ -185,18 +190,21 @@ _CE_DOMAIN_SYNONYMS: dict[str, frozenset[str]] = {
     "pagination": frozenset({"page", "paging", "offset", "cursor", "batch",
                               "limit", "size", "results"}),
     "batch":      frozenset({"chunk", "bulk", "page", "size", "limit", "group"}),
-    "size":       frozenset({"batch", "limit", "max", "chunk", "page", "count"}),
+    # "size" removed as standalone key — too cross-domain (font size ≠ batch size).
+    # Reachable as a value from "page", "pagination", "batch", "memory" clusters.
     # ---- infrastructure / error -------------------------------------------
     "timeout":    frozenset({"latency", "delay", "slow", "wait", "deadline",
-                              "response", "expiry", "ttl"}),
+                              "response", "expiry", "ttl", "out", "times"}),
+    "request":    frozenset({"requests", "call", "invocation", "hit", "api"}),
     "latency":    frozenset({"timeout", "delay", "slow", "response",
                               "performance", "speed"}),
     "retry":      frozenset({"backoff", "attempt", "reconnect", "throttle",
-                              "error", "fail"}),
+                              "fail", "retrying", "retries"}),
     "backoff":    frozenset({"retry", "wait", "delay", "throttle", "slow"}),
-    "error":      frozenset({"fail", "exception", "status", "code", "response",
-                              "retry", "bug"}),
-    "fail":       frozenset({"error", "exception", "crash", "bug", "issue"}),
+    "wait":       frozenset({"retry", "backoff", "delay", "pause", "hold"}),
+    # "error" removed as standalone key — too cross-domain (programming error ≠
+    # API retry error). Reachable as a value from "retry" and "fail" clusters.
+    "fail":       frozenset({"exception", "crash", "bug", "issue", "retry"}),
     # ---- configuration / deployment ---------------------------------------
     "config":     frozenset({"setting", "option", "parameter", "value",
                               "configure", "setup", "env", "environment"}),
@@ -209,6 +217,51 @@ _CE_DOMAIN_SYNONYMS: dict[str, frozenset[str]] = {
     # cache cluster deliberately excludes "expiry" and "refresh" to prevent
     # cross-domain bleed with auth/token constraints that also use those terms.
     "cache":      frozenset({"ttl", "invalidate", "stale", "memory", "storage"}),
+    # ---- financial / billing ------------------------------------------------
+    "cost":       frozenset({"price", "fee", "charge", "billing", "spend", "budget",
+                              "rate", "tier", "plan", "pricing", "pay", "invoice"}),
+    "price":      frozenset({"cost", "fee", "charge", "billing", "rate", "pricing"}),
+    "budget":     frozenset({"cost", "spend", "limit", "cap", "allocation",
+                              "forecast", "estimate"}),
+    "payment":    frozenset({"charge", "invoice", "billing", "fee", "subscription",
+                              "renewal", "refund"}),
+    "threshold":  frozenset({"limit", "cap", "max", "minimum", "floor", "ceiling",
+                              "cutoff", "trigger"}),
+    # ---- medical / dosing / clinical ----------------------------------------
+    "dose":       frozenset({"dosage", "dosing", "mg", "ml", "concentration",
+                              "amount", "quantity", "regimen", "prescription"}),
+    "dosage":     frozenset({"dose", "dosing", "mg", "ml", "frequency",
+                              "schedule", "concentration"}),
+    "frequency":  frozenset({"dose", "schedule", "interval", "period", "rate",
+                              "daily", "weekly", "hourly"}),
+    "interval":   frozenset({"frequency", "period", "schedule", "gap",
+                              "delay", "duration", "between"}),
+    "duration":   frozenset({"period", "length", "interval", "window", "lifetime",
+                              "expiry", "ttl"}),
+    "contraindication": frozenset({"warning", "restriction", "prohibited",
+                                    "interaction", "adverse"}),
+    # ---- hardware / infrastructure resources ---------------------------------
+    "cores":      frozenset({"cpu", "vCPU", "processor", "threads",
+                              "compute", "capacity", "workers"}),
+    "disk":       frozenset({"storage", "volume", "iops", "throughput",
+                              "space", "ssd", "capacity"}),
+    "iops":       frozenset({"disk", "throughput", "storage", "performance",
+                              "read", "write", "latency"}),
+    "bandwidth":  frozenset({"network", "throughput", "rate", "speed",
+                              "mbps", "gbps", "egress", "ingress"}),
+    "replica":    frozenset({"instance", "node", "shard", "copy",
+                              "failover", "availability", "cluster"}),
+    "instance":   frozenset({"node", "server", "vm", "container", "pod",
+                              "host", "replica", "worker"}),
+    # ---- legal / compliance -------------------------------------------------
+    "retention":  frozenset({"storage", "period", "duration", "policy",
+                              "gdpr", "deletion", "purge", "archive"}),
+    "sla":        frozenset({"uptime", "availability", "agreement", "guarantee",
+                              "reliability", "nines", "commitment"}),
+    "uptime":     frozenset({"availability", "sla", "reliability",
+                              "nines", "downtime", "guarantee"}),
+    "compliance": frozenset({"regulation", "policy", "requirement", "standard",
+                              "audit", "gdpr", "hipaa", "soc", "pci"}),
 }
 
 # ---------------------------------------------------------------------------
@@ -581,6 +634,8 @@ class ContextManager:
         use_semantic_entropy: bool = False,   # enable SE probe on MEDIUM-zone turns
         use_claim_extraction: Optional[bool] = None,  # None = auto: True when registry provided
         use_ghost_detector:   bool = False,   # enable Opus-powered ghost constraint detection
+        use_behavioral:       bool = False,   # enable Tier 2 behavioral consistency probe
+        use_manifest:         bool = False,   # use structured EpistemicManifest instead of Truth Buffer
     ):
         if not _ANTHROPIC_AVAILABLE:
             raise ImportError("pip install anthropic")
@@ -607,8 +662,12 @@ class ContextManager:
         else:
             self.use_claim_extraction = use_claim_extraction
         self.use_ghost_detector = use_ghost_detector
-        # Import here to avoid circular; SE probe is lazy-constructed on first use
-        self._se_probe = None
+        self.use_behavioral     = use_behavioral
+        self.use_manifest       = use_manifest
+        # Import here to avoid circular; SE and behavioral probes are lazy-constructed
+        self._se_probe         = None
+        self._behavioral_probe = None
+        self._claim_extractor  = None   # lazy-init ClaimExtractor when use_claim_extraction=True
         self.main_model        = main_model or _MODEL_OPUS
         self.compression_model = compression_model or _MODEL_HAIKU
         self.stats             = SessionStats()
@@ -856,6 +915,39 @@ class ContextManager:
                 content_type = cr.content_type,
             )
 
+        # Behavioral consistency probe (Tier 2, opt-in via use_behavioral=True).
+        # Draws N=5 Haiku re-completions and measures pairwise ROUGE-L variance.
+        # High variance → model is uncertain despite assertive-sounding text → downgrade zone.
+        # Fires on MEDIUM and HIGH (the J ranges where ghost constraints appear).
+        # Cost: ~$0.0003/turn (5 Haiku calls at max_tokens=150).
+        # Only upgrades downward — a MEDIUM that looks consistent stays MEDIUM;
+        # a HIGH that is wildly inconsistent becomes MEDIUM or LOW.
+        if self.use_behavioral and cr.zone in ("MEDIUM", "HIGH"):
+            if self._behavioral_probe is None:
+                from .behavioral_signal import BehavioralConsistencyProbe
+                self._behavioral_probe = BehavioralConsistencyProbe()
+            beh_result = self._behavioral_probe.compute(
+                messages  = messages,
+                client    = self.client,
+                theta_high = self._effective_theta_high,
+                theta_low  = self._effective_theta_low,
+                j_input    = cr.j_score,
+            )
+            _zone_rank = {"LOW": 0, "MEDIUM": 1, "HIGH": 2}
+            if _zone_rank.get(beh_result.fused_zone, 1) < _zone_rank.get(cr.zone, 1):
+                cr = CredenceResult(
+                    j_score      = beh_result.fused_j,
+                    zone         = beh_result.fused_zone,
+                    factors      = cr.factors,
+                    reasoning    = (
+                        cr.reasoning
+                        + f"; behavioral(var={beh_result.variance:.3f}"
+                        + f" cons={beh_result.consistency_score:.3f}"
+                        + f" fused={beh_result.fused_j:.3f})"
+                    ),
+                    content_type = cr.content_type,
+                )
+
         # Novelty guard: check if this turn signals a domain pivot
         novelty_override = self._check_novelty(text)
 
@@ -928,10 +1020,13 @@ class ContextManager:
         # Extracted claims are registered in the registry and visible in the Truth Buffer
         # from the NEXT turn onward (async — zero latency on this turn).
         if self.use_claim_extraction and self._registry is not None and self._session_id is not None:
+            if self._claim_extractor is None:
+                from .claim_extractor import ClaimExtractor
+                self._claim_extractor = ClaimExtractor(model=self.compression_model)
             combined = f"User: {user_message}\nAssistant: {text}"
-            self._registry.extract_and_register_claims(
-                combined, self._session_id, self._turn_idx,
-                self.client, self.compression_model,
+            self._claim_extractor.extract_and_register(
+                combined, self.client, self._registry,
+                self._session_id, self._turn_idx,
             )
 
         # Update adaptive threshold buffer (after decision — causal, not lookahead)
@@ -1208,10 +1303,14 @@ class ContextManager:
                 self.client, self.compression_model,
             )
             _claims_extracted = True
-        elif self._has_uncertainty_in_user_turns(high_j_msgs):
-            # Only scan USER turns for uncertainty markers — assistant code
-            # comments (# might need to verify, # TODO) should not block
-            # compression of HIGH-J turns that contain no user-stated uncertainty.
+        elif (
+            self._has_uncertainty_in_user_turns(high_j_msgs)
+            or self._has_uncertainty_in_assistant_prose(high_j_msgs)
+        ):
+            # Scan USER turns AND assistant prose for uncertainty markers.
+            # Assistant code blocks are excluded (they contain routine TODO/might
+            # comments); assistant natural-language hedging is included because
+            # Haiku would silently drop "I believe X — unconfirmed" from a summary.
             self._last_faithfulness_block = True
             return 0
 
@@ -1487,7 +1586,7 @@ class ContextManager:
             return base_prompt, False
 
         uncertain = self._registry.get_relevant_claims(
-            user_message, self._session_id, max_claims=9999
+            user_message, self._session_id, max_claims=15
         )
         if not uncertain:
             return base_prompt, False
@@ -1844,6 +1943,22 @@ class ContextManager:
                     return f"• [{zone}, STALE conf={eff:.2f}] {content}"
                 return f"• [{zone}, conf={eff:.2f}] {content}"
             return f"• [{zone}] {content}"
+
+        # use_manifest=True: replace natural language Truth Buffer with structured
+        # EpistemicManifest XML (the research-direction path). The manifest is
+        # explicitly labelled NON-COMPRESSIBLE and encodes confidence as a numeric
+        # attribute rather than as hedging words — testing whether structured
+        # representation survives compression better than natural language.
+        if self.use_manifest:
+            from .epistemic_manifest import EpistemicManifest
+            manifest_xml = EpistemicManifest.from_registry(
+                self._registry, self._session_id, current_turn=current_turn
+            )
+            if manifest_xml:
+                base = f"{self.system_prompt}\n\n{manifest_xml}"
+                if self._pending_alignment_caveat:
+                    base = f"{base}\n\nEPISTEMIC GOVERNOR ALERT:\n{self._pending_alignment_caveat}"
+                return base
 
         lines = "\n".join(_constraint_label(c) for c in uncertain)
         block = (
@@ -2316,6 +2431,30 @@ class ContextManager:
             m["content"] for m in msgs if m.get("role") == "user"
         )
         return self._has_uncertainty(user_text)
+
+    def _has_uncertainty_in_assistant_prose(self, msgs: list[dict]) -> bool:
+        """
+        Faithfulness probe for ASSISTANT prose (non-code) turns.
+
+        Catches cases where the assistant explicitly hedged a stated value —
+        e.g. "I believe the rate limit is around 50 — unconfirmed" — that would
+        be silently dropped if the turn were compressed by Haiku.
+
+        Code blocks are stripped before scanning to avoid false positives from
+        routine inline comments such as `# TODO: verify this` or `# might fail`.
+        Only fenced triple-backtick blocks are stripped; inline code spans are
+        left in place (they rarely contain hedging prose).
+        """
+        import re as _re
+        _code_block = _re.compile(r"```[^\n]*\n.*?```", _re.DOTALL)
+        prose_parts = []
+        for m in msgs:
+            if m.get("role") != "assistant":
+                continue
+            prose = _code_block.sub("", m["content"])
+            prose_parts.append(prose)
+        prose_text = " ".join(prose_parts)
+        return self._has_uncertainty(prose_text)
 
     # ------------------------------------------------------------------
     # Regime detection

@@ -14,7 +14,7 @@ The Ghost Detector — powered by Opus 4.7 — catches implicit uncertainty with
 
 As AI agents make higher-stakes decisions, uncertainty is not a weakness to hide — it is the most honest signal a system can carry. Credence is the first enforcement layer built around that principle.
 
-22-tool MCP server. 178 tests. Built entirely with Claude Code.
+10-tool MCP server. 611 tests. Built entirely with Claude Code.
 
 ---
 
@@ -45,7 +45,7 @@ All numbers measured fresh with `ANTHROPIC_API_KEY` and verified reproducible.
 | Prompt-only instruction (n=30 scenarios) | Qualifier survival | — | **90.0%** vs 100% with probe | Null hypothesis: instructions are not deterministic |
 | E6 Negative Needle (single trial, all Opus 4.7) | Correction recall | **2/2** | naive: 0/2 | Categorical — probe preserved constraints through 8 filler turns |
 | E7 Multi-Hop Chain (single trial) | Hops recalled | **3/3** chain complete | naive: 1/3 chain broken | Dependency chain destroyed by naive window |
-| E8 Real Debugging (single trial) | Mean recall | **0.944** | naive: 0.522 | Credence 1.8× better recall on real session |
+| E8 Real Debugging (single trial) | Mean recall | **1.000** | naive: 0.511 | Credence 2× better recall on real session |
 | Ghost Gauntlet (n=10 sessions × 3 conditions) | BothRate | **1.000** (credence_v1/credence_eg2) | naive_window: 0.200 | Implicit uncertain claims: value + qualifier preserved |
 | Cross-Session Memory (n=20 callbacks) | CS-FCR | **0%** | no memory: 40% | Epistemic state survives session boundary |
 | Native gate latency (PreToolUse hook) | Latency | **3.4ms** (Rust) | 331ms (Python) | 98× faster |
@@ -56,7 +56,8 @@ All numbers measured fresh with `ANTHROPIC_API_KEY` and verified reproducible.
 | Stress test — probe recall (n=200) | Recall | **100%** | — | 167 markers tested offline; 17 past-tense/modal variants added subsequently |
 | Stress test — J separation (n=200) | Score gap | **0.344** | — | Confident 0.859 vs hedged 0.514 |
 | Stress test — GTS (n=50) | Precision + recall | **100% / 0% FP** | — | Code block annotation, offline |
-| Stress test — probe latency (n=1000) | p50 / p99 | **0.011ms / 0.017ms** | — | 7× better than 0.07ms claim |
+| Latency report — all checkpoints (n=1000) | P99 sum | **1.1ms** in-process + 3.4ms gate | — | ~0.09% of typical LLM call latency |
+| Latency report — probe P50/P99 | p50 / p99 | **0.017ms / 0.026ms** | — | Sub-millisecond; does not block generation |
 | Test suite | Coverage | **178/178 pass** | — | 11 skipped (offline-only), S1–S26 |
 
 **EQL (Epistemic Qualifier Loss)** = the event of a user-stated uncertainty marker being dropped during context compression.
@@ -103,13 +104,13 @@ EQL is **not** hallucination (the value 50 is correct). EQL is **not** RLHF syco
 
 ## The Four Checkpoints
 
-Total deterministic enforcement overhead: **~0.56ms. Zero API calls from enforcement.**
+Total deterministic enforcement overhead: **~0.29ms P50 / ~1.1ms P99** (measured, n=1000 per checkpoint). **Zero API calls from enforcement.**
 
 | Checkpoint | Mechanism | Type | Latency | Invariant Enforcement |
 |---|---|---|---|---|
-| **Compression** | Faithfulness Probe + Uncertainty-Weighted Prompt | Deterministic | 0.07ms | Blocks Haiku before it strips qualifiers — 198 markers, user-turns-only; registered constraints quoted verbatim in compression prompt |
+| **Compression** | Faithfulness Probe + Uncertainty-Weighted Prompt | Deterministic | 0.017ms (P50) | Blocks Haiku before it strips qualifiers — 198 markers, user-turns-only; registered constraints quoted verbatim in compression prompt |
 | **Generation** | Truth Buffer + Consistency Enforcer | Deterministic injection + imperative block | ~0ms | ALL unverified constraints injected every turn; direct match → imperative prohibition |
-| **Code output** | Generation-Time Scanner | Deterministic | 0.08ms | Annotates numeric AND string literals (`"RS256"`, `"/api/v2"`, `us-east-1`) with confidence tier |
+| **Code output** | Generation-Time Scanner | Deterministic | 0.024ms (P50) | Annotates numeric AND string literals (`"RS256"`, `"/api/v2"`, `us-east-1`) with confidence tier |
 | **Tool execution** | credence-gate (Rust) | Deterministic | 3.4ms | Blocks Write/Edit/Bash before execution if arguments overlap unverified constraint |
 | **Agent handoff** | PipelineMonitor | Deterministic extraction + injection | ~0.5ms | Intercepts Agent A → Agent B; extracts uncertain claims, registers, injects epistemic handoff block |
 
@@ -228,6 +229,9 @@ python3 tests/tests.py                        # 178 unit tests (S1–S26), 11 sk
 python3 tests/test_claims.py                  # submission claim validation, offline
 python -m evals.precision_eval               # CE/GTS/probe false-positive rates, free, offline
 python -m evals.long_session_eval --dry-run  # 50-turn session structure validation, free
+python -m evals.latency_report --n 1000      # P50/P95/P99 for all 5 checkpoints, free, offline
+python -m evals.calibration_curve            # ECE + ghost candidate analysis, free, offline
+python -m evals.eql_bench --generate --stats # EQL-Bench v1 dataset (52 scenarios, 8 domains)
 ```
 
 Results already in repo (all verified, not cherry-picked):
@@ -246,6 +250,8 @@ Results already in repo (all verified, not cherry-picked):
 Three bodies of work surround this problem. None intersect the way Credence does.
 
 **Compression systems** (LLMLingua, LLMLingua-2, ACL 2024; SnapKV; StreamingLLM) define faithfulness as "not introducing new tokens" — a lexical criterion. None measure whether uncertainty qualifiers survive compression. The word "uncertain" does not appear in LLMLingua-2's evaluation section. Their faithfulness score says nothing about epistemic qualifier loss.
+
+**Concurrent compression failure research** (arXiv:2509.11208, ICML 2025) studies compression failures in evidence-based binary adjudication — where presenting the same evidence in different orderings produces inconsistent binary outputs (ISR gates, Bits-to-Trust divergence). Their failure is input ordering sensitivity in classification decisions; ours is output qualifier stripping in context summarization. The problems are orthogonal and complementary: both show that compression events are epistemic events with measurable correctness properties, and both demonstrate near-zero failure rates are achievable with purpose-built gates.
 
 **Uncertainty quantification** (Semantic Entropy, Kuhn et al., ICLR 2023; UProp, ACL 2025; Agentic UQ, 2025; Conformal Prediction for LLMs) measures or detects epistemic state — but provides no enforcement mechanism. UProp (ACL 2025) is the closest: it measures how uncertainty propagates across multi-step agent pipelines. It does not include a compression clause and does not prevent the loss it measures. Semantic Entropy requires N=5 model samples per turn; Credence's probe is a frozenset scan at 0.07ms.
 

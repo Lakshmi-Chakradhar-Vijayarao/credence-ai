@@ -619,4 +619,5 @@ if skipped_tests:
 
 print()
 
-sys.exit(0 if not critical_failures else 1)
+if __name__ == "__main__":
+    sys.exit(0 if not critical_failures else 1)

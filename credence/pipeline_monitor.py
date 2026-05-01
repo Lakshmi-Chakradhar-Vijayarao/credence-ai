@@ -68,7 +68,8 @@ from .registry import CredenceRegistry
 # Constants
 # ---------------------------------------------------------------------------
 
-_MONITOR_MODEL = "claude-haiku-4-5-20251001"
+_MONITOR_MODEL_DEFAULT = "claude-haiku-4-5-20251001"   # cost-optimized default
+_MONITOR_MODEL_PRECISE = "claude-opus-4-7"             # higher recall for high-stakes pipelines
 _MONITOR_J_SCORE = 0.25          # conservative — intercept-registered claims start LOW
 _MONITOR_ZONE = "LOW"
 _MONITOR_GHOST_CONFIDENCE = 0.65  # minimum Ghost Detector confidence to register
@@ -140,13 +141,16 @@ class PipelineMonitor:
 
     def __init__(
         self,
-        registry:          CredenceRegistry,
-        api_key:           Optional[str] = None,
+        registry:           CredenceRegistry,
+        api_key:            Optional[str] = None,
         use_ghost_detector: bool = True,
+        ghost_model:        Optional[str] = None,
     ) -> None:
         self._registry    = registry
         self._api_key     = api_key
         self._use_ghost   = use_ghost_detector and (api_key is not None)
+        # ghost_model: None → use haiku default; pass _MONITOR_MODEL_PRECISE for Opus-quality extraction
+        self._ghost_model = ghost_model or _MONITOR_MODEL_DEFAULT
 
         self._client = None
         if self._use_ghost:
@@ -313,7 +317,7 @@ class PipelineMonitor:
         )
         try:
             resp = self._client.messages.create(
-                model=_MONITOR_MODEL,
+                model=self._ghost_model,
                 max_tokens=512,
                 messages=[{"role": "user", "content": prompt}],
             )

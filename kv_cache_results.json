@@ -1,0 +1,460 @@
+{
+  "experiment": "credence-kv-cache-phase1",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "date": "2026-05-01",
+  "dry_run": true,
+  "methods": [
+    "baseline",
+    "h2o_70",
+    "h2o_50",
+    "snapkv_70",
+    "snapkv_50",
+    "streaming_70",
+    "streaming_50"
+  ],
+  "results": {
+    "baseline": {
+      "aggregate": {
+        "n": 3,
+        "n_ghost": 0,
+        "eqlr_token": 0.3333,
+        "eqlr_token_ci": [
+          0.0,
+          1.0
+        ],
+        "fcr": 0.3333,
+        "fcr_ci": [
+          0.0,
+          1.0
+        ],
+        "ghost_fcr": -1.0,
+        "ghost_fcr_ci": [
+          -1.0,
+          -1.0
+        ],
+        "eqlr_semantic": 1.0,
+        "value_recall": 1.0,
+        "qualifier_rate": 0.6667
+      },
+      "latency_s": 0.03
+    },
+    "h2o_70": {
+      "aggregate": {
+        "n": 3,
+        "n_ghost": 0,
+        "eqlr_token": 0.3333,
+        "eqlr_token_ci": [
+          0.0,
+          1.0
+        ],
+        "fcr": 0.3333,
+        "fcr_ci": [
+          0.0,
+          1.0
+        ],
+        "ghost_fcr": -1.0,
+        "ghost_fcr_ci": [
+          -1.0,
+          -1.0
+        ],
+        "eqlr_semantic": 1.0,
+        "value_recall": 1.0,
+        "qualifier_rate": 0.6667
+      },
+      "latency_s": 0.04
+    },
+    "h2o_50": {
+      "aggregate": {
+        "n": 3,
+        "n_ghost": 0,
+        "eqlr_token": 1.0,
+        "eqlr_token_ci": [
+          1.0,
+          1.0
+        ],
+        "fcr": 1.0,
+        "fcr_ci": [
+          1.0,
+          1.0
+        ],
+        "ghost_fcr": -1.0,
+        "ghost_fcr_ci": [
+          -1.0,
+          -1.0
+        ],
+        "eqlr_semantic": 0.1111,
+        "value_recall": 1.0,
+        "qualifier_rate": 0.0
+      },
+      "latency_s": 0.04
+    },
+    "snapkv_70": {
+      "aggregate": {
+        "n": 3,
+        "n_ghost": 0,
+        "eqlr_token": 0.3333,
+        "eqlr_token_ci": [
+          0.0,
+          1.0
+        ],
+        "fcr": 0.3333,
+        "fcr_ci": [
+          0.0,
+          1.0
+        ],
+        "ghost_fcr": -1.0,
+        "ghost_fcr_ci": [
+          -1.0,
+          -1.0
+        ],
+        "eqlr_semantic": 1.0,
+        "value_recall": 1.0,
+        "qualifier_rate": 0.6667
+      },
+      "latency_s": 0.04
+    },
+    "snapkv_50": {
+      "aggregate": {
+        "n": 3,
+        "n_ghost": 0,
+        "eqlr_token": 1.0,
+        "eqlr_token_ci": [
+          1.0,
+          1.0
+        ],
+        "fcr": 1.0,
+        "fcr_ci": [
+          1.0,
+          1.0
+        ],
+        "ghost_fcr": -1.0,
+        "ghost_fcr_ci": [
+          -1.0,
+          -1.0
+        ],
+        "eqlr_semantic": 0.1111,
+        "value_recall": 1.0,
+        "qualifier_rate": 0.0
+      },
+      "latency_s": 0.04
+    },
+    "streaming_70": {
+      "aggregate": {
+        "n": 3,
+        "n_ghost": 0,
+        "eqlr_token": 0.3333,
+        "eqlr_token_ci": [
+          0.0,
+          1.0
+        ],
+        "fcr": 0.3333,
+        "fcr_ci": [
+          0.0,
+          1.0
+        ],
+        "ghost_fcr": -1.0,
+        "ghost_fcr_ci": [
+          -1.0,
+          -1.0
+        ],
+        "eqlr_semantic": 1.0,
+        "value_recall": 1.0,
+        "qualifier_rate": 0.6667
+      },
+      "latency_s": 0.04
+    },
+    "streaming_50": {
+      "aggregate": {
+        "n": 3,
+        "n_ghost": 0,
+        "eqlr_token": 1.0,
+        "eqlr_token_ci": [
+          1.0,
+          1.0
+        ],
+        "fcr": 1.0,
+        "fcr_ci": [
+          1.0,
+          1.0
+        ],
+        "ghost_fcr": -1.0,
+        "ghost_fcr_ci": [
+          -1.0,
+          -1.0
+        ],
+        "eqlr_semantic": 0.1111,
+        "value_recall": 1.0,
+        "qualifier_rate": 0.0
+      },
+      "latency_s": 0.04
+    }
+  },
+  "full_scores": {
+    "baseline": [
+      {
+        "scenario_id": "mh-001",
+        "domain": "api",
+        "qualifier_type": "vendor_claim",
+        "answer": "The limit is approximately 16 \u2014 this is unconfirmed and may vary.",
+        "eqlr_token": true,
+        "fcr": true,
+        "eqlr_semantic": 1.0,
+        "value_recalled": true,
+        "qualifier_present": false,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-002",
+        "domain": "api",
+        "qualifier_type": "estimate",
+        "answer": "The limit is approximately 3540 \u2014 this is unconfirmed and may vary.",
+        "eqlr_token": false,
+        "fcr": false,
+        "eqlr_semantic": 1.0,
+        "value_recalled": true,
+        "qualifier_present": true,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-003",
+        "domain": "debug",
+        "qualifier_type": "estimate",
+        "answer": "The limit is approximately 1GB \u2014 this is unconfirmed and may vary.",
+        "eqlr_token": false,
+        "fcr": false,
+        "eqlr_semantic": 1.0,
+        "value_recalled": true,
+        "qualifier_present": true,
+        "is_ghost": false
+      }
+    ],
+    "h2o_70": [
+      {
+        "scenario_id": "mh-001",
+        "domain": "api",
+        "qualifier_type": "vendor_claim",
+        "answer": "The limit is roughly 16 according to observations, though this is not yet verified.",
+        "eqlr_token": false,
+        "fcr": false,
+        "eqlr_semantic": 1.0,
+        "value_recalled": true,
+        "qualifier_present": true,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-002",
+        "domain": "api",
+        "qualifier_type": "estimate",
+        "answer": "The limit is roughly 3540 according to observations, though this is not yet verified.",
+        "eqlr_token": true,
+        "fcr": true,
+        "eqlr_semantic": 1.0,
+        "value_recalled": true,
+        "qualifier_present": false,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-003",
+        "domain": "debug",
+        "qualifier_type": "estimate",
+        "answer": "The limit is roughly 1GB according to observations, though this is not yet verified.",
+        "eqlr_token": false,
+        "fcr": false,
+        "eqlr_semantic": 1.0,
+        "value_recalled": true,
+        "qualifier_present": true,
+        "is_ghost": false
+      }
+    ],
+    "h2o_50": [
+      {
+        "scenario_id": "mh-001",
+        "domain": "api",
+        "qualifier_type": "vendor_claim",
+        "answer": "The limit is 16.",
+        "eqlr_token": true,
+        "fcr": true,
+        "eqlr_semantic": 0.1333,
+        "value_recalled": true,
+        "qualifier_present": false,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-002",
+        "domain": "api",
+        "qualifier_type": "estimate",
+        "answer": "The limit is 3540.",
+        "eqlr_token": true,
+        "fcr": true,
+        "eqlr_semantic": 0.1,
+        "value_recalled": true,
+        "qualifier_present": false,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-003",
+        "domain": "debug",
+        "qualifier_type": "estimate",
+        "answer": "The limit is 1GB.",
+        "eqlr_token": true,
+        "fcr": true,
+        "eqlr_semantic": 0.1,
+        "value_recalled": true,
+        "qualifier_present": false,
+        "is_ghost": false
+      }
+    ],
+    "snapkv_70": [
+      {
+        "scenario_id": "mh-001",
+        "domain": "api",
+        "qualifier_type": "vendor_claim",
+        "answer": "The limit is roughly 16 according to observations, though this is not yet verified.",
+        "eqlr_token": false,
+        "fcr": false,
+        "eqlr_semantic": 1.0,
+        "value_recalled": true,
+        "qualifier_present": true,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-002",
+        "domain": "api",
+        "qualifier_type": "estimate",
+        "answer": "The limit is roughly 3540 according to observations, though this is not yet verified.",
+        "eqlr_token": true,
+        "fcr": true,
+        "eqlr_semantic": 1.0,
+        "value_recalled": true,
+        "qualifier_present": false,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-003",
+        "domain": "debug",
+        "qualifier_type": "estimate",
+        "answer": "The limit is roughly 1GB according to observations, though this is not yet verified.",
+        "eqlr_token": false,
+        "fcr": false,
+        "eqlr_semantic": 1.0,
+        "value_recalled": true,
+        "qualifier_present": true,
+        "is_ghost": false
+      }
+    ],
+    "snapkv_50": [
+      {
+        "scenario_id": "mh-001",
+        "domain": "api",
+        "qualifier_type": "vendor_claim",
+        "answer": "The limit is 16.",
+        "eqlr_token": true,
+        "fcr": true,
+        "eqlr_semantic": 0.1333,
+        "value_recalled": true,
+        "qualifier_present": false,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-002",
+        "domain": "api",
+        "qualifier_type": "estimate",
+        "answer": "The limit is 3540.",
+        "eqlr_token": true,
+        "fcr": true,
+        "eqlr_semantic": 0.1,
+        "value_recalled": true,
+        "qualifier_present": false,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-003",
+        "domain": "debug",
+        "qualifier_type": "estimate",
+        "answer": "The limit is 1GB.",
+        "eqlr_token": true,
+        "fcr": true,
+        "eqlr_semantic": 0.1,
+        "value_recalled": true,
+        "qualifier_present": false,
+        "is_ghost": false
+      }
+    ],
+    "streaming_70": [
+      {
+        "scenario_id": "mh-001",
+        "domain": "api",
+        "qualifier_type": "vendor_claim",
+        "answer": "The limit is roughly 16 according to observations, though this is not yet verified.",
+        "eqlr_token": false,
+        "fcr": false,
+        "eqlr_semantic": 1.0,
+        "value_recalled": true,
+        "qualifier_present": true,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-002",
+        "domain": "api",
+        "qualifier_type": "estimate",
+        "answer": "The limit is roughly 3540 according to observations, though this is not yet verified.",
+        "eqlr_token": true,
+        "fcr": true,
+        "eqlr_semantic": 1.0,
+        "value_recalled": true,
+        "qualifier_present": false,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-003",
+        "domain": "debug",
+        "qualifier_type": "estimate",
+        "answer": "The limit is roughly 1GB according to observations, though this is not yet verified.",
+        "eqlr_token": false,
+        "fcr": false,
+        "eqlr_semantic": 1.0,
+        "value_recalled": true,
+        "qualifier_present": true,
+        "is_ghost": false
+      }
+    ],
+    "streaming_50": [
+      {
+        "scenario_id": "mh-001",
+        "domain": "api",
+        "qualifier_type": "vendor_claim",
+        "answer": "The limit is 16.",
+        "eqlr_token": true,
+        "fcr": true,
+        "eqlr_semantic": 0.1333,
+        "value_recalled": true,
+        "qualifier_present": false,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-002",
+        "domain": "api",
+        "qualifier_type": "estimate",
+        "answer": "The limit is 3540.",
+        "eqlr_token": true,
+        "fcr": true,
+        "eqlr_semantic": 0.1,
+        "value_recalled": true,
+        "qualifier_present": false,
+        "is_ghost": false
+      },
+      {
+        "scenario_id": "mh-003",
+        "domain": "debug",
+        "qualifier_type": "estimate",
+        "answer": "The limit is 1GB.",
+        "eqlr_token": true,
+        "fcr": true,
+        "eqlr_semantic": 0.1,
+        "value_recalled": true,
+        "qualifier_present": false,
+        "is_ghost": false
+      }
+    ]
+  }
+}

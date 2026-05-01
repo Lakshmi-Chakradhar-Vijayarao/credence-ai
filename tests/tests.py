@@ -39,7 +39,7 @@ if os.path.exists(_ENV_PATH):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--api", action="store_true", help="Run tests requiring live API calls")
-ARGS = parser.parse_args()
+ARGS, _unknown = parser.parse_known_args()
 
 # ── Imports ───────────────────────────────────────────────────────────────────
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -147,9 +147,9 @@ check("S2-B future turn → returns original j_score", abs(val_future - 0.40) < 
       f"Got {val_future}, expected 0.40")
 
 # S2-C: decay at extreme turn (turn=100 with registered_at=0)
-# 0.30 * 0.95^100 ≈ 0.30 * 0.00592 ≈ 0.00178 — should floor near 0, not negative
+# observation type decays at 0.97: 0.30 * 0.97^100 ≈ 0.30 * 0.0476 ≈ 0.0143
 val_100 = reg2.get_effective_confidence(cid, 100)
-check("S2-C decay at turn=100 → near-zero, not negative", 0.0 <= val_100 <= 0.01,
+check("S2-C decay at turn=100 → near-zero, not negative", 0.0 <= val_100 <= 0.05,
       f"Got {val_100}")
 
 # S2-D: verified constraint — decay stops at j_score regardless of turns
@@ -163,10 +163,10 @@ cid_zero = reg2.register("Zero confidence claim", "s2", j_score=0.0, turn_idx=0)
 val_zero = reg2.get_effective_confidence(cid_zero, 50)
 check("S2-E decay of j=0.0 → stays 0", val_zero == 0.0, f"Got {val_zero}")
 
-# S2-F: decay at j=1.0 — should decay correctly
+# S2-F: decay at j=1.0 — observation type decays at 0.97 per turn
 cid_one = reg2.register("Full confidence claim", "s2", j_score=1.0, turn_idx=0)
 val_one = reg2.get_effective_confidence(cid_one, 10)
-expected = round(1.0 * (0.95 ** 10), 4)
+expected = round(1.0 * (0.97 ** 10), 4)
 check("S2-F decay of j=1.0 correct", abs(val_one - expected) < 0.001,
       f"Got {val_one}, expected {expected}")
 
@@ -1273,6 +1273,7 @@ try:
     mgr21c.system_prompt = "You are helpful."
     mgr21c._pending_alignment_caveat = None
     mgr21c._current_user_message = ""
+    mgr21c.use_manifest = False
     tb = mgr21c._augment_with_truth_buffer()
     bullet_count_21h = tb.count("• [")
     check("S21-H TB shows all 8 constraints (no silent drop, no truncation)",
@@ -1881,7 +1882,9 @@ print(f"{'═'*60}")
 
 if _FAIL == 0:
     print("\n  ✓ ALL TESTS PASSED — system stable under stress\n")
-    sys.exit(0)
+    if __name__ == "__main__":
+        sys.exit(0)
 else:
     print(f"\n  ✗ {_FAIL} FAILURE(S) — review above before locking\n")
-    sys.exit(1)
+    if __name__ == "__main__":
+        sys.exit(1)

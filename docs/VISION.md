@@ -54,9 +54,17 @@ Five checkpoints, each encoding a distinct architectural principle:
 
 **Now (deployed):** Deterministic enforcement at five checkpoints. 22-tool MCP server. 178 passing tests (S1–S26, 11 skipped offline-only). Ghost Gauntlet: BothRate 0.200 → 1.000 (n=10 sessions). E6: 19.6% → 100% correction recall (n=23). Precision eval: 0% FP on CE, GTS, and probe. ETP schema defined. The system prevents the measured failure with no false positives on the precision eval set.
 
+**DPO Phase 3 (in progress, 2026-05-01):** Base Phi-2 FCR established at 31.2% pre-training. DPO fine-tuning running on Kaggle T4 (3 epochs, 5,000 triples). Expected result: FCR drops to ~15% post-DPO — the soft learning layer reduces the baseline before the deterministic probe takes over. The three-point comparison (31.2% → ~15% → 0%) will be the headline Layer 2 validation.
+
 **6 months — calibrated epistemic compression:** Replace binary block/proceed with a continuous epistemic importance weight per sentence. Analogous to LLMLingua-2's token importance scoring, but the weight is derived from the constraint registry: sentences containing registered uncertain values receive 10× importance in compression scheduling. This gives a principled hybrid — compress everything else aggressively; treat uncertain sentences as near-incompressible. Technical path: replace the binary Haiku gate with a weighted retention policy that annotates compression-safe vs. compression-risky sentences before the compressor runs.
 
+**6 months — domain-learned uncertainty profiles:** Run 50 production sessions per project, identify which markers co-occurred with actual FCR events, output `epistemic_profile.json` with project-specific marker weights. Medical, legal, and financial domains each have distinct hedging vocabularies that the generic 108-term list misses. Thompson Sampling on marker weights (Layer 1 bandit) provides the mechanism; the product artifact is a committable, auditable profile alongside the codebase.
+
+**6 months — certainty trajectory as compliance artifact:** Surface the `credence_trajectory` audit trail as a structured report at PR merge time: which constraints were unverified, which lines they appeared in, whether they were ever resolved. This is epistemic debt reporting — the way test coverage reports code quality. For regulated industries (HIPAA, SOC 2, PCI-DSS), this becomes a mandatory audit artifact rather than a developer convenience.
+
 **2 years — ETP as open standard:** Make the Epistemic Transport Protocol a community standard adopted by AutoGPT, LangChain, CrewAI, and native model provider APIs. The model: HTTP headers carry request metadata; ETP headers carry epistemic metadata. Every agent handoff in every pipeline passes `{j_score, zone, verified, chain_depth}` alongside the content. The Ghost Detector and SE probe become standard middleware callable by any framework. Credence becomes the reference implementation of a protocol.
+
+**Concurrent work framing:** arXiv:2509.11208 (ICML 2025) independently reached the same framing — compression decisions are epistemic decisions, and epistemic failures compound through pipelines — from the evidence adjudication direction rather than context compression. Two independent convergences on the same thesis from different domains is the strongest possible signal that the problem class is real and the timing is right.
 
 ---
 

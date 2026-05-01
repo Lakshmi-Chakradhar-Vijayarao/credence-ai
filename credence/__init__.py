@@ -32,8 +32,13 @@ from .pipeline_monitor import PipelineMonitor, EpistemicHandoff
 from .agent import CredenceAgent
 from .envelope import CredenceEnvelope
 from .semantic_entropy import SemanticEntropyProbe, SemanticEntropyResult
+from .behavioral_signal import BehavioralConsistencyProbe, BehavioralResult, fuse_scores
+from .enforce import enforce, CredenceViolation
+from .wrap import wrap, WrapResult, measure_fcr
+from .claim_extractor import ClaimExtractor, StructuredClaim
+from .epistemic_manifest import EpistemicManifest
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 __all__ = [
     # Core enforcement
     "ContextManager", "TurnResult", "SessionStats",
@@ -47,4 +52,13 @@ __all__ = [
     "CredenceAgent",
     "CredenceEnvelope",
     "SemanticEntropyProbe", "SemanticEntropyResult",
+    # Tier 2 signal
+    "BehavioralConsistencyProbe", "BehavioralResult", "fuse_scores",
+    # Decorator API
+    "enforce", "CredenceViolation",
+    # Model-agnostic wrapper (Gate 1)
+    "wrap", "WrapResult", "measure_fcr",
+    # Structured epistemic representation (v2.1)
+    "ClaimExtractor", "StructuredClaim",
+    "EpistemicManifest",
 ]

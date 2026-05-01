@@ -54,7 +54,7 @@ Core system. Manages conversation history and all compression decisions.
 - `_UNCERTAINTY_MARKERS` — frozenset of 198 uncertainty phrases across 7 categories (faithfulness guard)
 
 **Session constants** (class-level on `ContextManager`):
-- `COMPRESS_AFTER = 3` — keep last N turn-pairs on COMPRESS; fires when n_turns > COMPRESS_AFTER*2=6
+- `COMPRESS_AFTER = 8` — keep last N turn-pairs on COMPRESS; fires when n_turns > COMPRESS_AFTER*2=16
 - `TRIM_WINDOW = 10` — turns to keep on TRIM
 - `ATTENTION_SINK = 2` — first N turns never compressed
 - `MAX_COMPRESSIONS = 3` — max recursive compressions
@@ -342,8 +342,9 @@ User message
 - credence:      correction_recall=100%  hallu=4.35%  n=23
 - baseline:      correction_recall=100%  hallu=2.17%  n=23
 - naive_window:  correction_recall=19.6% hallu=0%     n=23
-- NOTE: historical run used Haiku for baseline/naive conditions (model confound). e6_repeated.py has been
-  fixed to use claude-opus-4-7 for all conditions. Re-run needed for clean comparable numbers.
+- NOTE: model confound resolved. Current e6_repeated.py uses claude-opus-4-7 for all three conditions
+  (credence/baseline/naive_window) via the shared _ask() function. The 23-trial results above were
+  collected after this fix. A fresh multi-trial run is recommended to rebuild clean baseline statistics.
 - Single-trial E6 in experiment_results.json (all Opus): credence 100%/0%, naive 0%/100%, baseline 100%/50%.
 - Scorer fix: removed "1 hour"/"one hour" from hallu_frags (false positive from refresh recommendations).
   Added "unverified"/"unconfirmed"/"pending"/"flagged" to correct_frags (missed qualifier synonyms).
@@ -502,11 +503,15 @@ Output: `evals/claim_gauntlet_results.json` with per-claim scores + domain/quali
 
 Can be submitted to arXiv as-is.
 
-### MCP server tool count: 16
+### MCP server tool count: 22
 
-Previous: credence_chat, credence_inspect, credence_propagate, credence_stats, credence_log, credence_save, credence_load, credence_reset, credence_risk, credence_register, credence_verify, credence_list_uncertain, credence_check_contradiction (13)
-New: credence_gate, credence_trajectory (2)
-Total: **18 tools**
+credence_chat, credence_inspect, credence_propagate, credence_stats, credence_log,
+credence_save, credence_load, credence_reset, credence_risk, credence_register,
+credence_verify, credence_list_uncertain, credence_gate, credence_align,
+credence_trajectory, credence_claims, credence_check_contradiction,
+credence_scan_output, credence_memory_snapshot, credence_memory_recall,
+credence_memory_status, credence_pipeline_intercept
+Total: **22 tools**
 
 ### New `ContextManager` params summary
 ```python
@@ -847,7 +852,7 @@ idempotency, project_status, and memory exclusion on verify.
 - Rust gate speedup: **98×** (331ms → 3.4ms)
 - Cross-session eval structure: 10 scenarios, 20 callbacks, 3 conditions
 - Ghost ablation final: no_detection=0.400, haiku_extract=1.000, opus_ghost=1.000, full_credence=1.000 (n=19/20, last result still running)
-- MCP tools: 18 → **21** (added memory_snapshot, memory_recall, memory_status)
+- MCP tools: 18 → **22** (added memory_snapshot, memory_recall, memory_status, credence_pipeline_intercept)
 - Tests: 116 → **132**
 
 ### `.claude/settings.json` update for Rust gate

@@ -1,0 +1,55 @@
+{
+  "model": "microsoft/phi-2",
+  "epochs": 3,
+  "lambda": 0.3,
+  "n_train": 4000,
+  "n_eval": 200,
+  "baseline": {
+    "label": "baseline",
+    "fcr": 0.3116,
+    "eqlr": 0.533,
+    "n_with_value": 199,
+    "n_with_qualifier": 182,
+    "n_total": 200
+  },
+  "epoch_curve": [
+    {
+      "label": "epoch_1",
+      "fcr": 0.206,
+      "eqlr": 0.6099,
+      "n_with_value": 199,
+      "n_with_qualifier": 182,
+      "n_total": 200,
+      "epoch": 1,
+      "train_loss": 0.40031494140625
+    },
+    {
+      "label": "epoch_2",
+      "fcr": 0.191,
+      "eqlr": 0.6209,
+      "n_with_value": 199,
+      "n_with_qualifier": 182,
+      "n_total": 200,
+      "epoch": 2,
+      "train_loss": 0.2351910400390625
+    },
+    {
+      "label": "epoch_3",
+      "fcr": 0.2211,
+      "eqlr": 0.5879,
+      "n_with_value": 199,
+      "n_with_qualifier": 182,
+      "n_total": 200,
+      "epoch": 3,
+      "train_loss": 0.20496612548828125
+    }
+  ],
+  "fcr_delta": 0.0905,
+  "summary": {
+    "baseline_fcr": 0.3116,
+    "final_fcr": 0.2211,
+    "fcr_reduction": 0.0905,
+    "baseline_eqlr": 0.533,
+    "final_eqlr": 0.5879
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "results": [
+    {
+      "component": "CP1 \u2014 Faithfulness Probe",
+      "description": "198-term frozenset scan on user turns",
+      "p50": 0.0168,
+      "p95": 0.0213,
+      "p99": 0.0266,
+      "max": 0.1688,
+      "mean": 0.0126,
+      "n": 4000,
+      "uncertain_tp_rate": "10/10",
+      "certain_fp_rate": "0/20"
+    },
+    {
+      "component": "J-score (CredenceProxy)",
+      "description": "Linguistic assertiveness score \u2014 zero API calls",
+      "p50": 0.0132,
+      "p95": 0.0172,
+      "p99": 0.0188,
+      "max": 0.2543,
+      "mean": 0.0137,
+      "n": 2000,
+      "uncertain_low_pct": "2/10 scored LOW",
+      "certain_high_pct": "14/20 scored HIGH"
+    },
+    {
+      "component": "CP2 \u2014 Consistency Enforcer",
+      "description": "Keyword overlap + 52-cluster synonym expansion",
+      "p50": 0.0058,
+      "p95": 0.0073,
+      "p99": 0.0089,
+      "max": 0.0335,
+      "mean": 0.0061,
+      "n": 2000,
+      "overlap_match_rate": "4/5 overlapping queries matched",
+      "nonoverlap_match_rate": "0/5 non-overlapping falsely matched"
+    },
+    {
+      "component": "CP3 \u2014 Generation-Time Scanner",
+      "description": "Code + prose scan for unverified literals",
+      "p50": 0.025,
+      "p95": 0.0269,
+      "p99": 0.0329,
+      "max": 0.0726,
+      "mean": 0.0253,
+      "n": 2000,
+      "hit_count_uncertain": 0,
+      "hit_count_certain": 0
+    },
+    {
+      "component": "Registry (SQLite)",
+      "description": "Constraint write + confidence lookup",
+      "write": {
+        "p50": 0.0162,
+        "p95": 0.0223,
+        "p99": 0.031,
+        "max": 0.0418,
+        "mean": 0.0171,
+        "n": 1000
+      },
+      "read": {
+        "p50": 0.0021,
+        "p95": 0.0022,
+        "p99": 0.0026,
+        "max": 0.0208,
+        "mean": 0.0022,
+        "n": 1000
+      },
+      "combined": {
+        "p50": 0.0133,
+        "p95": 0.0197,
+        "p99": 0.0277,
+        "max": 0.0418,
+        "mean": 0.0096,
+        "n": 2000
+      }
+    },
+    {
+      "component": "CP5 \u2014 Cross-Session Memory",
+      "description": "Snapshot unverified constraints + inject into new session",
+      "snapshot": {
+        "p50": 0.0617,
+        "p95": 0.0658,
+        "p99": 0.074,
+        "max": 0.1065,
+        "mean": 0.0624,
+        "n": 1000
+      },
+      "recall": {
+        "p50": 0.9952,
+        "p95": 1.6825,
+        "p99": 1.7703,
+        "max": 1.972,
+        "mean": 1.0117,
+        "n": 1000
+      },
+      "combined": {
+        "p50": 0.2263,
+        "p95": 1.63,
+        "p99": 1.727,
+        "max": 1.972,
+        "mean": 0.537,
+        "n": 2000
+      }
+    }
+  ],
+  "n_per_component": 2000
+}

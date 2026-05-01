@@ -1,11 +1,11 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "credence-ai"
 version = "2.0.0"
-description = "Credence — confidence-aware epistemic memory for AI pipelines"
+description = "Credence — epistemic enforcement layer that prevents LLMs from forgetting what they didn't know"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
@@ -13,8 +13,9 @@ authors = [
     { name = "Lakshmi-Chakradhar-Vijayarao" }
 ]
 keywords = [
-    "llm", "claude", "memory", "context", "epistemic",
-    "confidence", "uncertainty", "mcp", "agent"
+    "llm", "claude", "epistemic", "uncertainty", "mcp",
+    "agent", "context-compression", "hallucination", "safety",
+    "claude-code", "eql", "false-certainty"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -46,7 +47,16 @@ dev = [
 credence-server = "credence.mcp_server:main"
 
 [project.urls]
+Homepage = "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai"
 Repository = "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai"
+Documentation = "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai/blob/main/docs/TECHNICAL_REPORT.md"
+"Bug Tracker" = "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai/issues"
 
 [tool.setuptools.packages.find]
 include = ["credence*", "evals*", "demo*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "tests.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

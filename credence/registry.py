@@ -117,6 +117,10 @@ class CredenceRegistry:
             self._conn.execute(
                 "ALTER TABLE constraints ADD COLUMN is_memory INTEGER NOT NULL DEFAULT 0"
             )
+        if "constraint_type" not in cols:
+            self._conn.execute(
+                "ALTER TABLE constraints ADD COLUMN constraint_type TEXT NOT NULL DEFAULT 'observation'"
+            )
         # Create project index if it doesn't exist
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_project ON constraints(project_id)"
@@ -132,15 +136,40 @@ class CredenceRegistry:
     SOURCE_SCOUT          = "scout"          # Scout classifier detected it
     SOURCE_MODEL_INFERRED = "model_inferred" # model derived this, not directly user-stated
 
+    # Constraint type constants — epistemic category of the claim.
+    # Higher-risk types (vendor claims, compliance specs) decay slower;
+    # low-stakes working hypotheses decay faster.
+    CTYPE_OBSERVATION  = "observation"    # user's own measurement or direct observation
+    CTYPE_VENDOR_CLAIM = "vendor_claim"   # value stated by a vendor / external party
+    CTYPE_ESTIMATE     = "estimate"       # approximation or rough guess
+    CTYPE_ASSUMPTION   = "assumption"     # working hypothesis or assumed default
+    CTYPE_COMPLIANCE   = "compliance"     # regulatory / legal / policy constraint
+    CTYPE_PERFORMANCE  = "performance"    # latency, throughput, resource measurements
+    CTYPE_CONFIG       = "config"         # configuration value (could change with env)
+
+    # Per-type decay rates (factor per turn, compared to base _DECAY_RATE=0.95).
+    # Vendor claims decay more slowly — they don't expire, they just become stale.
+    # Working assumptions decay faster — they should be confirmed quickly.
+    _TYPE_DECAY_RATES: dict[str, float] = {
+        "observation":  0.97,   # slow decay — user's own data
+        "vendor_claim": 0.98,   # very slow — third-party stated values, high stakes
+        "estimate":     0.93,   # faster — rough approximations
+        "assumption":   0.90,   # fastest — working hypotheses should be resolved quickly
+        "compliance":   0.99,   # almost no decay — regulatory constraints stay relevant
+        "performance":  0.95,   # standard rate — measurements may drift
+        "config":       0.94,   # slightly faster — config changes frequently
+    }
+
     def register(
         self,
-        content:    str,
-        session_id: str,
-        j_score:    float = 0.30,
-        zone:       str   = "LOW",
-        turn_idx:   int   = 0,
-        source:     str   = SOURCE_USER_STATED,
-        ttl_turns:  Optional[int] = None,
+        content:          str,
+        session_id:       str,
+        j_score:          float = 0.30,
+        zone:             str   = "LOW",
+        turn_idx:         int   = 0,
+        source:           str   = SOURCE_USER_STATED,
+        ttl_turns:        Optional[int] = None,
+        constraint_type:  str   = "observation",
     ) -> str:
         """
         Register an uncertain constraint. Returns constraint_id (12-char hash).
@@ -148,26 +177,30 @@ class CredenceRegistry:
         Idempotent: registering the same content twice returns the existing ID
         without creating a duplicate row (INSERT OR IGNORE).
 
-        turn_idx:  conversation turn at registration time — used for confidence decay.
-        source:    provenance tag — user_stated / auto_extracted / scout / model_inferred.
-        ttl_turns: if set, constraint expires after this many turns from registration.
-                   Verified constraints never expire regardless of TTL.
+        turn_idx:         conversation turn at registration time — used for confidence decay.
+        source:           provenance tag — user_stated / auto_extracted / scout / model_inferred.
+        ttl_turns:        if set, constraint expires after this many turns from registration.
+                          Verified constraints never expire regardless of TTL.
+        constraint_type:  epistemic category — controls per-type decay rate.
+                          One of: observation, vendor_claim, estimate, assumption,
+                          compliance, performance, config.
         """
         cid = self._content_id(content)
         now = self._now()
         expires_at = None
         if ttl_turns is not None:
             expires_at = str(turn_idx + ttl_turns)  # stored as turn number for simplicity
+        ctype = constraint_type if constraint_type in self._TYPE_DECAY_RATES else "observation"
         cursor = self._conn.execute(
             """
             INSERT OR IGNORE INTO constraints
               (constraint_id, content, session_id, j_score, zone,
                verified, verified_value, registered_at_turn, source, expires_at,
-               created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?, ?)
+               created_at, updated_at, constraint_type)
+            VALUES (?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?, ?, ?)
             """,
             (cid, content, session_id, round(j_score, 4), zone,
-             turn_idx, source, expires_at, now, now),
+             turn_idx, source, expires_at, now, now, ctype),
         )
         self._conn.commit()
         if cursor.rowcount > 0:
@@ -589,29 +622,30 @@ class CredenceRegistry:
     # Confidence Decay
     # ------------------------------------------------------------------
 
-    _DECAY_RATE = 0.95  # per-turn decay factor: confidence × 0.95^turns_elapsed
+    _DECAY_RATE = 0.95  # default per-turn decay factor (used when constraint_type unknown)
 
     def get_effective_confidence(self, constraint_id: str, current_turn: int) -> float:
         """
-        Decayed confidence: j_score × 0.95^(turns since registration).
+        Decayed confidence: j_score × decay_rate^(turns since registration).
 
-        Unverified constraints grow less trustworthy over time — if the system
-        hasn't been able to confirm a claim after many turns, it should be treated
-        as more uncertain, not equally uncertain. Verified constraints return
-        their stored j_score unchanged (verification stops decay).
+        Decay rate is per-type (see _TYPE_DECAY_RATES). Vendor claims decay slowly
+        (rate=0.98); working assumptions decay faster (rate=0.90). Verified constraints
+        return their stored j_score unchanged (verification stops decay).
 
         Returns 0.0 if constraint_id not found.
         """
         row = self._conn.execute(
-            "SELECT j_score, verified, registered_at_turn FROM constraints WHERE constraint_id=?",
+            "SELECT j_score, verified, registered_at_turn, constraint_type FROM constraints WHERE constraint_id=?",
             (constraint_id,),
         ).fetchone()
         if row is None:
             return 0.0
         if row["verified"]:
             return float(row["j_score"])
+        ctype = row["constraint_type"] if row["constraint_type"] else "observation"
+        decay = self._TYPE_DECAY_RATES.get(ctype, self._DECAY_RATE)
         turns_elapsed = max(0, current_turn - (row["registered_at_turn"] or 0))
-        return round(float(row["j_score"]) * (self._DECAY_RATE ** turns_elapsed), 4)
+        return round(float(row["j_score"]) * (decay ** turns_elapsed), 4)
 
     def update_confidence(
         self,
@@ -706,6 +740,7 @@ class CredenceRegistry:
             "contradicted_by":    row["contradicted_by"]    if "contradicted_by"    in keys else None,
             "created_at":         row["created_at"],
             "updated_at":         row["updated_at"],
+            "constraint_type":    row["constraint_type"] if "constraint_type" in keys else "observation",
         }
 
     @staticmethod
@@ -814,6 +849,60 @@ class CredenceRegistry:
                 injected.append(new_cid)
         self._conn.commit()
         return injected
+
+    def propagate_verification(
+        self,
+        constraint_id: str,
+        verified_value: str,
+    ) -> int:
+        """
+        Verify a constraint AND back-propagate to the source cross-session original.
+
+        When a cross_session_memory copy in a new session is verified, the original
+        constraint in the source project should also be marked verified — otherwise
+        epistemic debt reports show it as perpetually unresolved even after confirmation.
+
+        Steps:
+          1. Verify the given constraint_id (may be the copy OR the original).
+          2. Find the original: a constraint with matching content and source != 'cross_session_memory'.
+          3. Verify the original too.
+
+        Returns number of rows updated (1 = only local, 2 = local + original).
+        """
+        updated = 0
+
+        # Verify the local copy
+        result = self.verify(constraint_id, verified_value)
+        if "error" not in result:
+            updated += 1
+        else:
+            return 0   # local not found — nothing to propagate
+
+        # Look up the content to find the source original
+        content = result.get("content", "")
+        if not content:
+            return updated
+
+        # Find matching non-copy constraint(s) — same content, not a memory copy
+        rows = self._conn.execute(
+            """
+            SELECT constraint_id FROM constraints
+             WHERE content=?
+               AND source != 'cross_session_memory'
+               AND verified=0
+            """,
+            (content,),
+        ).fetchall()
+
+        for row in rows:
+            orig_id = row["constraint_id"]
+            if orig_id == constraint_id:
+                continue   # already verified above
+            src_result = self.verify(orig_id, verified_value)
+            if "error" not in src_result:
+                updated += 1
+
+        return updated
 
     def get_all_project_constraints(self, project_id: str) -> list[dict]:
         """All constraints (verified + unverified) for a project, ordered by recency."""

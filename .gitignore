@@ -8,6 +8,10 @@ build/
 .venv/
 venv/
 
+# Claude Code settings (may contain API keys or personal config)
+.claude/settings.json
+.claude/settings.local.json
+
 # Rust build artifacts
 credence_gate/target/
 credence_gate/epistemic_registry.db
@@ -19,3 +23,31 @@ credence_gate/epistemic_registry.db.bak
 .claude/scheduled_tasks.lock
 *.db
 *.db.bak
+
+# Large model weights — too big for git (31MB, use Kaggle/HuggingFace Hub)
+models/
+
+# Kaggle staging artifacts (not source)
+kaggle_bundle.zip
+kaggle_push/
+kaggle_push_public/
+kaggle_v5/
+kaggle_v6/
+notebookc65c08d7da.log
+
+# DPO Kaggle output (checkpoints too large — epoch_results.json committed separately)
+/tmp/dpo_out/
+
+# Large training datasets (source scripts committed, raw JSON too large)
+data/epistemic_5k_clustered.json
+data/epistemic_compression_training.json
+data/epistemic_compression_training.json.bak
+data/synthetic_5k_gold.json.archived
+
+# Kaggle staging artifacts
+kaggle_datasets/
+kaggle_kernel/
+kaggle_kv_cache/
+kaggle_training/
+evals/kernel-metadata.json
+evals/kv_cache/*.log

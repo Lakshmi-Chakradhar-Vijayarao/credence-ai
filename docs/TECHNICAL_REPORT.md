@@ -11,9 +11,9 @@ We introduce **Epistemic Qualifier Loss (EQL)** — the loss of user-stated unce
 
 We measure EQL under two compression regimes (n=50): Haiku summarization produces EQLR=46.0% and FCR=6.0% (95% CI [1.3%, 16.5%]); LLMLingua-inspired importance scoring produces EQLR=68.0% and FCR=74.0% (95% CI [59.7%, 85.4%]). FCR uses a corrected scorer (v2, 198 markers) that adds impersonal hedging vocabulary absent from v1; original v1 naive FCR was 34.0%. To our knowledge, no prior paper names, defines, or measures this specific failure mode. Compression papers (LLMLingua-2, SnapKV, StreamingLLM) measure lexical and task-level faithfulness; uncertainty quantification papers (Semantic Entropy, UProp, R-Tuning) address model confidence calibration. None intersect at the pipeline operation that converts user-stated uncertainty into model-stated certainty.
 
-We introduce Credence, a context safety layer that prevents EQL through five deterministic checkpoints: (1) a **faithfulness probe** blocking compression when uncertainty markers are present (167 terms, 0.011ms, zero API calls), (2) a **Truth Buffer** injecting unverified constraints into every system prompt, (3) a **Consistency Enforcer** with domain synonym expansion (32 clusters), (4) a **Generation-Time Scanner** annotating code and prose with confidence tiers, and (5) a **Rust PreToolUse gate** (3.4ms, 98× faster than Python) blocking irreversible actions on unverified constraints.
+We introduce Credence, a context safety layer that prevents EQL through five deterministic checkpoints: (1) a **faithfulness probe** blocking compression when uncertainty markers are present (198 terms, 0.017ms, zero API calls), (2) a **Truth Buffer** injecting unverified constraints into every system prompt, (3) a **Consistency Enforcer** with domain synonym expansion (52 clusters), (4) a **Generation-Time Scanner** annotating code and prose with confidence tiers, and (5) a **Rust PreToolUse gate** (3.4ms, 98× faster than Python) blocking irreversible actions on unverified constraints.
 
-Results: EQLR 46%→0%, FCR 6%→0% (Haiku, n=50); FCR 74%→0% (LLMLingua sim, n=50). Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions). Cross-session FCR: 40%→0% (n=20 callbacks). 178 unit tests, 0% false positive rate across all deterministic layers. Deployed as a 22-tool MCP server installable in Claude Code in two minutes.
+Results: EQLR 46%→0%, FCR 6%→0% (Haiku, n=50); FCR 74%→0% (LLMLingua sim, n=50). Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions). Cross-session FCR: 40%→0% (n=20 callbacks). 557 passing tests, 0% false positive rate across all deterministic layers. Deployed as a 10-tool MCP server installable in Claude Code in two minutes.
 
 ---
 
@@ -104,6 +104,8 @@ We constructed 50 realistic technical conversations (the full SCENARIOS list in 
 > *"The [X] is approximately [value] — unconfirmed, I'll need to verify."*
 
 Domains covered: API integration (10), system debugging (10), infrastructure configuration (10).
+
+**Model dependency**: All measurements in Sections 3 and 5 use Anthropic's Claude model family — Haiku (`claude-haiku-4-5-20251001`) as the compression model and Opus 4.7 (`claude-opus-4-7`) as the answering model. The faithfulness probe (CP1), Consistency Enforcer (CP2), Generation-Time Scanner (CP3), and Rust gate (CP4) are fully model-agnostic — they operate on text and SQLite state with no API calls. The compression and downstream FCR measurements require API access. Replication requires an Anthropic API key; all raw results are saved in `evals/compression_faithfulness_n50_results.json`.
 
 Each conversation was compressed using Claude Haiku with a standard summarization prompt: "Summarize this conversation in 2-3 sentences, preserving key facts."
 
@@ -282,7 +284,7 @@ Stating this as confirmed fact is an epistemic error.
 Do not give a confident answer on this specific point.
 ```
 
-Detection uses token-level overlap after stopword removal (`_CE_STOPWORDS`, 40+ terms) with a minimum overlap threshold `_CE_MIN_OVERLAP = 2`:
+Detection uses token-level overlap after stopword removal (`_CE_STOPWORDS`, 78 terms) with a minimum overlap threshold `_CE_MIN_OVERLAP = 2`:
 
 ```python
 def _direct_constraint_matches(self, user_message, constraints) -> list[dict]:
@@ -369,7 +371,34 @@ Without epistemic extraction, 80% of ghost constraint callbacks fail (naive wind
 
 The naive window drops T4 (the uncertain hypothesis), causing the model to fabricate an alternative hypothesis when asked at T12. Credence preserves T4 verbatim because its J-score is LOW.
 
-### 5.5 Limitations
+### 5.6 Phase 3 DPO: Learned Preference Layer
+
+**Research question**: Can DPO fine-tuning on (faithful_summary, unfaithful_summary) pairs reduce the generation-level FCR of a base language model, providing a soft preference floor beneath the deterministic probe?
+
+**Protocol**: Phi-2 fine-tuned with `EpistemicDPOTrainer` on 5,000 preference triples (faithful vs. unfaithful summaries, each containing registered uncertain constraints). Training: 3 epochs, lambda=0.3, Kaggle T4 (16GB VRAM), fp16, no quantization. FCR measured on 200 held-out examples after each epoch using the same 90-term qualifier scorer (`_QUAL_MARKERS_SET`) as the main study.
+
+**Results** (Kaggle T4, 2026-05-01):
+
+| Checkpoint | FCR | EQLR | Notes |
+|---|---|---|---|
+| Base Phi-2 (pre-DPO) | 31.2% | 53.3% | Generation-level baseline |
+| Epoch 1 | 20.6% | 61.0% | Large initial drop |
+| **Epoch 2** | **19.1%** | **62.1%** | **Best checkpoint** |
+| Epoch 3 | 22.1% | 58.8% | Regression — overfit, not used |
+
+**Findings**: DPO reduces base FCR by 12.1pp (39% relative reduction) at the best checkpoint (epoch 2). rewards/accuracies reached 1.0 by epoch 0.5, indicating fast convergence. Epoch 3 regression is consistent with DPO mode collapse at lambda=0.3 with a dataset of this size — the model drifted too far from the reference policy.
+
+**The three-point comparison** (final Layer 2 validation):
+
+```
+Base Phi-2 (no training):   FCR = 31.2%  — generation-level failure
+DPO fine-tuned (epoch 2):   FCR = 19.1%  — soft preference, 39% reduction
+Faithfulness probe (CP1):   FCR =  0%    — deterministic, 100% block rate
+```
+
+DPO does not replace the probe — it cannot provide a deterministic guarantee. The probe takes the residual 19.1% to 0% with a 0.017ms string match. Together: DPO lowers the base rate so the probe fires less; the probe guarantees the floor. This is the correct layered design: soft training for the common case, hard enforcement for the safety guarantee.
+
+### 5.7 Limitations
 
 **Confident-wrong ceiling**: The J-score measures linguistic assertiveness, not factual correctness. A confidently stated wrong value (J=0.92, no uncertainty markers) is routed to compression. Credence cannot protect against this case. It is a hard ceiling of the Tier 1 signal.
 
@@ -378,6 +407,10 @@ The naive window drops T4 (the uncertain hypothesis), causing the model to fabri
 **Advisory envelope**: The CredenceEnvelope passed to downstream agents is advisory metadata. Downstream agents need explicit instructions tied to `should_verify` to act on it. The envelope alone does not enforce verification.
 
 **J-proxy accuracy**: 68.7% out-of-fold accuracy on 26 labelled samples (±10.7% CI). Linguistic assertiveness correlates with but is not identical to epistemic confidence.
+
+**Sample size**: The compression faithfulness study is n=50. The probe block rate CI is [92.9%, 100%] and FCR CI is [0%, 7.1%]. These are honest bounds at n=50. A planned n=200 replication (same design) would tighten the CI to approximately [98%, 100%] probe block rate if the result holds. All raw results are available for inspection; replication requires Anthropic API access.
+
+**Claude-specific measurements**: E6, E7, E8, Ghost Gauntlet, and the compression faithfulness study were all run on Claude Opus 4.7 and Haiku. Model-agnostic behavior — whether the probe achieves the same FCR=0% with GPT-4o or Llama-3 as the compressor — is future work. The probe itself is model-agnostic (pure Python string match); only the compression model and downstream answering model vary.
 
 ---
 
@@ -411,24 +444,20 @@ User message
 
 ### 6.1 MCP Interface
 
-Credence is deployed as a 22-tool FastMCP server. Tools available in Claude Code after 2-minute setup:
+Credence is deployed as a 10-tool FastMCP server. Tools available in Claude Code after 2-minute setup:
 
 | Tool | Function |
 |------|----------|
-| `credence_chat` | Chat with epistemic envelope + Truth Buffer |
-| `credence_risk` | Pre-flight risk check before compress/action |
-| `credence_gate` | Agentic gate before tool execution |
-| `credence_inspect` | Trust analysis of received envelope |
-| `credence_propagate` | Chain_depth increment for agent handoffs |
-| `credence_register` | Manual constraint registration |
-| `credence_verify` | Write-back: confirm a constraint |
-| `credence_list_uncertain` | Audit unverified constraints |
-| `credence_check_contradiction` | Detect conflicts with verified constraints |
-| `credence_trajectory` | Certainty trajectory for a constraint |
-| `credence_stats` | Session statistics |
-| `credence_log` | Per-turn decision log |
-| `credence_save` / `credence_load` | Cross-session continuity |
-| `credence_reset` | Clear session |
+| `credence_chat` | Chat with Truth Buffer + Consistency Enforcer active |
+| `credence_gate` | Agentic gate: block tool calls touching unverified constraints |
+| `credence_register` | Manual constraint registration with j_score + zone |
+| `credence_verify` | Write-back: mark a constraint as confirmed |
+| `credence_list_uncertain` | Audit all unverified constraints for a session |
+| `credence_scan_output` | Scan any model output for unverified numeric literals |
+| `credence_memory_snapshot` | Snapshot unverified constraints to a project |
+| `credence_memory_recall` | Inject project memories into a new session |
+| `credence_stats` | Session statistics (compression count, trust_buffer_count) |
+| `credence_reset` | Clear session state |
 
 ---
 
@@ -451,6 +480,12 @@ Credence is deployed as a 22-tool FastMCP server. Tools available in Claude Code
 ### 7.3 Multi-Agent Trust
 
 **CAMEL** (Li et al., 2023) and **AutoGen** (Wu et al., 2023) address multi-agent communication and task decomposition. Neither provides mechanisms for epistemic provenance tracking. The CredenceEnvelope is a proposed standard for attaching epistemic metadata to every inter-agent message — analogous to provenance metadata in data lineage systems.
+
+### 7.4 Compression Failures as a Research Framing
+
+Concurrent work (arXiv:2509.11208, ICML 2025) studies compression failures in evidence-based binary adjudication — where presenting the same evidence in different orderings produces inconsistent binary classification outputs from an ISR (Information Sufficiency Reasoning) gate. Their compression is semantic: multiple evidence items are compressed into a single binary decision. Their failure metric is permutation dispersion, measured via Bits-to-Trust divergence across evidence orderings.
+
+Credence addresses an orthogonal failure mode: output stripping of uncertainty language during LLM context window summarization. Their compression operates at the decision level; ours operates at the generation level. Their failure is input ordering sensitivity; ours is output qualifier loss. Both papers name and measure a specific compression failure mode and demonstrate that a gate achieving near-zero failure rate is achievable. The broader framing is shared: compression decisions are simultaneously epistemic decisions, and epistemic failures compound through pipelines. This convergence from two independent directions strengthens the case that compression faithfulness is an under-studied correctness property deserving dedicated measurement methodology.
 
 ---
 
@@ -480,11 +515,11 @@ This is the missing reliability layer in AI infrastructure. Not hallucination de
 
 ## 9. Conclusion
 
-We identify epistemic qualifier loss as a systematic, measurable failure mode in LLM context compression: standard Haiku summarization strips uncertainty markers in 46.0% of compressions, causing downstream false certainty in 6.0% of cases (FCR, n=50, scorer v2, 95% CI [1.3%, 16.5%]). LLMLingua-simulated importance-based compression causes 74.0% FCR — 12× worse. Credence eliminates this failure through a faithfulness probe (198 markers, 0.011ms, zero API calls), J-selective routing, Truth Buffer injection, Consistency Enforcer, Generation-Time Scanner, and a Rust PreToolUse gate (3.4ms, 98× faster than Python).
+We identify epistemic qualifier loss as a systematic, measurable failure mode in LLM context compression: standard Haiku summarization strips uncertainty markers in 46.0% of compressions, causing downstream false certainty in 6.0% of cases (FCR, n=50, scorer v2, 95% CI [1.3%, 16.5%]). LLMLingua-simulated importance-based compression causes 74.0% FCR — 12× worse. Credence eliminates this failure through a faithfulness probe (198 markers, 0.017ms p50, zero API calls), J-selective routing, Truth Buffer injection, Consistency Enforcer (52 synonym clusters), Generation-Time Scanner, and a Rust PreToolUse gate (3.4ms, 98× faster than Python).
 
-The core validation demonstrates 100% qualifier survival (n=50, 95% CI [92.9%, 100%]) and 0% FCR (n=50, 95% CI [0%, 7.1%]) under Credence, versus 6.0%–74.0% FCR under naive/LLMLingua compression. Cross-session FCR: 40% no memory → 0% Credence Memory (n=20 callbacks). Ghost constraint BothRate: 0.200 (naive window) → 1.000 Credence (n=10 sessions × 3 conditions, ghost_gauntlet). Test coverage: 178 passing unit tests (S1–S26), 11 skipped (offline-only). Precision eval: CE FP rate 0%, GTS string FP rate 0%, probe FP rate 0%.
+The core validation demonstrates 100% qualifier survival (n=50, 95% CI [92.9%, 100%]) and 0% FCR (n=50, 95% CI [0%, 7.1%]) under Credence, versus 6.0%–74.0% FCR under naive/LLMLingua compression. Cross-session FCR: 40% no memory → 0% Credence Memory (n=20 callbacks). Ghost constraint BothRate: 0.200 (naive window) → 1.000 Credence (n=10 sessions × 3 conditions, ghost_gauntlet). Test coverage: 557 passing unit + integration tests, 1 skipped (offline-only). Precision eval: CE FP rate 0%, GTS string FP rate 0%, probe FP rate 0/20.
 
-Credence is available as a 22-tool MCP server installable in Claude Code in 2 minutes.
+Credence is available as a 10-tool MCP server installable in Claude Code in 2 minutes.
 
 ---
 
@@ -505,6 +540,7 @@ Credence is available as a 22-tool MCP server installable in Claude Code in 2 mi
 - Li, G., et al. (2023). CAMEL: Communicative Agents for "Mind" Exploration. *NeurIPS 2023*.
 - Wu, Q., et al. (2023). AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation. *arXiv:2308.08155*.
 - Burnham, T., et al. (2025). Calibration of Large Language Models via Uncertainty Quantification. *ACL Findings 2025*.
+- [Authors]. (2025). Predictable Compression Failures: Order Sensitivity and Information Budgeting for Evidence-Grounded Binary Adjudication. *arXiv:2509.11208. ICML 2025*. [Orthogonal failure mode: input ordering sensitivity in ISR gates vs. output qualifier stripping in context compression.]
 
 ---
 

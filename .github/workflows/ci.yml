@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: pip install -e ".[dev,mcp]"
+
+      - name: Unit tests (no API key)
+        run: pytest tests/unit/ -v --tb=short
+
+      - name: Integration tests — mock LLM (no API key)
+        run: pytest tests/integration/ -v --tb=short
+
+      - name: Security tests
+        run: pytest tests/security/ -v --tb=short
+
+      - name: Performance tests
+        run: pytest tests/perf/ -v --tb=short
+
+      - name: Gate 0 — probe false positive rate
+        run: python -m evals.false_positive_rate
+
+      - name: Gate 0B — CE false enforcement rate
+        run: python -m evals.ce_false_enforcement_rate
+
+      - name: Latency report (offline components only)
+        run: python -m evals.latency_report
+
+  lint:
+    name: Lint & Import Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e ".[dev,mcp]"
+
+      - name: Check all core exports
+        run: |
+          python -c "
+          import credence
+          from credence import (
+              ContextManager, CredenceRegistry, CredenceProxy,
+              CredenceMemory, BehavioralConsistencyProbe, fuse_scores,
+              enforce, CredenceViolation, EpistemicManifest,
+          )
+          print('All exports OK — v' + credence.__version__)
+          "
+
+      - name: EQL-Bench dataset validates
+        run: python -m evals.eql_bench --validate
+
+      - name: EQL-Bench statistics
+        run: python -m evals.eql_bench --stats
+
+  rust-gate:
+    name: Rust Gate Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build credence-gate
+        working-directory: credence_gate
+        run: cargo build --release
+
+      - name: Verify binary exists and runs
+        run: |
+          ls -lh credence_gate/target/release/credence-gate
+          ./credence_gate/target/release/credence-gate --help 2>/dev/null || true
