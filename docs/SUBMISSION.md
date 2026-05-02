@@ -49,7 +49,7 @@ Results from `evals/compression_faithfulness_n50_results.json` (saved). Latency 
 | Probe latency (n=4000, offline) | P50 / P99 | **0.017ms / 0.026ms** | — | Zero API calls |
 | Rust gate latency (n=4000, measured) | P50 | **3.4ms** | Python hook: 331ms | 98× faster |
 | All checkpoints P99 sum (n=1000, offline) | Total in-process | **1.1ms** + 3.4ms gate | — | ~0.09% of Opus call latency |
-| Test suite (2026-05-02) | Tests passing | **596 / 597** | — | 1 skipped (requires API key) |
+| Test suite | Tests passing | **596 / 597** | — | 1 skipped (requires API key) |
 
 **EQLR (EQL Rate)** = fraction of hedged user statements that lose their canonical uncertainty marker after compression. Direct text measurement — no LLM calls needed to verify. Computed using 198-marker frozenset (same as production probe), user turns only.
 

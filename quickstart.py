@@ -133,6 +133,6 @@ print(f"  Registry lookup:              constraint state, decay, dedup          
 print(f"  GTS scan:                     annotates uncertain values in output     ({gts_ms:.2f} ms)")
 print(f"  Envelope:                     trust degrades with chain depth (pure Python, ~0 ms)")
 print(f"\n  All deterministic layers: sub-millisecond. No API calls. JIT buffer design.")
-print(f"\n  18-tool MCP server for Claude Code integration:")
+print(f"\n  22-tool MCP server for Claude Code integration:")
 print(f"    pip install -e .")
 print(f"    # add to .claude/settings.json → see README.md\n")
