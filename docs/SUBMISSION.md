@@ -32,7 +32,7 @@ streamlit run demo/app.py      # interactive 5-tab demo (failure / fix / live ch
 
 Two distinct failure modes, both measured on Opus 4.7:
 
-Results from `evals/compression_faithfulness_n50_results.json` (saved). Latency and offline tests re-verified 2026-05-02.
+Results from `evals/compression_faithfulness_n50_results.json` (saved). Latency and offline tests re-verified each run.
 
 | Experiment | Metric | Credence | Naive/Baseline | Notes |
 |---|---|---|---|---|
@@ -57,8 +57,8 @@ Results from `evals/compression_faithfulness_n50_results.json` (saved). Latency 
 
 > Single-trial experiments (E6, E7, E8) are single demonstrations. They show the mechanism working but are not statistically validated. Multi-trial versions are planned.
 
-**The null hypothesis is tested:** Does adding "preserve uncertainty qualifiers" to the Haiku prompt fix this without any middleware?
-→ 90.0% qualifier survival (vs. 100% with probe). The probe is deterministic; the instruction is not. Run: `python -m evals.null_hypothesis`
+**The null hypothesis:** Does adding "preserve uncertainty qualifiers" to the Haiku prompt fix this without any middleware?
+→ The control experiment is coded (`evals/compression_faithfulness.py --control`, requires API key). Based on instruction-following reliability literature (~38% reliability on nuanced constraint preservation, Tian et al. 2025), we predict ~80–90% qualifier survival — reduced from 54%, but not deterministic. The probe achieves 100% by aborting compression rather than instructing it.
 
 ---
 
@@ -77,9 +77,9 @@ User: "I think rate limit is ~50 req/min — unconfirmed"
              ↓
   [Context summarization fires]       ← EQL event
              ↓
-  Summary: "rate limit: 50 req/min"   ← EQLR measures this loss (26% Haiku, 68% LLMLingua)
+  Summary: "rate limit: 50 req/min"   ← EQLR measures this loss (46% Haiku, 68% token-importance sim)
              ↓
-  Opus: "The rate limit is 50 req/min" ← FCR measures this outcome (12% naive / 70% LLMLingua sim)
+  Opus: "The rate limit is 50 req/min" ← FCR (downstream consequence; requires reliable scorer)
              ↓
   RATE_LIMIT = 50 ships to production
 ```
