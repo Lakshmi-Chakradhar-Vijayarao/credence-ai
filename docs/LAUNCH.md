@@ -13,13 +13,14 @@ When Claude Code summarizes old context to save tokens, it uses a smaller model 
 We measured what happens to uncertainty markers during that compression.
 
 Result: 46% of the time, naive Haiku strips qualifiers like "I think", "unverified", 
-"probably", "the vendor claims" from the summary. With token-importance compression 
-(simulation — which actively scores "informative" content high and drops "qualifiers" as 
-padding), the strip rate is 68% and the downstream False Certainty Rate hits 74%.
-With naive Haiku, the downstream FCR is 6%.
+"probably", "the vendor claims" from the summary. Among those stripped cases, 52% produce
+zero hedging in the output — the value is asserted as fact.
 
-We call this Epistemic Qualifier Loss (EQL). The downstream false certainty is the FCR 
-(False Certainty Rate). We built Credence to reduce both to zero.
+With token-importance compression (simulation — scores sentences by technical density, 
+drops short qualifier phrases as "padding"), the strip rate is 68%. In most stripped cases,
+the entire uncertain statement is removed — the downstream model has no epistemic context.
+
+We call this Epistemic Qualifier Loss (EQL). We built Credence to reduce the strip rate to zero.
 
 Five enforcement layers:
 
@@ -88,11 +89,9 @@ When Claude uses Haiku to summarize old context:
 → 46% of "I think / unverified / probably" markers get stripped
 → 6% of the time the downstream model states it as confirmed fact
 
-With token-importance compression (simulation — keeps high-density content, drops qualifiers):
-→ 68% strip rate
-→ 74% False Certainty Rate
-
-We call it EQL (Epistemic Qualifier Loss) and FCR (False Certainty Rate).
+With token-importance compression (simulation — scores by technical density, drops qualifier phrases):
+→ 68% qualifier strip rate
+→ Downstream model typically loses the entire constraint context
 ```
 
 **Tweet 3 (the fix — deterministic):**
@@ -103,7 +102,7 @@ Before Haiku runs: scan for "I think / unverified / probably" (198 terms).
 Found → block compression → keep the turn verbatim.
 
 Block rate: 100% across n=50
-FCR after: 0%
+Qualifier strip rate after: 0%
 
 0.017ms P50. Zero API calls.
 ```

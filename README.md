@@ -23,17 +23,19 @@ This failure has a name. We measured it. We fixed it.
 
 ## The Problem, Measured
 
-**Epistemic Qualifier Loss (EQL)** — uncertainty markers (*"I think"*, *"unverified"*, *"roughly"*, *"the vendor claims"*) are stripped during context compression, causing downstream models to treat uncertain constraints as confirmed facts.
+**Epistemic Qualifier Loss (EQL)** — uncertainty markers (*"I think"*, *"unverified"*, *"roughly"*, *"the vendor claims"*) are stripped during context compression. The compressed context reaches downstream models without the epistemic signal — they act on what look like confirmed facts.
 
 We ran 50 compression scenarios with three conditions:
 
-| Condition | Qualifier Strip Rate | False Certainty Rate (FCR) |
+| Condition | Qualifier Strip Rate | Primary failure mode |
 |---|---|---|
-| Naive Haiku compression | 46% | 6% |
-| Token-importance compression (simulation) ¹ | 68% | **74%** |
-| **Credence (faithfulness probe)** | **0%** | **0%** |
+| Naive Haiku compression | **46%** (23/50) | Epistemic downgrade — value retained, qualifier lost |
+| Token-importance compression (simulation) ¹ | **68%** (34/50) | Epistemic erasure — entire uncertain statement removed |
+| **Credence (faithfulness probe)** | **0%** (0/50) | — both failure modes prevented — |
 
-**FCR** = model states an uncertain value as confirmed fact. Drops to zero for explicitly hedged content. Deterministically. Zero extra API calls.
+**Qualifier strip rate** = compressed output contains no canonical uncertainty marker from a 198-term frozenset. Direct text measurement — no model calls needed to verify. Fully reproducible from the saved results in `evals/compression_faithfulness_n50_results.json`.
+
+Among the 23 Haiku-stripped cases: 12/23 (52%) produce **zero hedging** — the value is asserted without any qualifier. The remaining 11/23 replace canonical markers with softer hedges ("likely", "pending") — an epistemic downgrade. Both outcomes mislead downstream systems.
 
 > ¹ Simulates compression that scores sentences by technical token density with no epistemic awareness — the pattern used by token-importance systems. Not a measurement of the LLMLingua library itself.
 

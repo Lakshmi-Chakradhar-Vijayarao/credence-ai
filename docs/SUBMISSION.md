@@ -14,7 +14,7 @@ The Ghost Detector — powered by Opus 4.7 — catches implicit uncertainty with
 
 As AI agents make higher-stakes decisions, uncertainty is not a weakness to hide — it is the most honest signal a system can carry. Credence is the first enforcement layer built around that principle.
 
-10-tool MCP server. 611 tests. Built entirely with Claude Code.
+22-tool MCP server. 596 tests. Built entirely with Claude Code.
 
 ---
 
@@ -32,38 +32,30 @@ streamlit run demo/app.py      # interactive 5-tab demo (failure / fix / live ch
 
 Two distinct failure modes, both measured on Opus 4.7:
 
-All numbers measured fresh with `ANTHROPIC_API_KEY` and verified reproducible.
+Results from `evals/compression_faithfulness_n50_results.json` (saved). Latency and offline tests re-verified 2026-05-02.
 
 | Experiment | Metric | Credence | Naive/Baseline | Notes |
 |---|---|---|---|---|
-| EQL Study — Haiku (n=50 fresh rerun) | EQL Rate (EQLR) | **0%** (CI: 0–7.1%) | 26.0% (CI: 14.6–40.3%) | **Primary EQL evidence** |
-| EQL Study — Haiku (n=50 fresh rerun) | False Certainty Rate (FCR) | **0%** (CI: 0–7.1%) | 12.0% (CI: 5.6–23.8%) | Downstream harm from EQL |
-| EQL Study — Haiku (n=30 fresh rerun) | False Certainty Rate (FCR) | **0%** (CI: 0–11.3%) | 23.3% (CI: 11.8–40.9%) | Consistent across sample sizes |
-| EQL Study — LLMLingua-inspired sim (n=50 fresh rerun) | EQL Rate (EQLR) | **0%** | 68.0% | 2.6× worse EQL than Haiku |
-| EQL Study — LLMLingua-inspired sim (n=50 fresh rerun) | False Certainty Rate (FCR) | **0%** (CI: 0–7.1%) | 70.0% (CI: 56.2–80.9%) | ~6× worse FCR than Haiku |
-| EQL Study — LLMLingua-inspired sim (n=30 fresh rerun) | False Certainty Rate (FCR) | **0%** (CI: 0–11.3%) | 83.3% (CI: 66.4–92.6%) | Consistent across sample sizes |
-| Prompt-only instruction (n=30 scenarios) | Qualifier survival | — | **90.0%** vs 100% with probe | Null hypothesis: instructions are not deterministic |
-| E6 Negative Needle (single trial, all Opus 4.7) | Correction recall | **2/2** | naive: 0/2 | Categorical — probe preserved constraints through 8 filler turns |
-| E7 Multi-Hop Chain (single trial) | Hops recalled | **3/3** chain complete | naive: 1/3 chain broken | Dependency chain destroyed by naive window |
-| E8 Real Debugging (single trial) | Mean recall | **1.000** | naive: 0.511 | Credence 2× better recall on real session |
-| Ghost Gauntlet (n=10 sessions × 3 conditions) | BothRate | **1.000** (credence_v1/credence_eg2) | naive_window: 0.200 | Implicit uncertain claims: value + qualifier preserved |
-| Cross-Session Memory (n=20 callbacks) | CS-FCR | **0%** | no memory: 40% | Epistemic state survives session boundary |
-| Native gate latency (PreToolUse hook) | Latency | **3.4ms** (Rust) | 331ms (Python) | 98× faster |
-| Precision eval — CE FP rate | False positive rate | **0%** | — | Offline, reproducible |
-| Precision eval — GTS string FP rate | False positive rate | **0%** | — | Offline, reproducible |
-| Precision eval — probe FP rate | False positive rate | **0%** | — | Offline, reproducible |
-| Stress test — probe precision (n=200) | FP rate | **0%** | — | 200 non-uncertain phrases, offline |
-| Stress test — probe recall (n=200) | Recall | **100%** | — | 167 markers tested offline; 17 past-tense/modal variants added subsequently |
-| Stress test — J separation (n=200) | Score gap | **0.344** | — | Confident 0.859 vs hedged 0.514 |
-| Stress test — GTS (n=50) | Precision + recall | **100% / 0% FP** | — | Code block annotation, offline |
-| Latency report — all checkpoints (n=1000) | P99 sum | **1.1ms** in-process + 3.4ms gate | — | ~0.09% of typical LLM call latency |
-| Latency report — probe P50/P99 | p50 / p99 | **0.017ms / 0.026ms** | — | Sub-millisecond; does not block generation |
-| Test suite | Coverage | **178/178 pass** | — | 11 skipped (offline-only), S1–S26 |
+| EQL Study — Naive Haiku (n=50) | **Qualifier strip rate (EQLR)** | **0%** (CI: 0–7.1%) | **46.0%** (CI: 31.8–60.7%) | **Primary headline result** |
+| EQL Study — Naive Haiku (n=50) | Of those stripped: zero hedging | — | 52% (12/23) | Compressed output asserts value as fact |
+| EQL Study — Naive Haiku (n=50) | Of those stripped: epistemic downgrade | — | 48% (11/23) | Compressed output uses softer hedges ("likely", "pending") |
+| EQL Study — Token-importance sim (n=50) | **Qualifier strip rate (EQLR)** | **0%** | **68.0%** (CI: 53.6–80.0%) | Simulation; not a measurement of the LLMLingua library |
+| EQL Study — Token-importance sim (n=50) | Failure mode | — | Epistemic erasure | User statement removed entirely; model says "no context" |
+| E6 Negative Needle (single trial, Opus 4.7) | Correction recall | **2/2** | naive: 0/2 | Truth Buffer: constraints survive 8-turn window |
+| E7 Multi-Hop Chain (single trial) | Hops recalled | **3/3** | naive: 1/3 | Dependency chain: credence preserves, naive breaks |
+| E8 Real Debugging (single trial) | Mean recall | **1.000** | naive: 0.522 | Credence 2× better recall; real session |
+| Ghost Gauntlet (n=10, synthetic sessions) | BothRate | **1.000** | naive_window: 0.200 | Ghost Detector: implicit uncertainty classified correctly |
+| Probe FP rate (n=200, offline) | False positive rate | **0.5%** | — | 1/200 non-uncertain phrases triggers probe |
+| Probe latency (n=4000, offline) | P50 / P99 | **0.017ms / 0.026ms** | — | Zero API calls |
+| Rust gate latency (n=4000, measured) | P50 | **3.4ms** | Python hook: 331ms | 98× faster |
+| All checkpoints P99 sum (n=1000, offline) | Total in-process | **1.1ms** + 3.4ms gate | — | ~0.09% of Opus call latency |
+| Test suite (2026-05-02) | Tests passing | **596 / 597** | — | 1 skipped (requires API key) |
 
-**EQL (Epistemic Qualifier Loss)** = the event of a user-stated uncertainty marker being dropped during context compression.
-**EQLR** = the fraction of hedged claims that lose their qualifier after compression (the EQL rate).
-**FCR** = the fraction of downstream responses that state uncertain values without any qualifier (the harm caused by EQL).
-**BothRate** = fraction of ghost-constraint callbacks with both value AND qualifier recalled.
+**EQLR (EQL Rate)** = fraction of hedged user statements that lose their canonical uncertainty marker after compression. Direct text measurement — no LLM calls needed to verify. Computed using 198-marker frozenset (same as production probe), user turns only.
+
+**BothRate** = fraction of ghost-constraint callbacks where model recalls both the value AND expresses uncertainty about it.
+
+> Single-trial experiments (E6, E7, E8) are single demonstrations. They show the mechanism working but are not statistically validated. Multi-trial versions are planned.
 
 **The null hypothesis is tested:** Does adding "preserve uncertainty qualifiers" to the Haiku prompt fix this without any middleware?
 → 90.0% qualifier survival (vs. 100% with probe). The probe is deterministic; the instruction is not. Run: `python -m evals.null_hypothesis`
