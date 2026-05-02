@@ -33,9 +33,17 @@ We ran 50 compression scenarios with three conditions:
 | Token-importance compression (simulation) ¹ | **68%** (34/50) | Epistemic erasure — entire uncertain statement removed |
 | **Credence (faithfulness probe)** | **0%** (0/50) | — both failure modes prevented — |
 
-**Qualifier strip rate** = compressed output contains no canonical uncertainty marker from a 198-term frozenset. Direct text measurement — no model calls needed to verify. Fully reproducible from the saved results in `evals/compression_faithfulness_n50_results.json`.
+**Three concepts, three layers of the pipeline:**
 
-Among the 23 Haiku-stripped cases: 12/23 (52%) produce **zero hedging** — the value is asserted without any qualifier. The remaining 11/23 replace canonical markers with softer hedges ("likely", "pending") — an epistemic downgrade. Both outcomes mislead downstream systems.
+| Term | What it is | Where it occurs | How it's measured |
+|---|---|---|---|
+| **EQL** (Epistemic Qualifier Loss) | The failure *event* — a user-stated uncertainty marker disappears from compressed context | At the compressor | Detected by the faithfulness probe |
+| **EQLR** (EQL Rate) | How often EQL occurs — the fraction of hedged statements that lose their qualifier | Upstream (compressor output) | Direct text match: 198-marker frozenset on compressed output. No API call. |
+| **FCR** (False Certainty Rate) | The downstream *consequence* — fraction of model responses that assert an uncertain value as confirmed fact | Downstream (answering model) | Requires API call + reliable certainty scorer |
+
+EQLR is the primary validated metric. FCR is the intended downstream measure but requires a certainty scorer that detects *confident assertions* specifically — checking whether a response *lacks canonical markers* is insufficient (a response saying "I don't have context" also lacks markers). A reliable FCR scorer is planned future work.
+
+Among the 23 Haiku-stripped cases: 12/23 (52%) produce **zero hedging** in the compressed output — the value is asserted without any qualifier. The remaining 11/23 replace canonical markers with softer hedges ("likely", "pending"). Both mislead downstream systems; only the probe prevents both.
 
 > ¹ Simulates compression that scores sentences by technical token density with no epistemic awareness — the pattern used by token-importance systems. Not a measurement of the LLMLingua library itself.
 
@@ -244,17 +252,17 @@ cd credence_gate && cargo build --release
 
 | Experiment | Credence | Naive / Baseline | n | Status |
 |---|---|---|---|---|
-| Haiku compression FCR | **0%** | 6% | 50 | ✓ Multi-run |
-| Token-importance compression FCR (simulation) | **0%** | 74% | 50 | ✓ Multi-run |
-| E6: Long-session constraint recall | **100%** | 19.6% (naive window) | 23 trials | ✓ Multi-trial |
+| Haiku compression — EQLR (qualifier strip rate) | **0%** | 46% | 50 | ✓ Direct text measurement |
+| Token-importance sim — EQLR | **0%** | 68% | 50 | ✓ Direct text measurement |
+| E6: Long-session constraint recall (Truth Buffer) | **100%** | 19.6% (naive window) | 23 trials | ✓ Multi-trial |
 | E7: Multi-hop 3-step reasoning chain | **3/3 hops** | 0/3 (naive) | 1 | ⚠ Single trial |
 | E8: Real debugging session recall | **1.000** | 0.522 (naive) | 1 | ⚠ Single trial |
 | Ghost Gauntlet BothRate | **1.000** | 0.200 (naive) | 10 sessions | ⚠ Synthetic |
 | Probe false positive rate | **0.5%** | — | 200 sentences | ✓ Deterministic |
 | Rust gate latency | **3.4ms** | 331ms (Python hook) | 4000 calls | ✓ Measured |
-| Total in-process overhead (P99) | **1.1ms** | — | 2000 calls | ✓ Measured |
+| Total in-process overhead (P99) | **1.1ms** | — | 1000 calls | ✓ Measured |
 
-> **Transparency note:** E7 and E8 are single-trial demonstrations — they show the mechanism working correctly but are not statistically validated. Ghost Gauntlet uses researcher-constructed sessions. Cross-session FCR measurement is planned (the infrastructure exists in `credence/memory.py`; the empirical study has not been run). Multi-trial E7/E8 are on the roadmap.
+> **Transparency note:** E7 and E8 are single-trial demonstrations — they show the mechanism working correctly but are not statistically validated. Ghost Gauntlet uses researcher-constructed sessions. Multi-trial E7/E8 are on the roadmap. FCR (downstream false certainty) measurement requires a reliable certainty scorer; prior FCR numbers used a broken proxy and have been removed.
 
 ---
 

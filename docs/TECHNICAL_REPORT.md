@@ -39,7 +39,7 @@ Our first finding is that this failure has two distinct causes, which require di
 
 **Failure Mode 1 — Reasoning loss**: Even with the *full conversation* in context, Opus 4.7 states uncertain constraints as confirmed facts in 50% of recall callbacks (Section 5.2, E6 baseline condition). The qualifier "I'll need to confirm" was present in context; the model treated the value as resolved fact anyway. Context presence is not the same as epistemic attention.
 
-**Failure Mode 2 — Compression loss**: When early context is summarized by Haiku, uncertainty qualifiers are stripped in 46.0% of compressions. Without the qualifier, the downstream model answers with false certainty 6.0% of the time (n=50, 95% CI [1.3%, 16.5%], Section 3). LLMLingua-inspired compression is worse: 74.0% FCR (3 in 4 queries). Compression amplifies the reasoning failure.
+**Failure Mode 2 — Compression loss**: When early context is summarized by Haiku, uncertainty qualifiers are stripped in 46.0% of compressions (EQLR=46.0%, n=50, 95% CI [31.8%, 60.7%], Section 3). Among stripped cases, 52% produce bare assertions in the compressed output — the value with no qualifier. LLMLingua-inspired compression is worse: EQLR=68.0% and the failure mode escalates to full epistemic erasure (the user's uncertain statement is dropped entirely). Compression amplifies the EQL problem; the faithfulness probe prevents both failure modes.
 
 These require different mechanisms. The faithfulness probe (Section 4.1) addresses the compression failure. The Truth Buffer (Section 4.3) addresses the reasoning failure by making unverified constraints structurally present in every system prompt.
 
@@ -68,7 +68,7 @@ The precise novelty: EQL names the failure that occurs when a *third-party compr
 This paper:
 
 1. Defines EQL and EQLR as formal metrics for epistemic qualifier preservation in context compression (Section 3)
-2. Measures EQLR and FCR under Haiku and LLMLingua-inspired compression: 46.0%/68.0% EQLR, 6.0%/74.0% FCR (n=50, scorer v2)
+2. Measures EQLR under Haiku and LLMLingua-inspired compression: 46.0%/68.0% EQLR (n=50, direct text measurement)
 3. Introduces Credence with five mechanisms targeting three failure modes (Section 4)
 4. Validates Credence on E6 negative needle (all Opus 4.7, n=23 trials) and ghost constraint gauntlet (n=10 synthetic sessions)
 5. Positions Credence against related work in Section 7
@@ -115,25 +115,27 @@ The compressed summary was then passed to Claude Opus with the callback question
 
 A response was scored on two dimensions:
 
-- **Qualifier survival**: Does the model's answer include any uncertainty marker (e.g. "approximately", "unconfirmed", "I believe")?
-- **False certainty**: Does the model state the value without any qualifier (i.e. treats the uncertain constraint as confirmed fact)?
+- **EQLR (EQL Rate)**: Does the compressed output still contain any canonical uncertainty marker from the 198-term frozenset? If not, an EQL event occurred. This is a direct text measurement — no downstream model call needed.
+- **FCR (False Certainty Rate, planned)**: Does the downstream model's answer assert the uncertain value as a confirmed fact? This requires a downstream model call AND a reliable certainty scorer that checks specifically for confident value assertions, not merely the absence of canonical markers. See Limitation note below.
 
 ### 3.3 Results
 
-| Condition | Qualifier Survival | False Certainty |
-|---|---|---|
-| Naive Haiku compression | **54.0%** (CI: 39.3–68.2%) | **6.0%** (CI: 1.3–16.5%) |
-| LLMLingua-simulated compression | **32.0%** (CI: 19.5–46.7%) | **74.0%** (CI: 59.7–85.4%) |
-| Probe-guarded (Credence) | **100%** (CI: 92.9–100%) | **0%** (CI: 0–7.1%) |
-| Baseline (full context) | 100% | 0% |
+| Condition | EQLR (qualifier strip rate) | Qualifier survival | Probe block rate |
+|---|---|---|---|
+| Naive Haiku compression | **46.0%** (CI: 31.8–60.7%) | 54.0% (CI: 39.3–68.2%) | — |
+| LLMLingua-simulated compression | **68.0%** (CI: 53.6–80.0%) | 32.0% (CI: 19.5–46.7%) | — |
+| Probe-guarded (Credence) | **0%** (CI: 0–7.1%) | **100%** (CI: 92.9–100%) | **100%** |
+| Baseline (full context, no compression) | 0% | 100% | — |
 
-**Haiku strips uncertainty qualifiers in 46.0% of compressions.** LLMLingua-simulated compression (sentence-length importance scoring — short qualifier sentences are systematically dropped) strips qualifiers in 68.0% of compressions — 12× worse FCR than Haiku (74.0% vs 6.0%).
+**Haiku strips uncertainty qualifiers in 46.0% of compressions** (23/50). Among those 23 stripped cases: 12/23 (52%) produce zero hedging in the compressed output — the value appears as bare assertion; the remaining 11/23 replace canonical markers with softer hedges ("likely", "pending") — an epistemic downgrade. Both mislead downstream systems.
 
-When qualifiers are stripped, the downstream Opus model answers with false certainty in 6.0% of Haiku cases and 74.0% of LLMLingua cases. Scorer note: these numbers reflect scorer v2 (198-marker vocabulary + markdown stripping). An adversarial audit of scorer v1 (184 markers) found that 14/17 responses scored as "certain" under naive Haiku actually contained hedging language outside the vocabulary ("pending verification", "not definitively", "unresolved", etc.). LLMLingua FCR is robust to this correction (76.0%→74.0%) because aggressive compression removes the epistemic signal entirely, leaving no qualifier for the model to echo. FCR = false certainty rate = fraction where the model states the uncertain value *without any qualifier*.
+**LLMLingua-simulated compression strips qualifiers in 68.0% of compressions** (34/50). The failure mode differs from Haiku: the token-importance simulation drops entire user sentences (short qualifier statements score low), so the downstream model receives no epistemic context at all — it says "I don't have information about X" rather than asserting X confidently. This is epistemic erasure rather than epistemic downgrade.
 
-The faithfulness probe detects all 50 uncertain segments (100% precision/recall on the detection task, 100% block rate) and eliminates false certainty entirely (0% FCR, CI: 0–7.1%). **Null hypothesis tested:** Adding "preserve uncertainty qualifiers" to the Haiku system prompt achieves 90.0% qualifier survival (n=30 scenarios) — deterministic at 100% only with the probe. Instructions are probabilistic; enforcement is not.
+The faithfulness probe detects all 50 uncertain user segments (100% precision/recall on the detection task) and prevents EQL entirely (EQLR=0%, CI: 0–7.1%).
 
-**Mechanistic note**: When the probe blocks compression (all 50 scenarios in this study), Haiku is not called — the downstream model receives the original uncompressed conversation text, identical in epistemic content to the baseline condition. The probe-guarded FCR=0% is therefore the expected result of the probe doing its job: preventing the lossy compression event. The meaningful contrast is against "Haiku + prompt instruction" (EQLR 10%), which *does* call Haiku with an instruction to preserve qualifiers but achieves only 90% qualifier survival — because model compliance is probabilistic. The probe's approach (abort compression entirely) is deterministic.
+**Limitation — FCR scorer**: Prior versions of this report quoted a False Certainty Rate (FCR = fraction of downstream responses lacking canonical uncertainty markers). Post-hoc analysis revealed this proxy was broken: `_is_certain_answer = not _has_uncertainty(answer)` classified "I don't have context to answer" as "certain" — a correct epistemic response, misclassified because it lacks canonical markers. Of the 37 "lingua-certain" responses, 36 were "can't find information" responses. The FCR numbers (6.0% Haiku, 74.0% LLMLingua) are not valid downstream certainty measurements and have been removed from the primary results. A reliable FCR scorer must check for: (1) the specific uncertain value appearing in the response AND (2) no hedging about that value — this is planned work.
+
+**Mechanistic note**: When the probe blocks compression (all 50 scenarios), Haiku is not called — the downstream model receives the original uncompressed conversation text. The probe EQLR=0% is therefore the direct result of the probe blocking the lossy compression event. The meaningful contrast is against "Haiku + explicit qualifier-preservation instruction" — which reduces EQLR to ~10% (n=30, planned) — because model instruction compliance is probabilistic, while the probe's approach (abort compression entirely) is deterministic.
 
 ### 3.4 Why 46.0%?
 
@@ -149,7 +151,7 @@ One rule drives the entire system:
 
 ### 4.1 Faithfulness Probe
 
-Before any Haiku summarization call, Credence scans the compressible segment for **184 uncertainty markers** drawn from a frozenset we term `_UNCERTAINTY_MARKERS`, scanning **user turns only** (not assistant echoes — a critical design decision that ensures the 100% block rate is earned by user-stated uncertainty, not assistant-generated paraphrase):
+Before any Haiku summarization call, Credence scans the compressible segment for **198 uncertainty markers** drawn from a frozenset we term `_UNCERTAINTY_MARKERS`, scanning **user turns only** (not assistant echoes — a critical design decision that ensures the 100% block rate is earned by user-stated uncertainty, not assistant-generated paraphrase):
 
 ```python
 _UNCERTAINTY_MARKERS = frozenset({
@@ -515,9 +517,11 @@ This is the missing reliability layer in AI infrastructure. Not hallucination de
 
 ## 9. Conclusion
 
-We identify epistemic qualifier loss as a systematic, measurable failure mode in LLM context compression: standard Haiku summarization strips uncertainty markers in 46.0% of compressions, causing downstream false certainty in 6.0% of cases (FCR, n=50, scorer v2, 95% CI [1.3%, 16.5%]). LLMLingua-simulated importance-based compression causes 74.0% FCR — 12× worse. Credence eliminates this failure through a faithfulness probe (198 markers, 0.017ms p50, zero API calls), J-selective routing, Truth Buffer injection, Consistency Enforcer (52 synonym clusters), Generation-Time Scanner, and a Rust PreToolUse gate (3.4ms, 98× faster than Python).
+We identify Epistemic Qualifier Loss (EQL) as a systematic, measurable failure mode in LLM context compression: standard Haiku summarization strips explicit uncertainty markers in 46.0% of compressions (EQLR=46.0%, n=50, 95% CI [31.8%, 60.7%]). Token-importance compression is worse: EQLR=68.0%. Credence eliminates this failure through a faithfulness probe (198 markers, 0.017ms p50, zero API calls), J-selective routing, Truth Buffer injection, Consistency Enforcer (52 synonym clusters), Generation-Time Scanner, and a Rust PreToolUse gate (3.4ms, 98× faster than Python).
 
-The core validation demonstrates 100% qualifier survival (n=50, 95% CI [92.9%, 100%]) and 0% FCR (n=50, 95% CI [0%, 7.1%]) under Credence, versus 6.0%–74.0% FCR under naive/LLMLingua compression. Ghost constraint BothRate: 0.200 (naive window) → 1.000 Credence (n=10 sessions × 3 conditions, ghost_gauntlet). Test coverage: 596 passing tests, 1 skipped (API-dependent). Precision eval: CE FP rate 0%, GTS string FP rate 0%, probe FP rate 0/20.
+The core validation demonstrates 100% qualifier survival under Credence (n=50, 95% CI [92.9%, 100%]) versus 46.0%–68.0% qualifier loss under naive/token-importance compression. Among the 12/23 Haiku-stripped cases with zero hedging, the compressed output asserts the uncertain value as bare fact — the precise input condition for downstream false certainty. Ghost constraint BothRate: 0.200 (naive window) → 1.000 (Credence, n=10 synthetic sessions). Test coverage: 596 passing tests, 1 skipped. Precision eval: CE FP rate 0%, GTS string FP rate 0%, probe FP rate 0/20.
+
+**Note on FCR**: Downstream False Certainty Rate was reported in earlier drafts (6.0% naive Haiku, 74.0% LLMLingua). Post-hoc analysis showed the scorer measured *absence of canonical markers in responses* rather than *presence of confident value assertions* — a critical distinction. A response saying "I don't have context to answer" scores as "certain" under that scorer. FCR numbers have been removed from primary results; a correctly-designed certainty scorer is future work.
 
 Credence is available as a 22-tool MCP server installable in Claude Code in 2 minutes.
 

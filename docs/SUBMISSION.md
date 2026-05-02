@@ -86,7 +86,7 @@ User: "I think rate limit is ~50 req/min — unconfirmed"
 
 EQL is **not** hallucination (the value 50 is correct). EQL is **not** RLHF sycophancy (the model wasn't trained to strip qualifiers — the compression model ate them). EQL is **not** model overconfidence (the model's weights are fine — the pipeline corrupted the epistemic state).
 
-**1. Compression EQL.** To a compression model, *"I think the rate limit is ~50 req/min — unconfirmed"* and *"the rate limit is 50 req/min"* have identical informational cores. Epistemic metadata is collateral loss. EQLR: 26% Haiku, 68% LLMLingua (n=50 fresh reruns).
+**1. Compression EQL.** To a compression model, *"I think the rate limit is ~50 req/min — unconfirmed"* and *"the rate limit is 50 req/min"* have identical informational cores. Epistemic metadata is collateral loss. EQLR: 46% Haiku, 68% token-importance simulation (n=50).
 
 **2. Reasoning EQL.** Even with the qualifier present in full context, Opus 4.7 treats uncertain constraints as resolved facts in ~50% of long-session callbacks. The text was there. Epistemic attention was not. Context presence ≠ epistemic attention.
 
