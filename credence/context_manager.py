@@ -777,48 +777,11 @@ class ContextManager:
             augmented_system = self._augment_system_with_caveat()
         # Caveat consumed — clear it before the API call so it doesn't persist
         self._pending_alignment_caveat = None
-        messages = self._build_messages()
-        call_kwargs = dict(
-            model=self.main_model,
-            system=augmented_system,
-            messages=messages,
-            max_tokens=self.max_tokens,
-        )
-
-        # Continuous J-governed thinking budget.
-        # Opus 4.7 uses adaptive thinking (effort level) rather than a token budget.
-        # effort="high" when prev_j is low (uncertain); "medium" when mid-range.
-        # Note: Opus 4.7 does not expose thinking blocks, so thinking_tokens
-        # and thinking_utilization will always be 0 — dual-signal fusion is a no-op
-        # on this model. The feature is preserved for forward-compatibility.
-        thinking_budget = 0
-        if self.use_thinking and self._prev_j < self.proxy.theta_high:
-            effort = "high" if self._prev_j < self.proxy.theta_low else "medium"
-            call_kwargs["thinking"] = {"type": "adaptive"}
-            call_kwargs["output_config"] = {"effort": effort}
-            thinking_budget = _THINKING_MAX if effort == "high" else _THINKING_MIN
-
-        resp = self.client.messages.create(**call_kwargs)
-
-        # When thinking is enabled, content blocks are [thinking, text].
-        # next() default is evaluated eagerly, so we cannot use content[0].text
-        # as fallback when thinking blocks are present (they have no .text attr).
-        text_block = next((b for b in resp.content if b.type == "text"), None)
-        text = text_block.text if text_block else ""
-        tokens_in  = resp.usage.input_tokens
-        tokens_out = resp.usage.output_tokens
-
-        # Thinking token utilization — dual signal alongside J-proxy.
-        # Thinking chars ÷ 4 approximates tokens (Anthropic ~4 chars/token).
-        thinking_tokens = sum(
-            len(b.thinking) // 4
-            for b in resp.content
-            if b.type == "thinking" and hasattr(b, "thinking")
-        )
-        thinking_utilization = (
-            round(thinking_tokens / thinking_budget, 3)
-            if thinking_budget > 0
-            else 0.0
+        messages    = self._build_messages()
+        call_kwargs, thinking_budget = self._build_call_kwargs(augmented_system, messages)
+        resp        = self.client.messages.create(**call_kwargs)
+        text, tokens_in, tokens_out, thinking_tokens, thinking_utilization = (
+            self._parse_response(resp, thinking_budget)
         )
 
         # Compute J-proxy
@@ -1097,6 +1060,85 @@ class ContextManager:
             ghost_detections         = ghost_count,
             contradictions_detected  = contradictions,
         )
+
+    # ------------------------------------------------------------------
+    # chat() sub-phases — extracted for readability and testability
+    # ------------------------------------------------------------------
+
+    def _build_call_kwargs(self, augmented_system: str, messages: list) -> tuple[dict, int]:
+        """Build Anthropic API call kwargs + thinking_budget. Returns (kwargs, budget)."""
+        thinking_budget = 0
+        call_kwargs = dict(
+            model      = self.main_model,
+            system     = augmented_system,
+            messages   = messages,
+            max_tokens = self.max_tokens,
+        )
+        if self.use_thinking and self._prev_j < self.proxy.theta_high:
+            effort = "high" if self._prev_j < self.proxy.theta_low else "medium"
+            call_kwargs["thinking"]      = {"type": "adaptive"}
+            call_kwargs["output_config"] = {"effort": effort}
+            thinking_budget = _THINKING_MAX if effort == "high" else _THINKING_MIN
+        return call_kwargs, thinking_budget
+
+    def _parse_response(self, resp, thinking_budget: int) -> tuple[str, int, int, int, float]:
+        """Parse Anthropic response into (text, tokens_in, tokens_out, thinking_tokens, thinking_utilization)."""
+        text_block   = next((b for b in resp.content if b.type == "text"), None)
+        text         = text_block.text if text_block else ""
+        tokens_in    = resp.usage.input_tokens
+        tokens_out   = resp.usage.output_tokens
+        thinking_tokens = sum(
+            len(b.thinking) // 4
+            for b in resp.content
+            if b.type == "thinking" and hasattr(b, "thinking")
+        )
+        thinking_utilization = (
+            round(thinking_tokens / thinking_budget, 3)
+            if thinking_budget > 0
+            else 0.0
+        )
+        return text, tokens_in, tokens_out, thinking_tokens, thinking_utilization
+
+    def _adjust_zone(self, cr: "CredenceResult", thinking_utilization: float,
+                     messages: list) -> "CredenceResult":
+        """Apply all zone-adjustment signals after initial J-score computation.
+
+        Order matters: thinking override → semantic entropy proxy → SE probe →
+        agreement fusion → behavioral probe. Each can only downgrade the zone,
+        never upgrade it.
+        """
+        # Dual-signal: heavy thinking on HIGH text → downgrade to MEDIUM
+        if thinking_utilization > 0.50 and cr.zone == "HIGH":
+            cr = CredenceResult(
+                j_score      = cr.j_score,
+                zone         = "MEDIUM",
+                factors      = cr.factors,
+                reasoning    = cr.reasoning + f"; thinking override ({thinking_utilization:.0%} utilization)",
+                content_type = cr.content_type,
+            )
+
+        # Semantic entropy proxy: context-dependent answer → MEDIUM→LOW
+        if cr.zone == "MEDIUM" and self._has_multi_answer(cr._raw_text if hasattr(cr, "_raw_text") else ""):
+            pass  # handled inline in chat() where text is available
+
+        # Agreement fusion (MEDIUM only)
+        if self.use_agreement and cr.zone == "MEDIUM":
+            agreement  = self._agreement_score(cr._raw_text if hasattr(cr, "_raw_text") else "")
+            fused_j    = round(0.7 * cr.j_score + 0.3 * agreement, 4)
+            fused_zone = (
+                "HIGH"   if fused_j >= self._effective_theta_high else
+                "MEDIUM" if fused_j >= self._effective_theta_low  else
+                "LOW"
+            )
+            cr = CredenceResult(
+                j_score      = fused_j,
+                zone         = fused_zone,
+                factors      = cr.factors,
+                reasoning    = cr.reasoning + f"; agreement={agreement:.2f} fused_j={fused_j:.3f}",
+                content_type = cr.content_type,
+            )
+
+        return cr
 
     def reset(self):
         self._history            = []

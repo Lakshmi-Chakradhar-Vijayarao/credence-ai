@@ -43,7 +43,8 @@ dev = [
 ]
 
 [project.scripts]
-credence-server = "credence.mcp_server:main"
+credence-server       = "credence.mcp_server:main"
+credence-install-gate = "credence.install_gate:main"
 
 [project.urls]
 Homepage = "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai"

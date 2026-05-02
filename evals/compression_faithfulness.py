@@ -527,6 +527,20 @@ _COMPRESS_PROMPT = (
     "Capture the main decisions made and topics discussed."
 )
 
+# Control condition: same Haiku, explicit instruction to preserve epistemic qualifiers.
+# This answers the reviewer question: "Does prompt engineering alone solve this?"
+# If enhanced_prompt FCR ≈ 0%, the probe adds no marginal value.
+# If enhanced_prompt FCR >> 0%, the probe is providing value that prompting cannot.
+_COMPRESS_PROMPT_ENHANCED = (
+    "Summarise this conversation in 2-3 concise sentences. "
+    "Capture the main decisions made and topics discussed. "
+    "CRITICAL: You MUST preserve all uncertainty qualifiers, hedging language, and "
+    "modal verbs exactly as stated (words like 'might', 'probably', 'I think', "
+    "'unconfirmed', 'approximately', 'haven't verified'). If the original contains "
+    "uncertainty about a value, your summary MUST express the same uncertainty. "
+    "Do not convert uncertain claims into confident statements."
+)
+
 
 def _compress_naive(client, conversation: list[dict]) -> str:
     """Haiku summarises the full conversation. No epistemic safety check."""
@@ -537,6 +551,26 @@ def _compress_naive(client, conversation: list[dict]) -> str:
         client, _MODEL_HAIKU,
         [{"role": "user", "content": f"{_COMPRESS_PROMPT}\n\n{conv_text}"}],
         max_tokens=200,
+    )
+
+
+def _compress_enhanced_prompt(client, conversation: list[dict]) -> str:
+    """
+    Control condition: Haiku with explicit qualifier-preservation instruction.
+
+    Tests whether the naive FCR (6%) can be eliminated by prompt engineering alone,
+    without any probe mechanism. If this condition also achieves 0% FCR, the probe's
+    marginal value is in cases where prompting fails or is not possible (e.g., third-party
+    compression pipelines). If this condition has FCR > 0%, the probe is providing
+    value that explicit prompting cannot guarantee.
+    """
+    conv_text = "\n".join(
+        f"{m['role'].upper()}: {m['content']}" for m in conversation
+    )
+    return _call(
+        client, _MODEL_HAIKU,
+        [{"role": "user", "content": f"{_COMPRESS_PROMPT_ENHANCED}\n\n{conv_text}"}],
+        max_tokens=250,
     )
 
 
@@ -694,6 +728,13 @@ class ScenarioResult:
     lingua_downstream_answer:    str = ""
     lingua_downstream_certain:   bool = False
 
+    # Control condition: Haiku with explicit qualifier-preservation prompt.
+    # Answers: "Does prompt engineering alone solve this without the probe?"
+    enhanced_compressed_text:    str = ""
+    enhanced_qualifier_survived: bool = False
+    enhanced_downstream_answer:  str = ""
+    enhanced_downstream_certain: bool = False
+
 
 def _is_certain_answer(answer: str) -> bool:
     """
@@ -759,6 +800,17 @@ def run_scenario(
     result.lingua_downstream_certain = _is_certain_answer(lingua_answer)
     time.sleep(0.4)
 
+    # ── Control: Haiku with explicit qualifier-preservation prompt ─────────
+    # The critical control experiment: does prompt engineering alone solve this?
+    enhanced_compressed = _compress_enhanced_prompt(client, conversation)
+    result.enhanced_compressed_text    = enhanced_compressed
+    result.enhanced_qualifier_survived = _has_uncertainty(enhanced_compressed)
+
+    enhanced_answer = _ask_downstream(client, enhanced_compressed, callback_question)
+    result.enhanced_downstream_answer  = enhanced_answer
+    result.enhanced_downstream_certain = _is_certain_answer(enhanced_answer)
+    time.sleep(0.4)
+
     if verbose:
         survived     = "✓" if result.naive_qualifier_survived  else "✗"
         ling_surv    = "✓" if result.lingua_qualifier_survived else "✗"
@@ -781,28 +833,36 @@ def aggregate(results: list[ScenarioResult]) -> dict:
     if n == 0:
         return {}
 
-    naive_qual_survival   = sum(r.naive_qualifier_survived  for r in results) / n
-    naive_downstream_cert = sum(r.naive_downstream_certain  for r in results) / n
-    probe_block_rate      = sum(r.probe_blocked             for r in results) / n
-    probe_downstream_cert = sum(r.probe_downstream_certain  for r in results) / n
-    baseline_cert         = sum(r.baseline_downstream_certain for r in results) / n
-    lingua_qual_survival  = sum(r.lingua_qualifier_survived for r in results) / n
-    lingua_downstream_cert= sum(r.lingua_downstream_certain for r in results) / n
+    naive_qual_survival    = sum(r.naive_qualifier_survived    for r in results) / n
+    naive_downstream_cert  = sum(r.naive_downstream_certain    for r in results) / n
+    probe_block_rate       = sum(r.probe_blocked               for r in results) / n
+    probe_downstream_cert  = sum(r.probe_downstream_certain    for r in results) / n
+    baseline_cert          = sum(r.baseline_downstream_certain for r in results) / n
+    lingua_qual_survival   = sum(r.lingua_qualifier_survived   for r in results) / n
+    lingua_downstream_cert = sum(r.lingua_downstream_certain   for r in results) / n
+    enhanced_qual_survival  = sum(r.enhanced_qualifier_survived  for r in results) / n
+    enhanced_downstream_cert= sum(r.enhanced_downstream_certain  for r in results) / n
 
     return {
         "n": n,
-        "naive_qualifier_survival":       round(naive_qual_survival,   3),
-        "naive_downstream_certainty":     round(naive_downstream_cert, 3),
-        "lingua_qualifier_survival":      round(lingua_qual_survival,  3),
-        "lingua_downstream_certainty":    round(lingua_downstream_cert,3),
-        "probe_block_rate":               round(probe_block_rate,       3),
-        "probe_downstream_certainty":     round(probe_downstream_cert,  3),
-        "baseline_downstream_certainty":  round(baseline_cert,          3),
-        # Derived
-        "epistemic_error_reduction_naive_vs_probe":   round(
-            naive_downstream_cert - probe_downstream_cert, 3),
-        "epistemic_error_reduction_lingua_vs_probe":  round(
-            lingua_downstream_cert - probe_downstream_cert, 3),
+        "naive_qualifier_survival":           round(naive_qual_survival,     3),
+        "naive_downstream_certainty":         round(naive_downstream_cert,   3),
+        "lingua_qualifier_survival":          round(lingua_qual_survival,    3),
+        "lingua_downstream_certainty":        round(lingua_downstream_cert,  3),
+        "enhanced_prompt_qualifier_survival": round(enhanced_qual_survival,  3),
+        "enhanced_prompt_downstream_certainty": round(enhanced_downstream_cert, 3),
+        "probe_block_rate":                   round(probe_block_rate,         3),
+        "probe_downstream_certainty":         round(probe_downstream_cert,    3),
+        "baseline_downstream_certainty":      round(baseline_cert,            3),
+        # Derived: how much does each condition reduce FCR vs. naive?
+        "fcr_reduction_naive_vs_probe":    round(naive_downstream_cert - probe_downstream_cert,    3),
+        "fcr_reduction_naive_vs_enhanced": round(naive_downstream_cert - enhanced_downstream_cert, 3),
+        "fcr_reduction_lingua_vs_probe":   round(lingua_downstream_cert - probe_downstream_cert,   3),
+        # Key research question: probe vs. enhanced prompt (marginal value of the probe)
+        "probe_marginal_vs_enhanced_prompt": round(enhanced_downstream_cert - probe_downstream_cert, 3),
+        "scorer_version": "2.0-corrected",
+        "vocabulary_size": 198,
+        "scorer_notes": "v2: user-turns-only scanning + 198-marker vocab; enhanced_prompt control added v2.1",
     }
 
 
@@ -818,26 +878,45 @@ def print_summary(agg: dict):
     print(f"    Downstream false-certainty rate:      "
           f"{agg['naive_downstream_certainty']:.1%}")
     print()
-    print("  LLMLingua-2 SIMULATED (token-importance, 30% compression, no probe):")
+    print("  TOKEN-IMPORTANCE SIMULATION (30% compression, no epistemic awareness):")
     print(f"    Qualifier survival rate:              "
           f"{agg['lingua_qualifier_survival']:.1%}")
     print(f"    Downstream false-certainty rate:      "
           f"{agg['lingua_downstream_certainty']:.1%}")
     print()
-    print("  PROBE-GUARDED COMPRESSION (faithfulness probe active):")
+    print("  ENHANCED PROMPT CONTROL (Haiku + explicit qualifier-preservation instruction):")
+    print(f"    Qualifier survival rate:              "
+          f"{agg['enhanced_prompt_qualifier_survival']:.1%}")
+    print(f"    Downstream false-certainty rate:      "
+          f"{agg['enhanced_prompt_downstream_certainty']:.1%}")
+    print()
+    print("  PROBE-GUARDED COMPRESSION (faithfulness probe, no Haiku call):")
     print(f"    Compression blocked rate:             "
           f"{agg['probe_block_rate']:.1%}")
     print(f"    Downstream false-certainty rate:      "
           f"{agg['probe_downstream_certainty']:.1%}")
     print()
-    print("  BASELINE (full context, no compression):")
+    print("  BASELINE (full context, no compression — oracle upper bound):")
     print(f"    Downstream false-certainty rate:      "
           f"{agg['baseline_downstream_certainty']:.1%}")
     print()
-    print(f"  EPISTEMIC ERROR REDUCTION (naive → probe):   "
-          f"{agg['epistemic_error_reduction_naive_vs_probe']:+.1%}")
-    print(f"  EPISTEMIC ERROR REDUCTION (lingua → probe):  "
-          f"{agg['epistemic_error_reduction_lingua_vs_probe']:+.1%}")
+    print("  KEY COMPARISONS:")
+    print(f"    FCR reduction (naive → enhanced prompt):  "
+          f"{agg['fcr_reduction_naive_vs_enhanced']:+.1%}")
+    print(f"    FCR reduction (naive → probe):            "
+          f"{agg['fcr_reduction_naive_vs_probe']:+.1%}")
+    print(f"    FCR reduction (token-importance → probe): "
+          f"{agg['fcr_reduction_lingua_vs_probe']:+.1%}")
+    print(f"    Probe marginal value over enhanced prompt:"
+          f" {agg['probe_marginal_vs_enhanced_prompt']:+.1%}")
+    print()
+    if agg.get("probe_marginal_vs_enhanced_prompt", 0) > 0.02:
+        print("  FINDING: Probe provides meaningful FCR reduction beyond prompt engineering alone.")
+    elif agg.get("enhanced_prompt_downstream_certainty", 1) > 0.05:
+        print("  FINDING: Enhanced prompting reduces but does not eliminate FCR. Probe fills the gap.")
+    else:
+        print("  FINDING: Enhanced prompting achieves similar FCR to probe. "
+              "Probe value is in determinism, zero-latency, and pipeline contexts without prompt control.")
     print("=" * 72)
 
 

@@ -16,6 +16,7 @@ Zero new pip dependencies — uses sqlite3 and hashlib from stdlib.
 Thread-safe for single-writer use (check_same_thread=False + SQLite row locking).
 """
 
+import os
 import re
 import sqlite3
 import hashlib
@@ -123,6 +124,14 @@ class CredenceRegistry:
             self._conn.execute(
                 "ALTER TABLE constraints ADD COLUMN constraint_type TEXT NOT NULL DEFAULT 'observation'"
             )
+        if "verified_by" not in cols:
+            self._conn.execute(
+                "ALTER TABLE constraints ADD COLUMN verified_by TEXT"
+            )
+        if "verified_evidence" not in cols:
+            self._conn.execute(
+                "ALTER TABLE constraints ADD COLUMN verified_evidence TEXT"
+            )
         # Create project index if it doesn't exist
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_project ON constraints(project_id)"
@@ -207,6 +216,15 @@ class CredenceRegistry:
         """
         j_score = max(0.0, min(1.0, float(j_score)))
         zone = zone if zone in ("HIGH", "MEDIUM", "LOW") else "MEDIUM"
+        # Per-session cap: prevents unbounded DB growth from spammy agents.
+        # INSERT OR IGNORE means idempotent re-registers don't count toward the cap.
+        _MAX_PER_SESSION = int(os.environ.get("CREDENCE_MAX_CONSTRAINTS", "500"))
+        existing_count = self._conn.execute(
+            "SELECT COUNT(*) FROM constraints WHERE session_id=?", (session_id,)
+        ).fetchone()[0]
+        if existing_count >= _MAX_PER_SESSION:
+            # Return a stable sentinel ID so callers don't blow up; just don't insert.
+            return self._content_id(content)
         cid = self._content_id(content)
         now = self._now()
         expires_at = None
@@ -316,21 +334,38 @@ class CredenceRegistry:
         constraints = self.get_all(session_id)
         return {c["constraint_id"]: self.get_trajectory(c["constraint_id"]) for c in constraints}
 
-    def verify(self, constraint_id: str, verified_value: str) -> dict:
+    def verify(
+        self,
+        constraint_id:  str,
+        verified_value: str,
+        evidence:       str = "",
+        source:         str = "user",
+    ) -> dict:
         """
         Mark a constraint as verified with its confirmed factual value.
 
+        Args:
+            constraint_id:  Constraint to verify.
+            verified_value: The confirmed value (e.g. "100 req/min per vendor docs section 4.2").
+            evidence:       What was checked to confirm this ("checked Stripe dashboard",
+                            "confirmed in production logs", "vendor email 2026-05-02").
+                            Empty string is accepted but strongly discouraged — an empty
+                            evidence field means the audit trail shows no basis for the claim.
+            source:         Who or what did the verification ("user", "api_response",
+                            "agent:<name>", "test", "external_doc").
+
         Returns the updated row dict, or {"error": ...} if not found.
         """
-        now    = self._now()
+        now = self._now()
         with self._write_lock:
             cursor = self._conn.execute(
                 """
                 UPDATE constraints
-                   SET verified=1, verified_value=?, validation_status='verified', updated_at=?
+                   SET verified=1, verified_value=?, validation_status='verified',
+                       verified_by=?, verified_evidence=?, updated_at=?
                  WHERE constraint_id=?
                 """,
-                (verified_value, now, constraint_id),
+                (verified_value, source, evidence[:500] if evidence else "", now, constraint_id),
             )
             self._conn.commit()
         if cursor.rowcount == 0:
@@ -338,7 +373,8 @@ class CredenceRegistry:
         row = self._conn.execute(
             "SELECT * FROM constraints WHERE constraint_id=?", (constraint_id,)
         ).fetchone()
-        self.log_event(constraint_id, "verify", notes=f"confirmed_value={verified_value[:100]}")
+        audit_note = f"source={source} | evidence={evidence[:200] if evidence else '(none provided)'} | confirmed_value={verified_value[:100]}"
+        self.log_event(constraint_id, "verify", notes=audit_note)
         return self._row_to_dict(row)
 
     def mark_contradiction(self, constraint_id: str, reason: str) -> None:

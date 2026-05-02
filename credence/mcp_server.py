@@ -498,29 +498,41 @@ if _FASTMCP_AVAILABLE:
         constraint_id:  str,
         verified_value: str,
         session_id:     str,
+        evidence:       str = "",
+        source:         str = "user",
     ) -> dict:
         """
         Mark a registered constraint as verified with its confirmed value.
 
         After verification the constraint is excluded from Truth Buffer injection
-        and Consistency Enforcer enforcement. The registry keeps an audit trail.
+        and Consistency Enforcer enforcement. An audit trail is recorded — who
+        verified, on what basis, and what the confirmed value is.
 
         Args:
             constraint_id:  ID from credence_register.
-            verified_value: The confirmed value (e.g. "86400 seconds per vendor docs").
+            verified_value: The confirmed value (e.g. "100 req/min per Stripe docs §4.2").
             session_id:     Session identifier.
+            evidence:       What was checked to confirm this. Strongly recommended.
+                            Examples: "checked Stripe dashboard 2026-05-02",
+                            "confirmed in production logs", "vendor email attached".
+                            An empty evidence string is accepted but leaves no audit basis.
+            source:         Who verified this. Use "user" for human confirmation,
+                            "api_response" for automated checks, "agent:<name>" for
+                            downstream agents, "external_doc" for documentation.
 
         Returns:
-            Updated constraint dict with verified=True.
+            Updated constraint dict with verified=True and audit fields.
         """
         registry = _get_registry()
-        result   = registry.verify(constraint_id, verified_value)
+        result   = registry.verify(constraint_id, verified_value, evidence=evidence, source=source)
         if "error" in result:
             return result
-        result["status"]  = "verified"
-        result["message"] = (
-            f"Verified. Confirmed value: '{verified_value}'. "
-            "Safe to implement code that depends on this value."
+        result["status"]   = "verified"
+        result["audit"]    = {"source": source, "evidence": evidence or "(none provided)"}
+        result["message"]  = (
+            f"Verified by '{source}'. Confirmed value: '{verified_value}'. "
+            + (f"Evidence: {evidence}. " if evidence else "Warning: no evidence recorded. ")
+            + "Safe to implement code that depends on this value."
         )
         return result
 
