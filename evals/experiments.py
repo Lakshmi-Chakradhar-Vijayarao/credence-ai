@@ -166,7 +166,7 @@ def run_e1() -> list[E1Result]:
 
         if condition == "credence":
             mgr = ContextManager(
-                api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+                client=_client(),
                 theta_high=0.70, theta_low=0.45,
                 system_prompt=SYSTEM, max_tokens=400,
             )
@@ -289,7 +289,7 @@ ValueError: Found unknown categories ['premium_v3', 'beta_access'] in column 0 d
         recall_scores = []
 
         mgr = ContextManager(
-            api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+            client=_client(),
             theta_high=0.70, theta_low=0.45,
             system_prompt=SYSTEM, max_tokens=400,
         )
@@ -404,7 +404,7 @@ def run_e3() -> list[E3Result]:
         cognitive_friction_count = 0
 
         mgr = ContextManager(
-            api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+            client=_client(),
             theta_high=0.70, theta_low=0.45,
             system_prompt="You are a precise technical assistant. Answer concisely and confidently.",
             max_tokens=512,
@@ -559,7 +559,7 @@ def run_e4() -> list[E4Result]:
 
         if condition == "credence":
             mgr = ContextManager(
-                api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+                client=_client(),
                 theta_high=0.70, theta_low=0.45,
                 system_prompt=SYSTEM, max_tokens=256,
             )
@@ -771,7 +771,7 @@ def run_e5() -> list[E5Result]:
             # continuous: new behavior — use_thinking=True with continuous governor
             for item in _E5_QUESTIONS:
                 mgr = ContextManager(
-                    api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+                    client=_client(),
                     theta_high=0.70, theta_low=0.45,
                     system_prompt=SYSTEM, max_tokens=512,
                     use_thinking=True,
@@ -927,7 +927,7 @@ def run_e6() -> list[E6Result]:
 
         if condition == "credence":
             mgr = ContextManager(
-                api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+                client=_client(),
                 theta_high=0.70, theta_low=0.45,
                 system_prompt=SYSTEM, max_tokens=400,
             )
@@ -1108,7 +1108,7 @@ def run_e7() -> list[E7Result]:
 
         if condition == "credence":
             mgr = ContextManager(
-                api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+                client=_client(),
                 theta_high=0.70, theta_low=0.45,
                 system_prompt=SYSTEM, max_tokens=400,
             )
@@ -1261,7 +1261,7 @@ def run_e8() -> list[E8Result]:
 
         if condition == "credence":
             mgr = ContextManager(
-                api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
+                client=_client(),
                 theta_high=0.70, theta_low=0.45,
                 system_prompt=SYSTEM, max_tokens=400,
             )

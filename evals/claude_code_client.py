@@ -48,10 +48,21 @@ class _TextBlock:
 
 
 @dataclass
+class _Usage:
+    input_tokens: int = 0
+    output_tokens: int = 0
+
+
+@dataclass
 class _Message:
     content: list[_TextBlock]
     stop_reason: str = "end_turn"
     model: str = "claude-code"
+    usage: _Usage = None
+
+    def __post_init__(self):
+        if self.usage is None:
+            self.usage = _Usage()
 
 
 class _Messages:

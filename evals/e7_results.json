@@ -1,0 +1,64 @@
+{
+  "E7": [
+    {
+      "condition": "baseline",
+      "hop_logs": [
+        {
+          "hop_id": 1,
+          "recalled": true
+        },
+        {
+          "hop_id": 2,
+          "recalled": true
+        },
+        {
+          "hop_id": 3,
+          "recalled": true
+        }
+      ],
+      "chain_complete": true,
+      "hops_recalled": 3,
+      "tokens_used": 0
+    },
+    {
+      "condition": "naive_window",
+      "hop_logs": [
+        {
+          "hop_id": 1,
+          "recalled": true
+        },
+        {
+          "hop_id": 2,
+          "recalled": true
+        },
+        {
+          "hop_id": 3,
+          "recalled": true
+        }
+      ],
+      "chain_complete": true,
+      "hops_recalled": 3,
+      "tokens_used": 0
+    },
+    {
+      "condition": "credence",
+      "hop_logs": [
+        {
+          "hop_id": 1,
+          "recalled": true
+        },
+        {
+          "hop_id": 2,
+          "recalled": true
+        },
+        {
+          "hop_id": 3,
+          "recalled": true
+        }
+      ],
+      "chain_complete": true,
+      "hops_recalled": 3,
+      "tokens_used": 0
+    }
+  ]
+}

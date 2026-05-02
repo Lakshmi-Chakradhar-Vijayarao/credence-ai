@@ -636,13 +636,16 @@ class ContextManager:
         use_ghost_detector:   bool = False,   # enable Opus-powered ghost constraint detection
         use_behavioral:       bool = False,   # enable Tier 2 behavioral consistency probe
         use_manifest:         bool = False,   # use structured EpistemicManifest instead of Truth Buffer
+        client = None,                         # pre-built client (e.g. ClaudeCodeClient); overrides api_key
     ):
         if not _ANTHROPIC_AVAILABLE:
             raise ImportError("pip install anthropic")
 
-        self.client = Anthropic(
-            api_key=api_key or os.environ.get("ANTHROPIC_API_KEY", "")
-        )
+        if client is not None:
+            self.client = client
+        else:
+            resolved_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+            self.client = Anthropic(api_key=resolved_key)
         self.proxy         = CredenceProxy(theta_high, theta_low)
         self.system_prompt = system_prompt or (
             "You are a helpful, precise assistant. "
