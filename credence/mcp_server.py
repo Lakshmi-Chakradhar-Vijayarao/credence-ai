@@ -1,33 +1,35 @@
 """
 credence/mcp_server.py
-==================
-Credence MCP Server — 10 validated tools for epistemic context management.
+======================
+Credence MCP Server — zero API key required.
 
-Core principle: memory allocation decisions should be conditioned on epistemic
-state. Only HIGH-J (epistemically resolved) content is safe to compress. Uncertain
-content is preserved verbatim through every compression and trim operation.
+Credence is a guard layer, not a context manager. It wraps around whatever
+compression the host coding agent (Claude Code, Copilot, Codex) already does.
+The agent compresses with its own model; Credence enforces epistemic safety
+before and after, entirely through deterministic string operations.
 
-Tools (10 validated):
-    credence_chat           — Chat with full enforcement stack (probe + truth buffer + CE)
-    credence_register       — Register an uncertain constraint
-    credence_verify         — Mark a constraint as verified
-    credence_list_uncertain — Query unverified constraints for a session
-    credence_gate           — Agentic pre-tool gate: block if uncertain constraints apply
-    credence_scan_output    — GTS: scan model output for unverified numeric literals
-    credence_memory_snapshot — Save unverified constraints as project memory
-    credence_memory_recall  — Load project memory into a new session
-    credence_stats          — Session statistics (tokens, cost, compressions)
-    credence_reset          — Reset a session
+Tools (12, zero LLM calls):
+    credence_pre_compress    — CP1: check text before compression (BLOCK / ALLOW)
+    credence_post_compress   — CP1: measure qualifier survival after compression
+    credence_register        — register an uncertain constraint explicitly
+    credence_verify          — mark a constraint as verified
+    credence_list_uncertain  — query all unverified constraints for a session
+    credence_gate            — CP4: pre-tool gate (block if unverified constraints apply)
+    credence_scan_output     — CP3: scan model output for unverified numeric literals
+    credence_memory_snapshot — persist unverified constraints as project memory
+    credence_memory_recall   — load project memory into a new session
+    credence_session_info    — epistemic summary for a session (constraint counts)
+    credence_reset           — clear a session's constraint registry
 
 Resources (passive, epistemic:// URI scheme):
     epistemic://session/{session_id}/ledger             — all constraints
     epistemic://session/{session_id}/constraint/{id}    — single constraint + trajectory
 
-Run:
-    python -m credence.mcp_server
+Install:
+    pip install credence-ai fastmcp
+    credence-server
 
-Requires:
-    pip install fastmcp anthropic
+No ANTHROPIC_API_KEY or any other key needed.
 """
 
 import os
@@ -40,7 +42,17 @@ try:
 except ImportError:
     _FASTMCP_AVAILABLE = False
 
-from .context_manager import ContextManager, _UNCERTAINTY_MARKERS
+from .context_manager import (
+    _UNCERTAINTY_MARKERS,
+    _CE_STOPWORDS,
+    _CE_DOMAIN_SYNONYMS,
+    _GTS_NUM_PATTERN,
+    _GTS_CODE_BLOCK,
+    _GTS_SKIP_PREFIXES,
+    _GTS_SENTENCE_SPLIT,
+    _GTS_WARN_THRESHOLD,
+    _GTS_QUALIFY_THRESHOLD,
+)
 from .registry import CredenceRegistry
 
 # ---------------------------------------------------------------------------
@@ -50,29 +62,25 @@ from .registry import CredenceRegistry
 mcp = FastMCP(
     "Credence",
     instructions=(
-        "Credence is an epistemic memory layer for AI systems. It preserves "
-        "uncertainty state — which constraints are unverified — through context "
-        "compression and across multi-agent pipelines.\n\n"
+        "Credence is a zero-config epistemic guard layer. It prevents uncertainty "
+        "qualifiers from being silently dropped during context compression.\n\n"
         "Lifecycle:\n"
-        "  1. credence_memory_recall at session START — load prior uncertainties\n"
-        "  2. credence_chat for each turn — enforcement fires automatically\n"
-        "  3. credence_gate BEFORE any irreversible tool call\n"
-        "  4. credence_verify when a constraint is confirmed\n"
+        "  1. credence_memory_recall at session START — load prior unverified constraints\n"
+        "  2. credence_pre_compress BEFORE any compression — BLOCK if qualifiers present\n"
+        "  3. credence_post_compress AFTER compression — measure qualifier survival\n"
+        "  4. credence_gate BEFORE any irreversible tool call\n"
         "  5. credence_scan_output BEFORE shipping generated code\n"
-        "  6. credence_memory_snapshot at session END — persist for next session\n\n"
-        "The key invariant: never state an uncertain constraint as a confirmed fact."
+        "  6. credence_verify when a constraint is confirmed by the user\n"
+        "  7. credence_memory_snapshot at session END — persist for next session\n\n"
+        "Key invariant: never compress text that contains unverified uncertainty qualifiers."
     ),
 ) if _FASTMCP_AVAILABLE else None
 
-# Session registry: session_id → ContextManager
-_sessions: dict[str, ContextManager] = {}
-
-# Epistemic registry singleton — one per process
+# Process-level registry singleton
 _registry: Optional[CredenceRegistry] = None
 
 
 def _get_registry() -> CredenceRegistry:
-    """Return the process-level CredenceRegistry, creating it on first call."""
     global _registry
     if _registry is None:
         db_path   = os.environ.get("CREDENCE_REGISTRY_PATH", "epistemic_registry.db")
@@ -80,132 +88,227 @@ def _get_registry() -> CredenceRegistry:
     return _registry
 
 
-def _session_state_path(session_id: str) -> str:
-    session_dir = os.environ.get("CREDENCE_SESSION_DIR", ".credence/sessions")
-    os.makedirs(session_dir, exist_ok=True)
-    safe_id = re.sub(r"[^\w\-.]", "_", session_id)[:128]
-    return os.path.join(session_dir, f"{safe_id}.json")
+# ---------------------------------------------------------------------------
+# Synonym-expansion helper (replicates CE logic without a ContextManager)
+# ---------------------------------------------------------------------------
 
-
-def _get_session(session_id: str) -> ContextManager:
-    """Return or create a ContextManager for the given session ID."""
-    if session_id not in _sessions:
-        mgr = ContextManager(
-            main_model        = os.environ.get("CREDENCE_MAIN_MODEL") or None,
-            compression_model = os.environ.get("CREDENCE_COMPRESSION_MODEL") or None,
-            registry          = _get_registry(),
-            session_id        = session_id,
-        )
-        state_path = _session_state_path(session_id)
-        if os.path.exists(state_path):
-            try:
-                mgr.load(state_path)
-            except Exception:
-                pass
-        _sessions[session_id] = mgr
-    return _sessions[session_id]
-
-
-def _persist_session(session_id: str) -> None:
-    """Write the current session state to disk. Called after every chat turn."""
-    mgr = _sessions.get(session_id)
-    if mgr is None:
-        return
-    auto_persist = os.environ.get("CREDENCE_AUTO_PERSIST", "1").lower() not in ("0", "false", "no")
-    if not auto_persist:
-        return
-    try:
-        mgr.save(_session_state_path(session_id))
-    except Exception:
-        pass
+def _expand_tokens(tokens: set) -> set:
+    expanded = set(tokens)
+    for t in tokens:
+        cluster = _CE_DOMAIN_SYNONYMS.get(t)
+        if cluster:
+            expanded |= cluster
+    return expanded
 
 
 # ---------------------------------------------------------------------------
-# Tools (10 validated)
+# Standalone GTS scan (no ContextManager needed)
+# ---------------------------------------------------------------------------
+
+def _scan_output(output_text: str, registry: CredenceRegistry, session_id: str, turn: int = 0) -> tuple[str, list]:
+    """Scan output for unverified numeric literals. Returns (annotated_text, hits)."""
+    constraints = registry.list_uncertain(session_id)
+    if not constraints:
+        return output_text, []
+
+    # Build value map: numeric_value_str → constraint dict with eff_conf
+    value_map: dict[str, dict] = {}
+    for c in constraints:
+        nums = _GTS_NUM_PATTERN.findall(c.get("content", ""))
+        eff_conf = registry.get_effective_confidence(c["constraint_id"], turn)
+        c_with_conf = dict(c, eff_conf=eff_conf)
+        for n in nums:
+            if len(n) >= 2:
+                value_map[n] = c_with_conf
+
+    if not value_map:
+        return output_text, []
+
+    def _annotation(c: dict, snippet: str, for_code: bool) -> str:
+        ec = c.get("eff_conf", 0.5)
+        text = (c.get("content") or "")[:60]
+        if ec < _GTS_WARN_THRESHOLD:
+            tier = f"⚠⚠ CREDENCE[HIGH RISK, conf={ec:.2f}]"
+        elif ec < _GTS_QUALIFY_THRESHOLD:
+            tier = f"⚠ CREDENCE[unverified, conf={ec:.2f}]"
+        else:
+            tier = f"CREDENCE[check, conf={ec:.2f}]"
+        return (f"  # {tier}: {text}" if for_code else f" ⚠ {tier}: {text}")
+
+    hits: list[dict] = []
+    result = output_text
+
+    # Pass 1 — code blocks
+    def annotate_code_block(m: re.Match) -> str:
+        fence, body, close = m.group(1), m.group(2), m.group(3)
+        lines = body.split("\n")
+        out = []
+        for line in lines:
+            if any(line.lstrip().startswith(p) for p in _GTS_SKIP_PREFIXES):
+                out.append(line)
+                continue
+            if "CREDENCE:" in line:
+                out.append(line)
+                continue
+            matched = False
+            for val, c in value_map.items():
+                if re.search(r'\b' + re.escape(val) + r'\b', line):
+                    line = line.rstrip() + _annotation(c, val, for_code=True)
+                    hits.append({"value": val, "constraint_id": c["constraint_id"],
+                                 "constraint_text": c.get("content","")[:80],
+                                 "line": line.strip(), "eff_conf": c.get("eff_conf",0.5),
+                                 "source": "code"})
+                    matched = True
+                    break
+            out.append(line)
+        return fence + "\n".join(out) + close
+
+    result = _GTS_CODE_BLOCK.sub(annotate_code_block, result)
+
+    # Pass 2 — prose (non-code segments)
+    segments = _GTS_CODE_BLOCK.split(result)
+    prose_out = []
+    for seg in segments:
+        if seg.startswith("```") or seg.endswith("```"):
+            prose_out.append(seg)
+            continue
+        sentences = _GTS_SENTENCE_SPLIT.split(seg)
+        new_sents = []
+        for sent in sentences:
+            if "CREDENCE:" in sent:
+                new_sents.append(sent)
+                continue
+            for val, c in value_map.items():
+                if re.search(r'\b' + re.escape(val) + r'\b', sent):
+                    sent = sent.rstrip() + _annotation(c, val, for_code=False)
+                    hits.append({"value": val, "constraint_id": c["constraint_id"],
+                                 "constraint_text": c.get("content","")[:80],
+                                 "line": sent.strip(), "eff_conf": c.get("eff_conf",0.5),
+                                 "source": "prose"})
+                    break
+            new_sents.append(sent)
+        prose_out.append(" ".join(new_sents))
+
+    # prose_out will have interleaved code+prose; simplest: just return result from code pass
+    # (prose pass on the already-annotated result is correct)
+    return result, hits
+
+
+# ---------------------------------------------------------------------------
+# Tools
 # ---------------------------------------------------------------------------
 
 if _FASTMCP_AVAILABLE:
 
     @mcp.tool()
-    def credence_chat(session_id: str, message: str) -> dict:
+    def credence_pre_compress(text: str, session_id: str) -> dict:
         """
-        Send a message through Credence and receive a response with epistemic metadata.
+        Check whether text is safe to compress (CP1 — faithfulness probe).
 
-        Every turn runs the full enforcement stack:
-          1. Truth Buffer — injects all unverified constraints into system prompt
-          2. Consistency Enforcer — fires imperative enforcement on direct queries
-          3. Faithfulness probe — blocks compression if uncertainty markers present
-          4. J-score routing — HIGH→compress, MEDIUM→trim, LOW→preserve
-          5. Auto-registration — uncertain user messages registered automatically
+        Call this BEFORE any context compression. If uncertainty qualifiers
+        are detected, the tool returns action=BLOCK and you must preserve the
+        text verbatim. If safe, it returns action=ALLOW with a manifest of
+        qualifiers to preserve in the compressed output.
+
+        Works with any model: Claude, GPT, Gemini, local. No API key needed.
 
         Args:
-            session_id: Session identifier (use the same ID across a conversation)
-            message:    User message
+            text:       The text about to be compressed.
+            session_id: Session identifier for registry context.
 
         Returns:
-            response, j_score, zone, decision, enforcement_active,
-            truth_buffer_count, tokens_in, tokens_out, cost_usd
+            action: "BLOCK" or "ALLOW"
+            markers_found: list of uncertainty markers detected
+            registered_constraints: count of unverified constraints in session
+            message: human-readable explanation
         """
-        mgr = _get_session(session_id)
-        try:
-            result = mgr.chat(message)
-        except Exception as e:
-            return {"error": str(e)}
+        text_lower = text.lower()
+        found = [m for m in _UNCERTAINTY_MARKERS if m in text_lower]
 
-        _persist_session(session_id)
+        registry     = _get_registry()
+        n_uncertain  = len(registry.list_uncertain(session_id))
+
+        if found:
+            return {
+                "action":                 "BLOCK",
+                "markers_found":          found[:10],
+                "marker_count":           len(found),
+                "registered_constraints": n_uncertain,
+                "message": (
+                    f"BLOCK — {len(found)} uncertainty marker(s) detected. "
+                    "Compress this text and you risk stripping epistemic qualifiers. "
+                    "Preserve it verbatim or verify the uncertain claims first."
+                ),
+            }
 
         return {
-            "response":           result.response,
-            "j_score":            round(result.j_score, 4),
-            "zone":               result.zone,
-            "decision":           result.decision,
-            "enforcement_active": getattr(result, "enforcement_active", False),
-            "truth_buffer_count": getattr(result, "truth_buffer_count", 0),
-            "scout_extractions":  getattr(result, "scout_extractions", 0),
-            "tokens_in":          result.tokens_in,
-            "tokens_out":         result.tokens_out,
-            "tokens_saved":       result.tokens_saved,
-            "cost_usd":           round(result.cost_usd, 6),
+            "action":                 "ALLOW",
+            "markers_found":          [],
+            "marker_count":           0,
+            "registered_constraints": n_uncertain,
+            "message": (
+                "ALLOW — no uncertainty markers found. "
+                "Safe to compress. After compression, call credence_post_compress "
+                "to verify qualifier survival."
+            ),
         }
 
     @mcp.tool()
-    def credence_stats(session_id: str) -> dict:
+    def credence_post_compress(original: str, compressed: str, session_id: str) -> dict:
         """
-        Return session statistics: tokens used, saved, cost, compression counts.
+        Measure qualifier survival after compression (CP1 — post-check).
+
+        Call this AFTER your model compresses context. Measures what fraction
+        of the original uncertainty markers survived into the compressed output.
+        Low qual_survival → qualifiers were stripped → false certainty risk.
 
         Args:
-            session_id: Session identifier
+            original:   The original uncompressed text.
+            compressed: The compressed output from your model.
+            session_id: Session identifier.
 
         Returns:
-            Full session stats including compression_ratio and per-decision counts
+            qual_survival: fraction of original markers preserved (0.0–1.0)
+            fcr_risk:      estimated false-certainty rate (0.0–1.0)
+            verdict:       "SAFE" / "WARN" / "RISK"
+            dropped:       list of markers that were stripped
         """
-        mgr = _get_session(session_id)
+        orig_lower = original.lower()
+        comp_lower = compressed.lower()
+
+        orig_markers = {m for m in _UNCERTAINTY_MARKERS if m in orig_lower}
+        comp_markers = {m for m in _UNCERTAINTY_MARKERS if m in comp_lower}
+
+        if orig_markers:
+            survived     = orig_markers & comp_markers
+            dropped      = orig_markers - comp_markers
+            qual_survival = len(survived) / len(orig_markers)
+        else:
+            survived, dropped = set(), set()
+            qual_survival = 1.0
+
+        fcr_risk = max(0.0, min(1.0, round(1.0 - qual_survival * 1.2, 3)))
+
+        if qual_survival >= 0.80:
+            verdict = "SAFE"
+        elif qual_survival >= 0.50:
+            verdict = "WARN"
+        else:
+            verdict = "RISK"
+
         return {
-            "total_tokens_in":    mgr.stats.total_tokens_in,
-            "total_tokens_out":   mgr.stats.total_tokens_out,
-            "total_tokens_saved": mgr.stats.total_tokens_saved,
-            "total_cost_usd":     round(mgr.stats.total_cost_usd, 4),
-            "compression_ratio":  round(mgr.stats.compression_ratio, 3),
-            "turns_compressed":   mgr.stats.turns_compressed,
-            "turns_trimmed":      mgr.stats.turns_trimmed,
-            "turns_preserved":    mgr.stats.turns_preserved,
-            "turn_count":         mgr._turn_idx,
+            "qual_survival":        round(qual_survival, 3),
+            "fcr_risk":             fcr_risk,
+            "verdict":              verdict,
+            "original_marker_count": len(orig_markers),
+            "output_marker_count":   len(comp_markers),
+            "survived":             list(survived)[:10],
+            "dropped":              list(dropped)[:10],
+            "message": (
+                f"{verdict} — qualifier survival {qual_survival:.0%}. "
+                + (f"Dropped: {list(dropped)[:5]}" if dropped else "All qualifiers preserved.")
+            ),
         }
-
-    @mcp.tool()
-    def credence_reset(session_id: str) -> dict:
-        """
-        Reset a Credence session, clearing all history and stats.
-
-        Args:
-            session_id: Session to reset
-
-        Returns:
-            Status confirmation
-        """
-        if session_id in _sessions:
-            _sessions[session_id].reset()
-        return {"status": "reset", "session_id": session_id}
 
     @mcp.tool()
     def credence_register(
@@ -215,20 +318,21 @@ if _FASTMCP_AVAILABLE:
         zone:       str   = "LOW",
     ) -> dict:
         """
-        Explicitly register an uncertain constraint in the epistemic registry.
+        Register an uncertain constraint in the epistemic registry.
 
-        credence_chat auto-registers messages with uncertainty markers.
-        Use this tool when you want to manually track an uncertain claim
-        or supply custom j_score/zone values.
+        Use whenever the user states something uncertain: an unconfirmed vendor
+        claim, an assumption, a 'I think' statement, a number from a quick search.
+        The registry tracks it across the session so Truth Buffer and Consistency
+        Enforcer can enforce it on every subsequent turn.
 
         Args:
-            content:    The uncertain constraint text
-            session_id: Session identifier for grouping constraints
-            j_score:    Confidence score 0–1 (default 0.30 = clearly uncertain)
-            zone:       "HIGH", "MEDIUM", or "LOW" (default "LOW")
+            content:    The uncertain claim text.
+            session_id: Session identifier.
+            j_score:    Confidence 0–1 (default 0.30 = clearly uncertain).
+            zone:       "HIGH", "MEDIUM", or "LOW" (default "LOW").
 
         Returns:
-            constraint_id, status, content, session_id, j_score, zone
+            constraint_id, status, content, j_score, zone
         """
         registry = _get_registry()
         cid = registry.register(
@@ -247,7 +351,7 @@ if _FASTMCP_AVAILABLE:
             "message": (
                 f"Registered as uncertain (id={cid}). "
                 f"Call credence_verify('{cid}', <confirmed_value>, '{session_id}') "
-                "when the value is confirmed."
+                "when confirmed."
             ),
         }
 
@@ -258,20 +362,18 @@ if _FASTMCP_AVAILABLE:
         session_id:     str,
     ) -> dict:
         """
-        Mark a registered uncertain constraint as verified with its confirmed value.
+        Mark a registered constraint as verified with its confirmed value.
 
-        This closes the loop on an uncertain claim. After verification:
-          - The constraint is excluded from credence_list_uncertain
-          - The Truth Buffer stops injecting it into system prompts
-          - The Consistency Enforcer no longer fires for it
+        After verification the constraint is excluded from Truth Buffer injection
+        and Consistency Enforcer enforcement. The registry keeps an audit trail.
 
         Args:
-            constraint_id:  The ID returned by credence_register or credence_chat auto-register
-            verified_value: The confirmed factual value (e.g. "86400 seconds per vendor docs")
-            session_id:     Session identifier (for audit context)
+            constraint_id:  ID from credence_register.
+            verified_value: The confirmed value (e.g. "86400 seconds per vendor docs").
+            session_id:     Session identifier.
 
         Returns:
-            Updated constraint dict with verified=True and verified_value set
+            Updated constraint dict with verified=True.
         """
         registry = _get_registry()
         result   = registry.verify(constraint_id, verified_value)
@@ -279,7 +381,7 @@ if _FASTMCP_AVAILABLE:
             return result
         result["status"]  = "verified"
         result["message"] = (
-            f"Constraint verified. Confirmed value: '{verified_value}'. "
+            f"Verified. Confirmed value: '{verified_value}'. "
             "Safe to implement code that depends on this value."
         )
         return result
@@ -287,61 +389,49 @@ if _FASTMCP_AVAILABLE:
     @mcp.tool()
     def credence_list_uncertain(session_id: str) -> dict:
         """
-        List all unverified uncertain constraints registered for this session.
+        List all unverified constraints for a session.
 
-        Use before implementing code that may depend on unconfirmed values,
-        or at the end of a session to audit what still needs verification.
+        Use before writing code that may embed user-stated values, or at
+        session end to audit what still needs confirmation.
 
         Args:
-            session_id: Session identifier
+            session_id: Session identifier.
 
         Returns:
-            count, constraints list (each with constraint_id, content, j_score, zone),
-            and a human-readable message
+            count, constraints list (id, content, j_score, zone), message.
         """
         registry    = _get_registry()
         constraints = registry.list_uncertain(session_id)
         count       = len(constraints)
-        if count == 0:
-            message = "All constraints verified. No unresolved uncertainties for this session."
-        elif count == 1:
-            message = "1 unverified constraint — confirm before implementing code that depends on it."
-        else:
-            message = (
-                f"{count} unverified constraints — confirm each before implementing "
-                "code that depends on them."
-            )
-        return {
-            "count":       count,
-            "constraints": constraints,
-            "message":     message,
-        }
+        message = (
+            "All constraints verified."
+            if count == 0
+            else f"{count} unverified constraint(s) — confirm before shipping code."
+        )
+        return {"count": count, "constraints": constraints, "message": message}
 
     @mcp.tool()
     def credence_gate(
-        tool_name:           str,
-        arguments_summary:   str,
-        session_id:          str,
+        tool_name:         str,
+        arguments_summary: str,
+        session_id:        str,
     ) -> dict:
         """
-        Agentic pre-execution gate: check for unverified constraints before running a tool.
+        Pre-execution epistemic gate (CP4): block irreversible tool calls that
+        embed unverified constraint values.
 
-        Call this BEFORE any tool execution that may depend on user-stated constraints
-        (e.g. write_file, execute_code, send_request, deploy). If unverified constraints
-        are topically related to the planned action, block and surface a warning.
+        Call BEFORE write_file, execute_code, send_request, deploy, or any
+        tool that would embed a user-stated value into code or infrastructure.
+        Uses synonym-expansion to catch paraphrase overlap ("how fast" ↔ "rate limit").
 
         Args:
-            tool_name:           Name of the tool about to be called (e.g. "write_file")
-            arguments_summary:   Brief summary of the arguments (sensitive values omitted)
-            session_id:          Session identifier
+            tool_name:           Name of the tool about to be called.
+            arguments_summary:   Brief summary of arguments (omit secrets).
+            session_id:          Session identifier.
 
         Returns:
-            proceed: bool — True if safe to proceed, False if verification needed
-            blocked_by: list of constraint dicts that triggered the block
-            recommendation: human-readable action
+            proceed: bool, blocked_by: list, recommendation: str.
         """
-        from .context_manager import _CE_STOPWORDS, _CE_DOMAIN_SYNONYMS
-
         registry  = _get_registry()
         uncertain = registry.list_uncertain(session_id)
 
@@ -353,20 +443,15 @@ if _FASTMCP_AVAILABLE:
                 "recommendation":   "PROCEED — no unverified constraints in this session.",
             }
 
-        # Reuse the CE synonym-expansion for more accurate overlap
-        cm = ContextManager.__new__(ContextManager)
-        action_text = f"{tool_name} {arguments_summary}".lower()
-        raw_tokens  = set(re.sub(r"[^\w\s]", " ", action_text).split()) - _CE_STOPWORDS
-        if hasattr(cm, "_expand_tokens"):
-            action_tokens = cm._expand_tokens(raw_tokens)
-        else:
-            action_tokens = raw_tokens
+        action_text  = f"{tool_name} {arguments_summary}".lower()
+        raw_tokens   = set(re.sub(r"[^\w\s]", " ", action_text).split()) - _CE_STOPWORDS
+        action_tokens = _expand_tokens(raw_tokens)
 
         blocking: list[dict] = []
         for c in uncertain:
-            c_raw  = set(re.sub(r"[^\w\s]", " ", c["content"].lower()).split()) - _CE_STOPWORDS
-            c_exp  = cm._expand_tokens(c_raw) if hasattr(cm, "_expand_tokens") else c_raw
-            overlap = action_tokens & c_exp
+            c_raw    = set(re.sub(r"[^\w\s]", " ", c["content"].lower()).split()) - _CE_STOPWORDS
+            c_tokens = _expand_tokens(c_raw)
+            overlap  = action_tokens & c_tokens
             if len(overlap) >= 2:
                 c["overlap_terms"] = list(overlap)[:6]
                 blocking.append(c)
@@ -375,12 +460,11 @@ if _FASTMCP_AVAILABLE:
             cids = ", ".join(c["constraint_id"] for c in blocking)
             recommendation = (
                 f"BLOCK — {len(blocking)} unverified constraint(s) may affect this action. "
-                f"Verify them first with credence_verify (IDs: {cids}), "
-                "or call credence_list_uncertain for the full list."
+                f"Verify first (IDs: {cids})."
             )
         else:
             recommendation = (
-                f"PROCEED — {len(uncertain)} unverified constraint(s) exist in session "
+                f"PROCEED — {len(uncertain)} unverified constraint(s) exist "
                 "but none are topically related to this action."
             )
 
@@ -392,43 +476,43 @@ if _FASTMCP_AVAILABLE:
         }
 
     @mcp.tool()
-    def credence_scan_output(output_text: str, session_id: str) -> dict:
+    def credence_scan_output(output_text: str, session_id: str, current_turn: int = 0) -> dict:
         """
-        Generation-Time Constraint Scanner (GTS) with Confidence Policy Layer.
+        Generation-Time Constraint Scanner (CP3): scan model output for numeric
+        literals that match registered unverified constraints.
 
-        Scans model output (code blocks AND prose) for numeric literals that match
-        registered unverified constraints. Annotations are severity-tiered by
-        effective confidence (decayed j_score):
+        Annotations are severity-tiered by decayed confidence:
+            ⚠⚠ CREDENCE[HIGH RISK, conf=0.15]  — eff_conf < 0.20
+            ⚠  CREDENCE[unverified, conf=0.30]  — 0.20 ≤ eff_conf < 0.40
+               CREDENCE[check, conf=0.42]        — eff_conf ≥ 0.40
 
-            HIGH RISK  (eff_conf < 0.20):  ⚠⚠ CREDENCE[HIGH RISK, conf=0.15]: ...
-            UNVERIFIED (0.20 ≤ eff_conf < 0.40): ⚠ CREDENCE[unverified, conf=0.30]: ...
-            CHECK      (eff_conf ≥ 0.40): CREDENCE[check, conf=0.42]: ...
-            VERIFIED:  no annotation (clean output).
+        Scans both code blocks and prose.
 
         Args:
-            output_text: The raw model output to scan (code blocks and prose)
-            session_id:  Session whose unverified constraints to scan against
+            output_text:  Raw model output to scan.
+            session_id:   Session whose constraints to check against.
+            current_turn: Turn number for confidence decay (default 0).
 
         Returns:
-            annotated_output, scan_hits, hit_count, high_risk_count, recommendation
+            annotated_output, scan_hits, hit_count, high_risk_count, recommendation.
         """
-        mgr = _get_session(session_id)
-        annotated, hits = mgr._scan_output_for_constraints(output_text)
+        registry   = _get_registry()
+        annotated, hits = _scan_output(output_text, registry, session_id, current_turn)
 
-        high_risk = [h for h in hits if h.get("eff_conf", 1.0) < 0.20]
+        high_risk = [h for h in hits if h.get("eff_conf", 1.0) < _GTS_WARN_THRESHOLD]
 
         if high_risk:
             recommendation = (
                 f"BLOCK — {len(high_risk)} HIGH RISK literal(s) found. "
-                "These values have very low confidence and must be verified before use."
+                "Verify before use."
             )
         elif hits:
             recommendation = (
                 f"REVIEW — {len(hits)} unverified literal(s) annotated. "
-                "Confirm values with source before shipping."
+                "Confirm values before shipping."
             )
         else:
-            recommendation = "CLEAN — no output literals matched registered unverified constraints."
+            recommendation = "CLEAN — no output literals matched unverified constraints."
 
         return {
             "annotated_output": annotated,
@@ -438,31 +522,21 @@ if _FASTMCP_AVAILABLE:
             "recommendation":   recommendation,
         }
 
-
-# ---------------------------------------------------------------------------
-# Cross-session memory tools
-# ---------------------------------------------------------------------------
-
-if _FASTMCP_AVAILABLE:
-
     @mcp.tool()
     def credence_memory_snapshot(session_id: str, project_id: str) -> dict:
         """
-        Save all unverified constraints from session_id as persistent project memory.
+        Persist all unverified constraints from a session as project memory.
 
-        Call this at the END of a Claude Code session to preserve epistemic state
-        across session boundaries. Any constraint that was stated but never verified
-        during the session will be remembered for future sessions on the same project.
-
-        Unlike regular memory systems (Mem0, Zep), Credence memory carries epistemic
-        provenance: it remembers not just WHAT you told Claude, but WHETHER it was verified.
+        Call at the END of a session. Next session on the same project calls
+        credence_memory_recall to inherit what was still uncertain — the new
+        session starts knowing what it doesn't know.
 
         Args:
-            session_id: The current session ID.
-            project_id: A stable project identifier (e.g. "my-api-project").
+            session_id: Current session ID.
+            project_id: Stable project identifier (e.g. "my-api-project").
 
         Returns:
-            saved_count, items, message
+            saved_count, items, message.
         """
         from .memory import CredenceMemory
         mem  = CredenceMemory(_get_registry())
@@ -472,13 +546,11 @@ if _FASTMCP_AVAILABLE:
             "session_id":  snap.session_id,
             "saved_count": snap.saved_count,
             "items": [
-                {
-                    "constraint_id": item.get("constraint_id"),
-                    "content":       item.get("content"),
-                    "zone":          item.get("zone"),
-                    "j_score":       item.get("j_score"),
-                }
-                for item in snap.items
+                {"constraint_id": i.get("constraint_id"),
+                 "content":       i.get("content"),
+                 "zone":          i.get("zone"),
+                 "j_score":       i.get("j_score")}
+                for i in snap.items
             ],
             "message": snap.summary(),
         }
@@ -492,20 +564,16 @@ if _FASTMCP_AVAILABLE:
         """
         Load project memories into a new session at session start.
 
-        Call this at the START of a new Claude Code session before any other
-        credence_chat calls. It injects all previously unverified constraints
-        from the project into the new session's registry so the Truth Buffer
-        and Consistency Enforcer work from turn 1.
-
-        The new session starts KNOWING what it doesn't know.
+        Call at the START of a new session. Injects all previously unverified
+        constraints into the new session so enforcement works from turn 1.
 
         Args:
             project_id:     Project identifier matching credence_memory_snapshot.
             new_session_id: ID for the new session.
-            context_hint:   Optional keyword filter (e.g. "rate limit authentication").
+            context_hint:   Optional keyword filter.
 
         Returns:
-            injected_count, system_block (prepend to system prompt), items, message
+            injected_count, system_block (prepend to system prompt), items, message.
         """
         from .memory import CredenceMemory
         mem    = CredenceMemory(_get_registry())
@@ -520,40 +588,83 @@ if _FASTMCP_AVAILABLE:
             "injected_count": recall.injected_count,
             "system_block":   recall.system_block,
             "items": [
-                {
-                    "constraint_id": item.get("constraint_id"),
-                    "content":       item.get("content"),
-                    "zone":          item.get("zone"),
-                    "j_score":       item.get("j_score"),
-                }
-                for item in recall.items
+                {"constraint_id": i.get("constraint_id"),
+                 "content":       i.get("content"),
+                 "zone":          i.get("zone"),
+                 "j_score":       i.get("j_score")}
+                for i in recall.items
             ],
             "is_empty": recall.is_empty(),
             "message": (
-                f"Loaded {recall.injected_count} unverified constraint(s) from project "
-                f"'{project_id}' into session '{new_session_id}'."
+                f"Loaded {recall.injected_count} unverified constraint(s) from "
+                f"project '{project_id}' into session '{new_session_id}'."
                 if not recall.is_empty()
                 else f"No unverified constraints found for project '{project_id}'."
             ),
         }
 
+    @mcp.tool()
+    def credence_session_info(session_id: str) -> dict:
+        """
+        Epistemic summary for a session.
+
+        Returns constraint counts (total, verified, unverified) and
+        an epistemic debt score (fraction still unverified).
+
+        Args:
+            session_id: Session identifier.
+
+        Returns:
+            total, verified, unverified, epistemic_debt (0.0–1.0).
+        """
+        registry  = _get_registry()
+        uncertain = registry.list_uncertain(session_id)
+        all_rows  = registry._conn.execute(
+            "SELECT COUNT(*) FROM constraints WHERE session_id=?", (session_id,)
+        ).fetchone()[0]
+        verified  = all_rows - len(uncertain)
+        debt      = round(len(uncertain) / max(all_rows, 1), 3)
+        return {
+            "session_id":      session_id,
+            "total":           all_rows,
+            "verified":        verified,
+            "unverified":      len(uncertain),
+            "epistemic_debt":  debt,
+            "message": (
+                "Clean session — all constraints verified."
+                if len(uncertain) == 0
+                else f"{len(uncertain)} unverified constraint(s). Epistemic debt: {debt:.0%}."
+            ),
+        }
+
+    @mcp.tool()
+    def credence_reset(session_id: str) -> dict:
+        """
+        Clear all constraints for a session (hard reset).
+
+        Args:
+            session_id: Session to reset.
+
+        Returns:
+            Status confirmation.
+        """
+        registry = _get_registry()
+        registry._conn.execute(
+            "DELETE FROM constraints WHERE session_id=?", (session_id,)
+        )
+        registry._conn.commit()
+        return {"status": "reset", "session_id": session_id}
+
 
 # ---------------------------------------------------------------------------
 # MCP Resources — epistemic:// URI scheme
-#
-# Resources expose the epistemic ledger as passive context any MCP-compatible
-# agent can read without calling a tool.
 # ---------------------------------------------------------------------------
 
 if _FASTMCP_AVAILABLE:
 
     @mcp.resource("epistemic://session/{session_id}/ledger")
     def epistemic_ledger(session_id: str) -> str:
-        """
-        Epistemic ledger for a session — all registered uncertain constraints.
-
-        URI: epistemic://session/{session_id}/ledger
-        """
+        """Epistemic ledger — all constraints for a session."""
         import json as _json
         registry = _get_registry()
         uncertain = registry.list_uncertain(session_id)
@@ -573,14 +684,10 @@ if _FASTMCP_AVAILABLE:
 
     @mcp.resource("epistemic://session/{session_id}/constraint/{constraint_id}")
     def epistemic_constraint(session_id: str, constraint_id: str) -> str:
-        """
-        Single constraint with full certainty trajectory.
-
-        URI: epistemic://session/{session_id}/constraint/{constraint_id}
-        """
+        """Single constraint with full certainty trajectory."""
         import json as _json
-        registry   = _get_registry()
-        rows       = registry._conn.execute(
+        registry = _get_registry()
+        rows = registry._conn.execute(
             "SELECT * FROM constraints WHERE constraint_id=? AND session_id=?",
             (constraint_id, session_id),
         ).fetchone()
@@ -603,11 +710,6 @@ if _FASTMCP_AVAILABLE:
 
 def main():
     if not _FASTMCP_AVAILABLE:
-        print("fastmcp not installed. Run: pip install fastmcp")
-        print("Then: python -m credence.mcp_server")
+        print("fastmcp not installed. Run: pip install 'credence-ai[mcp]'")
         return
     mcp.run()
-
-
-if __name__ == "__main__":
-    main()

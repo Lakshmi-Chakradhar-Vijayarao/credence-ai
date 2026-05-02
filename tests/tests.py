@@ -1482,16 +1482,9 @@ try:
           len(missed50) == 0,
           f"missed: {missed50}")
 
-    # S23-I: ghost_detector_ablation pure sessions have zero canonical markers
-    from evals.ghost_detector_ablation import PURE_SESSIONS, _has_any_canonical_marker
-    contaminated = []
-    for s in PURE_SESSIONS:
-        for gt in s.ghost_turns:
-            if _has_any_canonical_marker(gt["content"]):
-                contaminated.append(f"{s.session_id}/{gt['ghost_id']}")
-    check("S23-I all pure ghost sessions have zero canonical markers",
-          len(contaminated) == 0,
-          f"contaminated: {contaminated}")
+    # S23-I: skip — ghost_detector_ablation archived (API-dependent, needs Opus)
+    skip("S23-I all pure ghost sessions have zero canonical markers",
+         "ghost_detector_ablation archived — API-dependent")
 
 except Exception as e:
     import traceback
@@ -1852,13 +1845,13 @@ try:
     check("S26-K EpistemicHandoff exported from credence package",
           hasattr(credence, "EpistemicHandoff"))
 
-    # --- S26-L: agent_propagation_eval dry-run imports cleanly ---
+    # --- S26-L: cross_session_test imports cleanly (agent_propagation_eval archived) ---
     import importlib
     try:
-        importlib.import_module("evals.agent_propagation_eval")
-        check("S26-L evals.agent_propagation_eval imports cleanly", True)
+        importlib.import_module("evals.cross_session_test")
+        check("S26-L evals.cross_session_test imports cleanly", True)
     except ImportError as ie:
-        check("S26-L evals.agent_propagation_eval imports cleanly", False, str(ie))
+        check("S26-L evals.cross_session_test imports cleanly", False, str(ie))
 
 except Exception as e:
     import traceback

@@ -1,13 +1,18 @@
 """
-Credence — Epistemic Enforcement Layer for Claude.
+Credence — Epistemic Enforcement Layer.
 
-Four checkpoints ensure uncertain constraints keep their epistemic status
-through every downstream operation:
+Prevents uncertainty qualifiers from being silently dropped during LLM
+context compression. Works with any model, any coding agent, zero API key.
 
-  CP1  Compression      → faithfulness probe blocks Haiku before it strips qualifiers
-  CP2  Generation       → Truth Buffer + Consistency Enforcer inject and enforce
-  CP3  Code output      → Generation-Time Scanner annotates uncertain literals
-  CP4  Tool execution   → credence-gate (Rust) / hooks.py (Python) blocks writes
+Four deterministic checkpoints:
+  CP1  Pre-compression  → faithfulness probe blocks compression when qualifiers present
+  CP2  Pre-generation   → Truth Buffer + Consistency Enforcer enforce uncertainty in output
+  CP3  Post-generation  → Generation-Time Scanner annotates unverified literals in code
+  CP4  Pre-tool-use     → credence-gate (Rust) / hooks.py (Python) blocks irreversible writes
+
+Model-agnostic API (no API key required):
+    wrap(compress_fn, context)   — wrap any compress function with CP1 guard
+    credence-server              — MCP server with 12 tools, zero LLM calls
 
 Cross-session: CredenceMemory persists j_score + zone + verified=False so new
 sessions inherit which facts were unverified, not just what the values were.
@@ -15,13 +20,6 @@ sessions inherit which facts were unverified, not just what the values were.
 Multi-agent: PipelineMonitor intercepts Agent A → Agent B handoffs, extracts
 uncertain claims from Agent A's output, registers them, and injects an
 epistemic handoff block into Agent B's system prompt.
-
-Public API:
-    ContextManager   — main enforcement engine
-    CredenceRegistry — constraint store (SQLite)
-    CredenceProxy    — J-score computation (offline)
-    PipelineMonitor  — multi-agent middleware
-    CredenceMemory   — cross-session epistemic persistence
 """
 
 from .confidence_proxy import CredenceProxy, CredenceResult
@@ -29,36 +27,26 @@ from .context_manager import ContextManager, TurnResult, SessionStats
 from .registry import CredenceRegistry
 from .memory import CredenceMemory
 from .pipeline_monitor import PipelineMonitor, EpistemicHandoff
-from .agent import CredenceAgent
-from .envelope import CredenceEnvelope
-from .semantic_entropy import SemanticEntropyProbe, SemanticEntropyResult
-from .behavioral_signal import BehavioralConsistencyProbe, BehavioralResult, fuse_scores
 from .enforce import enforce, CredenceViolation
 from .wrap import wrap, WrapResult, measure_fcr
-from .claim_extractor import ClaimExtractor, StructuredClaim
 from .epistemic_manifest import EpistemicManifest
 
-__version__ = "2.1.0"
+__version__ = "3.0.0"
 __all__ = [
-    # Core enforcement
-    "ContextManager", "TurnResult", "SessionStats",
-    "CredenceRegistry",
-    "CredenceProxy", "CredenceResult",
-    # Cross-session
-    "CredenceMemory",
-    # Multi-agent
-    "PipelineMonitor", "EpistemicHandoff",
-    # Extras
-    "CredenceAgent",
-    "CredenceEnvelope",
-    "SemanticEntropyProbe", "SemanticEntropyResult",
-    # Tier 2 signal
-    "BehavioralConsistencyProbe", "BehavioralResult", "fuse_scores",
-    # Decorator API
-    "enforce", "CredenceViolation",
-    # Model-agnostic wrapper (Gate 1)
+    # Model-agnostic wrapper — primary open-source API
     "wrap", "WrapResult", "measure_fcr",
-    # Structured epistemic representation (v2.1)
-    "ClaimExtractor", "StructuredClaim",
+    # Constraint registry (SQLite, zero deps)
+    "CredenceRegistry",
+    # Cross-session epistemic memory
+    "CredenceMemory",
+    # Multi-agent middleware
+    "PipelineMonitor", "EpistemicHandoff",
+    # Decorator-based enforcement
+    "enforce", "CredenceViolation",
+    # Structured epistemic representation
     "EpistemicManifest",
+    # J-score (offline, no API calls)
+    "CredenceProxy", "CredenceResult",
+    # Full enforcement engine (requires API key — optional power-user feature)
+    "ContextManager", "TurnResult", "SessionStats",
 ]
