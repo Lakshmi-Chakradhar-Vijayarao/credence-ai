@@ -1,0 +1,3187 @@
+{
+  "results": [
+    {
+      "scenario_id": "S01",
+      "domain": "api",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S01",
+          "domain": "api",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "What rate limit should we code against in our retry logic?",
+          "answer": "Code against **80 req/s** \u2014 that's what you've actually observed triggering throttles. The documented 100 is unverified in your environment; using it as your ceiling risks hitting limits in production.\n\nA safe pattern: target ~70 req/s in steady state, with backoff on 429s that respects the ambiguou",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        },
+        {
+          "scenario_id": "S01",
+          "domain": "api",
+          "condition": "credence",
+          "callback_idx": 1,
+          "question": "What burst window should we assume?",
+          "answer": "Based on what you shared earlier, the docs list 10 seconds but you flagged the documentation as ambiguous. Treat it as unverified \u2014 design conservatively (assume 5\u20138s) until you've confirmed with the vendor or tested empirically.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S01",
+      "domain": "api",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S01",
+          "domain": "api",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "What rate limit should we code against in our retry logic?",
+          "answer": "Code against 80 req/s \u2014 that's what you've actually observed throttling at. The documented 100 req/s appears to be the stated limit, but since you've measured enforcement at 80, use that as your ceiling. With the burst window ambiguous, add jitter and back off conservatively on 429s rather than assu",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        },
+        {
+          "scenario_id": "S01",
+          "domain": "api",
+          "condition": "baseline",
+          "callback_idx": 1,
+          "question": "What burst window should we assume?",
+          "answer": "Based on what you shared earlier, the burst window is listed as 10 seconds but the vendor docs were ambiguous \u2014 so that figure is unverified. Assume 10s as a rough upper bound and test at 60\u201370% utilization to build in headroom.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S01",
+      "domain": "api",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S01",
+          "domain": "api",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "What rate limit should we code against in our retry logic?",
+          "answer": "Code against **80 req/s** \u2014 that's the empirically observed throttle threshold from your testing. The documented 100 req/s appears to be the nominal limit, but since you've seen throttling at 80, treat that as your effective ceiling.\n\nFor retry logic specifically:\n- Set your client-side rate limit t",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        },
+        {
+          "scenario_id": "S01",
+          "domain": "api",
+          "condition": "naive_window",
+          "callback_idx": 1,
+          "question": "What burst window should we assume?",
+          "answer": "Based on what you told me earlier, the vendor docs list **10 seconds** \u2014 but you flagged the documentation as ambiguous. That figure is unverified. I'd recommend designing against a shorter window (e.g., 5\u20137s) until you can confirm with the vendor.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S02",
+      "domain": "api",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S02",
+          "domain": "api",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "How long should we cache auth tokens before refreshing proactively?",
+          "answer": "Based on your logs showing ~3600s expiry (unverified), a common rule of thumb is to refresh at 75\u201380% of the observed TTL \u2014 around **45\u201360 minutes** \u2014 to avoid races near the boundary.\n\nSince that 3600s figure isn't confirmed against the spec, I'd recommend verifying it before hardcoding a refresh i",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S02",
+      "domain": "api",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S02",
+          "domain": "api",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "How long should we cache auth tokens before refreshing proactively?",
+          "answer": "Since you noted the 3600-second expiry is from logs and **not verified against the spec**, this answer depends on that unverified value.\n\nA common heuristic is to refresh at 80\u201390% of the token lifetime. If 3600s holds, that means refreshing around **2880\u20133240 seconds** (48\u201354 minutes). A safe defau",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S02",
+      "domain": "api",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S02",
+          "domain": "api",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "How long should we cache auth tokens before refreshing proactively?",
+          "answer": "Since the 3600-second expiry is unverified from logs only, I'd recommend caching with a conservative buffer: refresh at ~80% of the observed window, so around 2880 seconds (~48 minutes).\n\nHowever, **verify the actual expiry against the spec before hardcoding any value** \u2014 log-observed expiry can ref",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S03",
+      "domain": "api",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S03",
+          "domain": "api",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "What batch size should we use in production?",
+          "answer": "Based on what you shared earlier, the changelog mentioned 50 items, but that limit isn't confirmed in the main docs. For production, I'd recommend starting at **40** to stay comfortably under the unverified 50-item ceiling \u2014 verify the hard limit with the vendor before pushing higher.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S03",
+      "domain": "api",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S03",
+          "domain": "api",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "What batch size should we use in production?",
+          "answer": "Based on what you told me earlier: **the 50-item limit comes from the changelog only \u2014 the main docs don't confirm it.** That's unverified, so don't hard-code 50 in production.\n\nRecommended approach:\n- Use **40** as your production batch size (20% safety margin below the changelog figure)\n- Make it ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S03",
+      "domain": "api",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S03",
+          "domain": "api",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "What batch size should we use in production?",
+          "answer": "Based on what you shared earlier, the changelog mentioned 50 as the limit but the main docs don't confirm it \u2014 so treat 50 as unverified. Use **40 items** in production to give yourself a safety margin until you can verify the hard limit directly with the vendor or by testing at the boundary.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S04",
+      "domain": "api",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S04",
+          "domain": "api",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Can we rely on read:data to access metadata endpoints?",
+          "answer": "No \u2014 you flagged earlier that the OAuth docs are unclear on this and there's no explicit statement confirming the relationship. Relying on an unconfirmed assumption here could cause silent auth failures in production. Request both `read:data` and `read:metadata` explicitly until you get confirmation",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S04",
+      "domain": "api",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S04",
+          "domain": "api",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Can we rely on read:data to access metadata endpoints?",
+          "answer": "No \u2014 you flagged this as uncertain earlier in this conversation: the OAuth docs don't explicitly confirm whether read:data includes read:metadata. Until you get a definitive answer from the provider, request both scopes explicitly. Assuming scope inheritance here is a risk.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S04",
+      "domain": "api",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S04",
+          "domain": "api",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Can we rely on read:data to access metadata endpoints?",
+          "answer": "No. You said earlier that the docs are unclear and you couldn't find an explicit statement confirming it. \"It seems like it should\" is not a guarantee \u2014 scope inheritance behavior varies by provider and is not standardized.\n\nRequest both `read:data` and `read:metadata` explicitly until you get a con",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S05",
+      "domain": "api",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S05",
+          "domain": "api",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "When should we target completing the v2-to-v3 migration?",
+          "answer": "Target Q3 as a working deadline, but treat it as a soft planning anchor \u2014 the deprecation date is still unconfirmed from that webinar. Lock in a hard cutover date only after the vendor publishes an official notice.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S05",
+      "domain": "api",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S05",
+          "domain": "api",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "When should we target completing the v2-to-v3 migration?",
+          "answer": "That date is still unconfirmed \u2014 the only source is an informal webinar mention, with Q3 heard secondhand. Without a published deprecation notice, planning a hard migration target around Q3 carries real risk of either rushing unnecessarily or being caught off guard if the timeline shifts.\n\nRecommend",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S05",
+      "domain": "api",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S05",
+          "domain": "api",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "When should we target completing the v2-to-v3 migration?",
+          "answer": "The Q3 deprecation date is still unconfirmed \u2014 you shouldn't set a hard migration target against an unofficial date. Start migration planning now so you're ready whenever the formal announcement comes, but keep the deadline provisional until the vendor publishes it officially.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S06",
+      "domain": "api",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S06",
+          "domain": "api",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Can we use webhooks for time-sensitive payment confirmations?",
+          "answer": "Given what you said earlier \u2014 the 5s SLA is unverified (sales claim only, not in contract) \u2014 **no, webhooks are not safe for time-sensitive payment confirmations** in your case.\n\nYour contract only guarantees best-effort delivery. For payments specifically:\n\n- **Webhooks can fail silently**: deliver",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S06",
+      "domain": "api",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S06",
+          "domain": "api",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Can we use webhooks for time-sensitive payment confirmations?",
+          "answer": "Given what you mentioned earlier \u2014 the 5s delivery claim is from Sales only, with \"best effort\" in the contract \u2014 **no, you should not rely on webhooks for time-sensitive payment confirmations.**\n\nSpecifically:\n- **No contractual SLA exists** for the 5s figure; delivery could be delayed 30s, 60s, or",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S06",
+      "domain": "api",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S06",
+          "domain": "api",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Can we use webhooks for time-sensitive payment confirmations?",
+          "answer": "**No** \u2014 and this connects directly to what you flagged earlier: the 5-second webhook delivery claim from Sales has no contractual backing. Your contract says \"best effort,\" which means delays of minutes (or failures requiring retry) are within spec.\n\nFor time-sensitive payment confirmations, the ri",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S07",
+      "domain": "api",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S07",
+          "domain": "api",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "How long can we safely pause between page fetches?",
+          "answer": "Based on your earlier observation, cursors seem to expire after ~10 minutes of inactivity \u2014 but that's unverified since the docs are silent on TTL. To be safe, keep pauses under 5 minutes, implement cursor-expired error handling regardless, and treat the actual limit as unknown until you confirm it ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S07",
+      "domain": "api",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S07",
+          "domain": "api",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "How long can we safely pause between page fetches?",
+          "answer": "Based on your earlier observation, cursor TTL appears to be around 10 minutes \u2014 but **this is unverified** (your testing suggests it, the docs say nothing). Staying under 5 minutes between fetches gives you a reasonable safety margin against that observed limit, but treat it as a heuristic until you",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S07",
+      "domain": "api",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S07",
+          "domain": "api",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "How long can we safely pause between page fetches?",
+          "answer": "Based on your earlier observation, cursor expiry appears to be around 10 minutes \u2014 but that TTL is unverified since it's not documented. Stay well under 10 minutes to be safe; 5 minutes or less is a reasonable conservative ceiling until the actual TTL is confirmed with the API provider.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S08",
+      "domain": "api",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S08",
+          "domain": "api",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "How should we schedule automated key rotation?",
+          "answer": "Before scheduling, note that the 90-day rotation period from your security team is still unverified \u2014 any automation built on that interval is a guess until confirmed.\n\nThat said, the general approach:\n\n- **Overlap window**: generate the new key, deploy it, then revoke the old one \u2014 never delete bef",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S08",
+      "domain": "api",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S08",
+          "domain": "api",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "How should we schedule automated key rotation?",
+          "answer": "Before building the scheduler: the 90-day rotation interval your security team mentioned is **unverified** \u2014 it wasn't in the docs you reviewed. Build the scheduler so the interval is a configuration parameter, not a hardcoded constant.\n\nFor the scheduling itself:\n\n- **Cron job / scheduled task**: s",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S08",
+      "domain": "api",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S08",
+          "domain": "api",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "How should we schedule automated key rotation?",
+          "answer": "Before answering: the 90-day rotation period you mentioned earlier is **unverified** \u2014 your security team believes it but it wasn't in the documentation you reviewed. Any automation you build should treat that interval as an assumption, not a confirmed policy.\n\nThat said, a standard approach:\n\n- **S",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S09",
+      "domain": "api",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S09",
+          "domain": "api",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Can we reuse idempotency keys within 24 hours safely?",
+          "answer": "No \u2014 not safely, because the 24h TTL is unverified. That figure comes from a year-old Stack Overflow post; the current docs don't mention TTL at all. The actual TTL could be shorter, longer, or undefined. If you build logic around 24h and the real TTL is different, you risk either key collisions or ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S09",
+      "domain": "api",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S09",
+          "domain": "api",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Can we reuse idempotency keys within 24 hours safely?",
+          "answer": "No \u2014 you flagged this yourself earlier: the 24h TTL comes from a year-old Stack Overflow post and the current docs don't mention it at all. That's unverified vendor behavior.\n\nReusing keys within an assumed 24h window is risky if the actual TTL is shorter (or if the behavior changed). Treat this as ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S09",
+      "domain": "api",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S09",
+          "domain": "api",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Can we reuse idempotency keys within 24 hours safely?",
+          "answer": "No \u2014 you mentioned earlier that the 24-hour TTL comes from a year-old Stack Overflow post, and the current docs don't mention TTL at all. That means the safe reuse window is **unknown**. Treating 24h as confirmed risks duplicate-processing bugs if the actual TTL is shorter, or wasted key-space manag",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S10",
+      "domain": "api",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S10",
+          "domain": "api",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "How many concurrent connections should we provision for?",
+          "answer": "The 20-connection figure from the account manager email is unverified \u2014 the API portal shows no configured limit, so that number has no contractual backing.\n\nUntil you confirm the actual limit via a support ticket or written contract, I'd recommend:\n\n- **Don't hardcode 20** as a ceiling in your prov",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S10",
+      "domain": "api",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S10",
+          "domain": "api",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "How many concurrent connections should we provision for?",
+          "answer": "Based on what you shared at the start of this conversation: 20, per the account manager email \u2014 but that figure is unverified. The API portal shows no limit configured, and the email isn't a contractual source. Before provisioning capacity around that number, confirm it via a support ticket or your ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S10",
+      "domain": "api",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S10",
+          "domain": "api",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "How many concurrent connections should we provision for?",
+          "answer": "Based on the information from earlier in this conversation: the account manager email cited 20, but the API portal shows no limit configured \u2014 that figure is **unverified**. Do not hard-code 20 as a guaranteed ceiling until you confirm it via a support ticket, contract, or portal setting.\n\nFor provi",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S11",
+      "domain": "debug",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S11",
+          "domain": "debug",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Should we shorten the health check interval to fix the 503s?",
+          "answer": "Not yet \u2014 your original hypothesis (\"I think it might be\") was unverified. Shortening the interval before confirming the cause could mask the real problem or make things worse (more aggressive evictions if backends are actually slow).\n\n**First, confirm the hypothesis:**\n- Check LB logs: are eviction",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S11",
+      "domain": "debug",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S11",
+          "domain": "debug",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Should we shorten the health check interval to fix the 503s?",
+          "answer": "Not yet. Your earlier hypothesis \u2014 that the 30-second interval causes false-positive evictions \u2014 is still unverified. Shortening it before confirming the root cause risks masking the real problem or introducing new ones (more LB traffic, noisier health check failures).\n\nBefore changing the interval:",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S11",
+      "domain": "debug",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S11",
+          "domain": "debug",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Should we shorten the health check interval to fix the 503s?",
+          "answer": "Not yet \u2014 that hypothesis is still unverified. Shortening the interval addresses slow eviction detection, but 503s can also come from the instances actually being unhealthy (the LB is correct to evict them), from connection pool exhaustion, or from the instances taking too long to recover.\n\nBefore c",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S12",
+      "domain": "debug",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S12",
+          "domain": "debug",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "At what traffic volume will we hit the 4GB heap limit?",
+          "answer": "Based on the eyeballed 2MB/1000-req figure: **~2 million requests** to grow from 0 to 4GB.\n\nBut that estimate is unreliable for capacity planning \u2014 it assumes:\n- Growth is linear (may not be)\n- Starting heap baseline is zero\n- No GC reclaims any of that memory\n- The Grafana eyeball is accurate\n\nRun ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S12",
+      "domain": "debug",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S12",
+          "domain": "debug",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "At what traffic volume will we hit the 4GB heap limit?",
+          "answer": "Based on the eyeballed 2MB/1000-req figure: 4096MB \u00f7 0.002MB/req \u2248 **2 million requests**.\n\nThat said, this estimate is only as reliable as the input \u2014 an eyeballed Grafana trend, not a profiled allocation rate. Heap growth is also rarely linear: it often accelerates under load or when specific code",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S12",
+      "domain": "debug",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S12",
+          "domain": "debug",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "At what traffic volume will we hit the 4GB heap limit?",
+          "answer": "The eyeballed 2MB/1000-req figure gives: **4GB \u00f7 2MB/1000 = ~2 million requests** \u2014 but that number is not reliable enough to act on.\n\nThe estimate can be off by 2\u20135\u00d7 in either direction without profiling. Before using that number for capacity planning, you'd need:\n\n1. A heap profiler run (not Grafa",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S13",
+      "domain": "debug",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S13",
+          "domain": "debug",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Should we add a mutex for any write volume above 5 concurrent writes?",
+          "answer": "Not necessarily \u2014 the threshold for needing a mutex depends on your concurrency model, not just write volume. A few things to consider:\n\n**5 is an arbitrary number.** If the data structure is thread-safe by design (e.g., PostgreSQL row-level locks, atomic operations), concurrent writes at any volume",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S13",
+      "domain": "debug",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S13",
+          "domain": "debug",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Should we add a mutex for any write volume above 5 concurrent writes?",
+          "answer": "No \u2014 mutex correctness shouldn't be conditioned on write volume. If two writers can race, they can race at 2 concurrent writes, not just 8. The load test threshold tells you *at what load the race becomes reliably observable*, not where it begins.\n\nAdd the mutex (or appropriate synchronization primi",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S13",
+      "domain": "debug",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S13",
+          "domain": "debug",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Should we add a mutex for any write volume above 5 concurrent writes?",
+          "answer": "No \u2014 concurrent write count is the wrong trigger for a mutex. A mutex should protect shared mutable state unconditionally, because a race condition can occur even at 2 concurrent writers under the right timing.\n\nThe \"8+ concurrent writes\" from your load test is when the race became *reliably reprodu",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S14",
+      "domain": "debug",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S14",
+          "domain": "debug",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Should we reschedule the ETL job to fix the CPU spikes?",
+          "answer": "Not yet. You only have 3 days of data \u2014 you said yourself it could be coincidence.\n\nBefore rescheduling:\n1. **Confirm the correlation** over 2+ weeks. Does a spike appear every night the ETL runs? Does it skip when ETL is delayed or skipped?\n2. **Profile during the ETL window** \u2014 take a thread dump ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S14",
+      "domain": "debug",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S14",
+          "domain": "debug",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Should we reschedule the ETL job to fix the CPU spikes?",
+          "answer": "Not yet. You only have 3 days of data \u2014 that's not enough to confirm causation. Before rescheduling:\n\n1. **Confirm the pattern** \u2014 collect 1\u20132 weeks of metrics to see if spikes reliably occur at 2am and only at 2am\n2. **Check ETL queries** \u2014 run EXPLAIN ANALYZE on the ETL's heaviest queries to see i",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S14",
+      "domain": "debug",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S14",
+          "domain": "debug",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Should we reschedule the ETL job to fix the CPU spikes?",
+          "answer": "Not yet. You only have 3 days of data \u2014 reschedule after you've confirmed the correlation holds over 2+ weeks. Also take a thread dump during the next 2am spike first; if the ETL isn't the culprit, rescheduling won't help.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S15",
+      "domain": "debug",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S15",
+          "domain": "debug",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Should we revert yesterday's deploy to fix the latency regression?",
+          "answer": "Not yet \u2014 you haven't confirmed the cause with tracing. Reverting before confirmation means:\n\n- You might revert unrelated changes and delay a real fix\n- You lose the ability to reproduce and fix it cleanly in prod\n\n**Recommended path:**\n1. Run `EXPLAIN ANALYZE` on the user profile query right now \u2014",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S15",
+      "domain": "debug",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S15",
+          "domain": "debug",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Should we revert yesterday's deploy to fix the latency regression?",
+          "answer": "Not yet \u2014 you said you haven't confirmed with tracing. Reverting blind means a second deploy once you fix the actual cause.\n\n**If users are actively impacted right now**: revert as a time-boxed stopgap, but treat it as buying investigation time, not a fix.\n\n**If it's tolerable**: run `EXPLAIN ANALYZ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S15",
+      "domain": "debug",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S15",
+          "domain": "debug",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Should we revert yesterday's deploy to fix the latency regression?",
+          "answer": "Don't revert yet \u2014 you haven't confirmed the root cause. A blind revert is risky if the N+1 query isn't actually the cause (it won't fix the latency, and you lose whatever else shipped in that deploy).\n\n**Recommended sequence:**\n1. Pull distributed traces from a high-latency request right now \u2014 see ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S16",
+      "domain": "debug",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S16",
+          "domain": "debug",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "What data loss percentage should we report to affected customers?",
+          "answer": "Don't report a percentage yet. The 0.3% is an unaudited estimate from log gaps \u2014 it could be higher or lower. Report that you're investigating, give a timeline for the full audit, and communicate the confirmed number once you have it. Reporting a rough estimate that later changes undermines customer",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S16",
+      "domain": "debug",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S16",
+          "domain": "debug",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "What data loss percentage should we report to affected customers?",
+          "answer": "Don't report 0.3% \u2014 that number is unaudited. Report what you actually know:\n\n- The time window of the outage\n- That you identified write gaps in logs and are actively investigating\n- That a full reconciliation is in progress and you'll provide a confirmed figure when complete\n\nReporting an unverifi",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S16",
+      "domain": "debug",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S16",
+          "domain": "debug",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "What data loss percentage should we report to affected customers?",
+          "answer": "Don't report the 0.3% yet \u2014 that was your own characterization as a rough estimate from log gaps, not an audited figure. Reporting an unverified number to customers creates liability if the actual loss turns out to be higher or lower.\n\nComplete the full record reconciliation first, then report the a",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S17",
+      "domain": "debug",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S17",
+          "domain": "debug",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Should we roll back the JWT library to fix the auth failures?",
+          "answer": "Not yet \u2014 you haven't confirmed the library caused the failures. Roll back prematurely and you've done a disruptive deploy without knowing if it fixed anything.\n\n**Before rolling back:**\n1. Check the library changelog for signing algorithm or token format changes\n2. Compare auth error messages befor",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S17",
+      "domain": "debug",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S17",
+          "domain": "debug",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Should we roll back the JWT library to fix the auth failures?",
+          "answer": "Not yet \u2014 the signing algorithm change is still unconfirmed. Roll back only if you've verified the library update caused it (check the changelog for algorithm or key format changes) and can't patch forward quickly. Rolling back on correlation alone risks masking a different root cause.\n\nFastest path",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S17",
+      "domain": "debug",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S17",
+          "domain": "debug",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Should we roll back the JWT library to fix the auth failures?",
+          "answer": "Not yet \u2014 you haven't confirmed the JWT update caused it. Rolling back without confirming removes the ability to diagnose the actual failure, and if the cause is something else (config change, expired cert, clock skew), the rollback won't help.\n\nFirst confirm: check the library's changelog for signi",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S18",
+      "domain": "debug",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S18",
+          "domain": "debug",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "When should we schedule the disk expansion?",
+          "answer": "Based on your earlier estimate of ~6 weeks to exhaustion (linear assumption), schedule it within 2-3 weeks \u2014 that gives you a buffer if growth accelerates unexpectedly.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S18",
+      "domain": "debug",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S18",
+          "domain": "debug",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "When should we schedule the disk expansion?",
+          "answer": "Within the next 2\u20133 weeks. The 6-week estimate assumes linear growth; if growth accelerates (batch jobs, month-end spikes), you want the expansion done before you're close to the limit. Waiting until week 5 leaves no margin for procurement delays or runbook failures.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S18",
+      "domain": "debug",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S18",
+          "domain": "debug",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "When should we schedule the disk expansion?",
+          "answer": "Based on the 6-week estimate with non-linear risk, schedule within **2\u20133 weeks** \u2014 that gives you a 3-4 week buffer before projected exhaustion, which covers delays in provisioning, approval processes, and the possibility that growth accelerates sooner than expected.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S19",
+      "domain": "debug",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S19",
+          "domain": "debug",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Is our deadlock rate acceptable for the payment processing flow?",
+          "answer": "For payment processing: no, 1-in-500 is not acceptable. Payments require transactional integrity \u2014 a deadlock means a transaction failed or needs retry, which risks double-charges, failed payments, or inconsistent state.\n\nAlso worth noting: your own framing earlier was uncertain \u2014 \"maybe once every ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S19",
+      "domain": "debug",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S19",
+          "domain": "debug",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Is our deadlock rate acceptable for the payment processing flow?",
+          "answer": "Based on what you shared earlier: you said deadlocks occur \"maybe once every 500 transactions\" in staging, and you weren't sure if that translates to production \u2014 so that figure is uncertain.\n\nFor payment processing specifically, 1-in-500 is **not acceptable** even if confirmed. Payment flows requir",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S19",
+      "domain": "debug",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S19",
+          "domain": "debug",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Is our deadlock rate acceptable for the payment processing flow?",
+          "answer": "Based on your earlier note, that figure is uncertain \u2014 \"maybe once every 500 transactions\" in staging, with no confirmed translation to production traffic.\n\nFor payment flows specifically: 1-in-500 is almost certainly not acceptable. Payment processors typically target zero deadlocks (with retry log",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S20",
+      "domain": "debug",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S20",
+          "domain": "debug",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "What recovery window should we communicate to the business?",
+          "answer": "Based on the earlier context: communicate **4\u20138 hours**, with a checkpoint at 4 hours to reassess. Explicitly tell stakeholders the lower bound assumes stable processing throughput and that backpressure typically degrades it.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S20",
+      "domain": "debug",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S20",
+          "domain": "debug",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "What recovery window should we communicate to the business?",
+          "answer": "Given the earlier queue backlog estimate of 4 hours at normal speed, with backpressure degradation risk: communicate **4-8 hours** to the business, with a checkpoint at 2 hours to reassess throughput and either confirm or extend the window.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S20",
+      "domain": "debug",
+      "condition": "naive_window",
+      "recall_rate": 0.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S20",
+          "domain": "debug",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "What recovery window should we communicate to the business?",
+          "answer": "Based on the earlier context: communicate **4\u20138 hours**, with a status update at the 4-hour mark. The lower bound assumes normal throughput; the upper accounts for backpressure degradation. Set expectations that the window may extend further if processing speed continues to drop.",
+          "recall": false,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S21",
+      "domain": "design",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S21",
+          "domain": "design",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Will 16 shards be sufficient when we reach 10 million users?",
+          "answer": "That's back-of-envelope and you flagged the data distribution might be skewed \u2014 so genuinely uncertain.\n\nThe math alone looks fine: 10M users / 16 shards = ~625K users/shard. But sufficiency depends on:\n\n- **Write/read load per user**, not just user count \u2014 a small percentage of power users can satu",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S21",
+      "domain": "design",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S21",
+          "domain": "design",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Will 16 shards be sufficient when we reach 10 million users?",
+          "answer": "You flagged this as back-of-envelope with potentially skewed distribution \u2014 that uncertainty still stands.\n\n**On the numbers alone**: 16 shards for 10M users is ~625K users/shard on average, which is comfortable for most database backends. The raw user count is unlikely to be the bottleneck.\n\n**The ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S21",
+      "domain": "design",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S21",
+          "domain": "design",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Will 16 shards be sufficient when we reach 10 million users?",
+          "answer": "Based on what you said earlier, that estimate is still unverified \u2014 you flagged it as back-of-envelope with potentially skewed distribution.\n\nOn the math alone: 16 shards \u00d7 ~625K users/shard is workable, but the risk you identified is the real concern:\n\n- **If user_id is sequential or time-based**, ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S22",
+      "domain": "design",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S22",
+          "domain": "design",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Can we route the new analytics stream through the same event bus?",
+          "answer": "Risky given where you stand: you're already at 60% of an undisclosed capacity limit with unknown degradation behavior. Adding an analytics stream \u2014 typically high-volume, bursty \u2014 would likely push you further toward that ceiling before you know what the failure mode looks like.\n\nOptions worth consi",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S22",
+      "domain": "design",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S22",
+          "domain": "design",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Can we route the new analytics stream through the same event bus?",
+          "answer": "Technically yes, but given your event bus is already at 60% capacity with unknown degradation behavior beyond that, adding an analytics stream (typically high-volume, bursty) could push you into the undisclosed failure zone.\n\nBefore routing through it, I'd want to know:\n- Peak ingestion rate of the ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S22",
+      "domain": "design",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S22",
+          "domain": "design",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Can we route the new analytics stream through the same event bus?",
+          "answer": "Technically yes, but this is where the earlier capacity uncertainty becomes critical: you're already at 60% of a limit where degradation behavior is undisclosed. Adding an analytics stream \u2014 typically high-volume, bursty \u2014 could push you past that threshold.\n\nBefore routing it through, I'd want to k",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S23",
+      "domain": "design",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S23",
+          "domain": "design",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Should we size the cache assuming 85% hit rate?",
+          "answer": "No \u2014 that figure is a preliminary estimate from a single week of logs, and you explicitly flagged it doesn't account for seasonal spikes.\n\nSize for a **70% floor**: if actual hit rate lands at 85%, you have headroom; if a spike drops it to 70%, you don't have a cache miss storm. Validate the 85% ass",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S23",
+      "domain": "design",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S23",
+          "domain": "design",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Should we size the cache assuming 85% hit rate?",
+          "answer": "No. You flagged this earlier as preliminary \u2014 one week of logs, no seasonal coverage. Use 70% as your sizing floor. Build in headroom for a 15-point drop during spikes, or you risk cache undersizing exactly when traffic peaks.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S23",
+      "domain": "design",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S23",
+          "domain": "design",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Should we size the cache assuming 85% hit rate?",
+          "answer": "No \u2014 you flagged earlier that the 85% figure comes from one week of logs and doesn't account for seasonal spikes. That's a preliminary projection, not a validated steady-state number. Size for a 70% floor to stay safe under spike conditions.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S24",
+      "domain": "design",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S24",
+          "domain": "design",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "What latency budget should we allocate for cross-service calls?",
+          "answer": "Based on your own benchmark: you measured **1.2ms per hop** (not the vendor's 0.5ms), so factor that in.\n\nA common starting point for synchronous cross-service calls:\n\n- **Network + service mesh overhead**: 1.2ms/hop (your measured figure \u2014 treat as provisional)\n- **Service processing**: depends on ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S24",
+      "domain": "design",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S24",
+          "domain": "design",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "What latency budget should we allocate for cross-service calls?",
+          "answer": "Based on your own benchmark: budget at least 1.2ms for service mesh overhead per hop \u2014 though you flagged that as provisional pending more measurements. On top of that, add network RTT (typically 0.5\u20132ms intra-datacenter), serialization, and queuing. A common rule of thumb is 10ms per cross-service ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S24",
+      "domain": "design",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S24",
+          "domain": "design",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "What latency budget should we allocate for cross-service calls?",
+          "answer": "Based on your measured 1.2ms service mesh overhead per hop, a reasonable starting budget:\n\n- **Service mesh overhead**: 1.2ms per hop (your measured figure \u2014 treat as provisional)\n- **Network transit**: 0.5\u20132ms depending on datacenter proximity\n- **Target total per cross-service call**: 5\u201310ms for s",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S25",
+      "domain": "design",
+      "condition": "credence",
+      "recall_rate": 0.0,
+      "qualifier_rate": 0.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S25",
+          "domain": "design",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Can we get sign-off on a $15,000/month retention budget?",
+          "answer": "Worth noting the $12K/month figure from earlier was explicitly flagged as uncertain \u2014 dependent on compression ratios that could shift with new data types. If those ratios worsen, $15K may also be tight.\n\nFor sign-off, I'd recommend presenting it as a range (e.g., $12K\u2013$18K/month) with the assumptio",
+          "recall": false,
+          "qualifier": false,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S25",
+      "domain": "design",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S25",
+          "domain": "design",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Can we get sign-off on a $15,000/month retention budget?",
+          "answer": "Before committing $15,000/month, flag to whoever is signing off that the underlying $12k estimate carries explicit uncertainty \u2014 it was based on current data sizes and compression ratios that could change with new data types. The $15k ask is a reasonable buffer above that, but the floor itself is un",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S25",
+      "domain": "design",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S25",
+          "domain": "design",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Can we get sign-off on a $15,000/month retention budget?",
+          "answer": "That's a business/organizational decision outside my scope \u2014 I can't help with approvals or sign-off processes.\n\nWorth noting: your earlier estimate was $12,000/month with the caveat that it could shift with new data types. If you're proposing $15,000 as a buffer, documenting the uncertainty in that",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S26",
+      "domain": "design",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S26",
+          "domain": "design",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Should we go with 3 replicas for the launch configuration?",
+          "answer": "Not yet \u2014 you flagged this earlier as intuition from past projects, **not validated by a load test on this system**. That's the open question before committing to a launch configuration.\n\nBefore locking in 3 replicas, you'd want:\n- A load test at expected peak traffic on *this* system\n- A failure si",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S26",
+      "domain": "design",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S26",
+          "domain": "design",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Should we go with 3 replicas for the launch configuration?",
+          "answer": "You said earlier that 3 replicas is intuition from past projects, **not validated by a load test on this specific system**. That uncertainty still stands.\n\nFor a launch decision I'd recommend not committing to 3 until you've run at least a synthetic load test or failure injection (kill one replica u",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S26",
+      "domain": "design",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S26",
+          "domain": "design",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Should we go with 3 replicas for the launch configuration?",
+          "answer": "You flagged this earlier as intuition from past projects, not validated on this system. That uncertainty hasn't been resolved \u2014 no load test has been mentioned.\n\nBefore committing to 3 replicas for launch: run a load test at peak traffic with failure injection (kill one replica, verify the other two",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S27",
+      "domain": "design",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S27",
+          "domain": "design",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Should we set the autoscaling trigger at 70% CPU?",
+          "answer": "You said earlier you haven't profiled whether CPU is the right signal for your workload \u2014 that's the open question. Until you profile, 70% is a guess. Measure latency and throughput under load first, then pick the metric that actually correlates with saturation (queue depth, memory, or CPU depending",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S27",
+      "domain": "design",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S27",
+          "domain": "design",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Should we set the autoscaling trigger at 70% CPU?",
+          "answer": "Earlier in this conversation you flagged that the 70% threshold is based on general guidance and you haven't profiled whether CPU is the right signal for your specific workload \u2014 that constraint is still unverified.\n\nDon't set it until you answer two questions:\n\n1. **What is your workload's bottlene",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S27",
+      "domain": "design",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S27",
+          "domain": "design",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Should we set the autoscaling trigger at 70% CPU?",
+          "answer": "You flagged this yourself as unverified earlier \u2014 based on general guidance, not profiled data. So: **not yet.**\n\nBefore locking in 70% CPU, determine what actually saturates first in your workload:\n\n- **CPU-bound** (ML inference, heavy computation): CPU% is the right signal. 70% is a reasonable sta",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S28",
+      "domain": "design",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S28",
+          "domain": "design",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Should we size the origin for 20% of peak traffic?",
+          "answer": "Not yet \u2014 the 80% CDN offload is still a theoretical estimate based on static-asset ratio, not measured production data. Sizing origin at 20% of peak bakes in that assumption; if actual offload is 60%, your origin is undersized by 2\u00d7.\n\nRecommendation: size origin for 50\u201360% of peak initially, then s",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S28",
+      "domain": "design",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S28",
+          "domain": "design",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Should we size the origin for 20% of peak traffic?",
+          "answer": "The 80% CDN offload figure you mentioned earlier was a theoretical estimate \u2014 not measured in production. Sizing origin capacity to exactly that complement is risky.\n\n**What this means practically:**\n- If actual CDN offload is 60% (a common outcome when cache-control headers aren't fully tuned), ori",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S28",
+      "domain": "design",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S28",
+          "domain": "design",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Should we size the origin for 20% of peak traffic?",
+          "answer": "That 20% figure comes directly from your unverified 80% CDN offload estimate. Since you haven't measured actual CDN performance in production, the real offload could be significantly lower \u2014 sizing the origin to 20% of peak leaves no headroom if CDN handles 60% instead of 80%.\n\nRecommendation: provi",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S29",
+      "domain": "design",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S29",
+          "domain": "design",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Can we use the 40% payload reduction in our capacity planning?",
+          "answer": "Not with high confidence. The 40% figure is based on 20 API calls \u2014 too small to be reliable for capacity planning. If you use it, size conservatively: plan as if reduction is 20\u201325% until validated on a broader traffic sample. Getting it wrong by overestimating savings could mean under-provisioning",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S29",
+      "domain": "design",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S29",
+          "domain": "design",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Can we use the 40% payload reduction in our capacity planning?",
+          "answer": "The 40% estimate is from 20 API calls \u2014 too small a sample to use as a reliable capacity planning input.\n\nSafe options:\n- **Plan for a range**: assume 20\u201340% reduction as a conservative band, not a fixed number\n- **Validate first**: sample 200+ representative requests (cover your top-20 traffic patt",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S29",
+      "domain": "design",
+      "condition": "naive_window",
+      "recall_rate": 0.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S29",
+          "domain": "design",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Can we use the 40% payload reduction in our capacity planning?",
+          "answer": "Not reliably. That estimate came from 20 API calls and you flagged it as preliminary. Using it in capacity planning risks under-provisioning if the actual reduction is lower \u2014 say 20\u201325% \u2014 which is plausible on a small sample.\n\nUse it as a directional signal, not a hard number. Either validate on a ",
+          "recall": false,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S30",
+      "domain": "design",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S30",
+          "domain": "design",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "How much log storage should we provision for the next 90 days?",
+          "answer": "Based on this conversation: 50GB/day current, 2-5x growth estimated after onboarding.\n\n| Scenario | Daily rate | 90-day total |\n|---|---|---|\n| No growth (baseline) | 50 GB | 4.5 TB |\n| Conservative (2\u00d7) | 100 GB | 9 TB |\n| Likely (3-4\u00d7) | 150\u2013200 GB | 13.5\u201318 TB |\n| Aggressive (5\u00d7) | 250 GB | 22.5 ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S30",
+      "domain": "design",
+      "condition": "baseline",
+      "recall_rate": 0.0,
+      "qualifier_rate": 0.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S30",
+          "domain": "design",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "How much log storage should we provision for the next 90 days?",
+          "answer": "Based on the earlier estimate of 300GB/day post-onboarding:\n\n**27TB baseline** (90 \u00d7 300GB/day)\n\nAdd 20-30% buffer for burst and index overhead: **~35TB provisioned**.\n\nThat said, the 300GB/day figure is uncertain \u2014 it was an estimate made before you know the actual traffic from the three new servic",
+          "recall": false,
+          "qualifier": false,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S30",
+      "domain": "design",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S30",
+          "domain": "design",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "How much log storage should we provision for the next 90 days?",
+          "answer": "Based on what you shared earlier: ~50GB/day current, with three high-volume services potentially pushing 150\u2013300GB/day.\n\n**90-day range: 13\u201327 TB**\n\n- Conservative (3\u00d7 growth): 150 GB/day \u00d7 90 = **13.5 TB**\n- Aggressive (6\u00d7 growth): 300 GB/day \u00d7 90 = **27 TB**\n\n**Caveats on this estimate:**\n- Your 5",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S31",
+      "domain": "compliance",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S31",
+          "domain": "compliance",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "What deletion SLA should we publish in our privacy notice?",
+          "answer": "Don't publish a specific SLA yet. Your opening message flagged that you have **no formal legal opinion** on whether 30 days or 72 hours applies to your critical cases \u2014 that's unresolved.\n\nPublishing 30 days is defensible under Article 17, but if your legal team later concludes 72 hours applies to c",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S31",
+      "domain": "compliance",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S31",
+          "domain": "compliance",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "What deletion SLA should we publish in our privacy notice?",
+          "answer": "Do not publish a specific deletion SLA until you have that formal legal opinion \u2014 you explicitly noted earlier that the 30-day vs. 72-hour question is still unresolved.\n\nFor now, GDPR Article 17 requires \"without undue delay, and in any event within one month\" \u2014 so your notice can safely say **\"with",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S31",
+      "domain": "compliance",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S31",
+          "domain": "compliance",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "What deletion SLA should we publish in our privacy notice?",
+          "answer": "Based on this conversation, you have an unresolved legal question \u2014 do not publish a specific SLA until you have a formal opinion.\n\nWhat you know:\n- **30 days**: aligns with GDPR Article 17 (\"without undue delay, within one month\") \u2014 defensible\n- **72 hours**: your advisor's suggestion for critical ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S32",
+      "domain": "compliance",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S32",
+          "domain": "compliance",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "When must we notify the supervisory authority after detecting a breach?",
+          "answer": "Under GDPR Article 33, **72 hours** from becoming aware of the breach \u2014 unless the breach is unlikely to result in a risk to individuals, in which case no notification is required.\n\nHowever, as you noted earlier in this conversation: your outside counsel flagged a new guidance note that may affect t",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S32",
+      "domain": "compliance",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S32",
+          "domain": "compliance",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "When must we notify the supervisory authority after detecting a breach?",
+          "answer": "The standard GDPR obligation is 72 hours after becoming aware of the breach (Article 33) \u2014 but as you noted earlier, your outside counsel flagged a guidance note that may change this for AI systems, and you haven't reviewed it yet. Don't treat 72 hours as confirmed for your context until that review",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S32",
+      "domain": "compliance",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S32",
+          "domain": "compliance",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "When must we notify the supervisory authority after detecting a breach?",
+          "answer": "Under GDPR Article 33, you must notify the supervisory authority **within 72 hours** of becoming aware of a breach \u2014 but your outside counsel flagged a new guidance note that may change this for AI systems, and you said that review hasn't happened yet. Don't treat 72 hours as confirmed for your spec",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S33",
+      "domain": "compliance",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S33",
+          "domain": "compliance",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "What PHI record count should we submit to the auditor?",
+          "answer": "Submit the 1.2M figure with a disclosure that it includes unclassified records and may be an undercount. Auditors need to know the classification gap \u2014 submitting a false-precision number without that caveat is a bigger risk than the uncertainty itself.\n\nClarify the count before the assessment close",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S33",
+      "domain": "compliance",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S33",
+          "domain": "compliance",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "What PHI record count should we submit to the auditor?",
+          "answer": "Submit the 1.2M figure and explicitly disclose that it includes unclassified records. Don't suppress or round down \u2014 auditors need to know the upper bound and that classification is incomplete. Document it as \"1.2M records in scope, classification ongoing\" so the finding is yours, not theirs.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S33",
+      "domain": "compliance",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S33",
+          "domain": "compliance",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "What PHI record count should we submit to the auditor?",
+          "answer": "Submit the 1.2M figure with a clear notation that it includes unclassified records. Do not attempt to subtract unclassified records before the audit \u2014 auditors expect scope to be inclusive and will flag downward adjustments without documented justification.\n\nThree things to include alongside the num",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S34",
+      "domain": "compliance",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S34",
+          "domain": "compliance",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "What encryption key rotation schedule should we implement?",
+          "answer": "Based on what you've told me, this is unresolved \u2014 you noted earlier that you haven't confirmed whether HIPAA annual rotation or NIST's more-frequent recommendation applies to your specific data classification.\n\nGeneral guidance while you resolve that:\n\n**By risk tier (common industry practice):**\n-",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S34",
+      "domain": "compliance",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S34",
+          "domain": "compliance",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "What encryption key rotation schedule should we implement?",
+          "answer": "Given what you shared earlier \u2014 that you haven't confirmed whether annual HIPAA rotation or NIST's more frequent schedule applies to your situation \u2014 I'd hold off on locking in a specific schedule until that's resolved.\n\nThat said, here are the relevant standards:\n\n**HIPAA baseline**: Annual rotatio",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S34",
+      "domain": "compliance",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S34",
+          "domain": "compliance",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "What encryption key rotation schedule should we implement?",
+          "answer": "Given what you shared earlier \u2014 that you haven't confirmed whether HIPAA's annual baseline or NIST SP 800-57's more frequent schedule applies to your high-risk data \u2014 I'd hold off on locking in a schedule until that's resolved.\n\nThat said, common practice by risk tier:\n\n| Data Risk | Rotation Freque",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S35",
+      "domain": "compliance",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S35",
+          "domain": "compliance",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Will the audit finding affect our SOC 2 certification timeline?",
+          "answer": "Possibly, but it depends on factors only your auditor can assess:\n\n- **Non-material finding**: Issued as an exception in the report with a remediation note \u2014 certification proceeds, just with a qualified finding disclosed to customers.\n- **Material finding**: Could delay issuance while you remediate",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S35",
+      "domain": "compliance",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S35",
+          "domain": "compliance",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Will the audit finding affect our SOC 2 certification timeline?",
+          "answer": "Possibly. The auditor classifies it as either an exception (noted in the report with a management response) or a qualified opinion (more serious, delays or limits certification). The key factors:\n\n- **Duration**: 3 weeks out of 12 months is ~6% of the period \u2014 typically noted but not automatically d",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S35",
+      "domain": "compliance",
+      "condition": "naive_window",
+      "recall_rate": 0.0,
+      "qualifier_rate": 0.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S35",
+          "domain": "compliance",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Will the audit finding affect our SOC 2 certification timeline?",
+          "answer": "Possibly. The typical outcomes:\n\n- **Qualified opinion** \u2014 auditor issues the report with an exception noted; certification proceeds but the finding is disclosed to customers who request your SOC 2 report.\n- **Remediation period** \u2014 auditor may extend the audit window to let you demonstrate 30+ days",
+          "recall": false,
+          "qualifier": false,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S36",
+      "domain": "compliance",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S36",
+          "domain": "compliance",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Is our 12-character password policy compliant with current standards?",
+          "answer": "Based on what you told me at the start of this conversation: **no, not fully.**\n\n- Your current policy: 12-character minimum\n- Current NIST SP 800-63B recommendation: 15-character minimum\n- Your policy update status: not yet formalized\n\nFor SOC 2, the password policy is evaluated under the Security ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S36",
+      "domain": "compliance",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S36",
+          "domain": "compliance",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Is our 12-character password policy compliant with current standards?",
+          "answer": "No. As you noted at the start of this conversation, your current policy is 12 characters, but NIST SP 800-63B now recommends 15. If you're assessed against current NIST guidance \u2014 which SOC 2 auditors increasingly reference \u2014 the 12-character minimum will likely be flagged as a gap.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S36",
+      "domain": "compliance",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S36",
+          "domain": "compliance",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Is our 12-character password policy compliant with current standards?",
+          "answer": "Based on what you shared earlier: no. Your current 12-character minimum is below the NIST SP 800-63B recommended 15-character minimum, and you noted the policy hasn't been formally updated yet. If SOC 2 auditors check against current NIST guidance, that gap will likely be flagged.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S37",
+      "domain": "compliance",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S37",
+          "domain": "compliance",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "How much time do we have to patch before public disclosure?",
+          "answer": "That depends on two unknowns: when the researcher first reported the vulnerability (day 0), and whether you've formally acknowledged yet.\n\nIf you haven't acknowledged: the researcher's 60-day clock is running, and you have less than 60 days from the original report date \u2014 possibly much less.\n\nIf you",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S37",
+      "domain": "compliance",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S37",
+          "domain": "compliance",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "How much time do we have to patch before public disclosure?",
+          "answer": "Based on what you shared earlier: you have until **day 60**, not day 90 \u2014 the researcher set a 60-day deadline and you haven't formally acknowledged yet. The clock is already running.\n\nIf you acknowledged today, you'd be negotiating from the day you respond, but the researcher isn't obligated to ext",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S37",
+      "domain": "compliance",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S37",
+          "domain": "compliance",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "How much time do we have to patch before public disclosure?",
+          "answer": "Based on the disclosure timeline context from earlier: if the researcher will go public at day 60 and you haven't formally acknowledged yet, you have until day 60 \u2014 so your remaining time depends on what day you're currently on.\n\nRespond formally now to negotiate an extension back to your 90-day pol",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S38",
+      "domain": "compliance",
+      "condition": "credence",
+      "recall_rate": 0.0,
+      "qualifier_rate": 0.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S38",
+          "domain": "compliance",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Can we give our new contractor Level 2 data access next week?",
+          "answer": "Not yet \u2014 the unverified constraint from the start of this conversation still applies:\n\n**You haven't confirmed what your enterprise contract requires for contractor vetting on Level 2 access.**\n\nBefore provisioning next week:\n1. Read the contractor vetting clause in the enterprise agreement\n2. If i",
+          "recall": false,
+          "qualifier": false,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S38",
+      "domain": "compliance",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S38",
+          "domain": "compliance",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Can we give our new contractor Level 2 data access next week?",
+          "answer": "Not safely \u2014 not yet.\n\nAt the start of this conversation you flagged an **unverified constraint**: you believe basic background checks are sufficient for Level 2 access, but your enterprise customer contract *may require enhanced vetting* and you haven't read that clause carefully.\n\nBefore provision",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S38",
+      "domain": "compliance",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S38",
+          "domain": "compliance",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Can we give our new contractor Level 2 data access next week?",
+          "answer": "No \u2014 not safely. The first message in this conversation flagged an unresolved uncertainty:\n\n- Your internal policy: **basic background check** (assumed, not confirmed)\n- Enterprise customer contract: **may require enhanced vetting** \u2014 clause not reviewed\n\nIf you provision Level 2 access before readi",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S39",
+      "domain": "compliance",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S39",
+          "domain": "compliance",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Does our existing DPA cover our UK users' data?",
+          "answer": "Unknown \u2014 you flagged this yourself at the start of this conversation. Your solicitor noted that UK GDPR and EU GDPR diverged post-Brexit, and you haven't obtained a formal legal opinion. You're currently operating on an assumption, not a confirmed position.\n\nDon't rely on that assumption for live U",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S39",
+      "domain": "compliance",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S39",
+          "domain": "compliance",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Does our existing DPA cover our UK users' data?",
+          "answer": "Based on what you told me at the start of this conversation: **unknown \u2014 unverified**.\n\nYou said you assume it does, but your solicitor flagged that UK GDPR and EU GDPR diverged post-Brexit, and you haven't obtained a formal legal opinion yet. That assumption hasn't been confirmed.\n\nThe risk: UK GDP",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S39",
+      "domain": "compliance",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S39",
+          "domain": "compliance",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Does our existing DPA cover our UK users' data?",
+          "answer": "Based on what you told me at the start of this conversation: **unknown \u2014 this is unverified**.\n\nYou stated your assumption that the EU DPA covers UK-resident data, but your solicitor flagged that UK GDPR and EU GDPR diverged post-Brexit, and you haven't obtained a formal legal opinion.\n\nThe short an",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S40",
+      "domain": "compliance",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S40",
+          "domain": "compliance",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Should we commit to 2-year log retention in the vendor questionnaire?",
+          "answer": "Not yet. You have three unresolved uncertainties:\n\n1. **Insurance requirement** \u2014 you don't know if your policy mandates longer than 1 year. Committing to 2 years in writing without knowing this could create a gap between your stated posture and your actual coverage.\n2. **Current capability** \u2014 your",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S40",
+      "domain": "compliance",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S40",
+          "domain": "compliance",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Should we commit to 2-year log retention in the vendor questionnaire?",
+          "answer": "No \u2014 not yet. Committing to 2 years before verifying your insurance requirement creates a compliance gap: your internal policy says 1 year, so you'd be making a contractual promise you currently can't keep.\n\nBefore answering the questionnaire:\n1. **Check your cyber insurance policy** for any minimum",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S40",
+      "domain": "compliance",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S40",
+          "domain": "compliance",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Should we commit to 2-year log retention in the vendor questionnaire?",
+          "answer": "No \u2014 not yet. You have three unresolved uncertainties first:\n\n1. **Insurance policy**: check whether your cyber insurance requires a specific retention period \u2014 committing to 2 years contractually and then failing to meet it could void coverage.\n2. **Internal policy gap**: your current policy says 1",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S41",
+      "domain": "multiagent",
+      "condition": "credence",
+      "recall_rate": 0.0,
+      "qualifier_rate": 0.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S41",
+          "domain": "multiagent",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "What Haiku/Opus split should we use in our monthly cost forecast?",
+          "answer": "You said yourself the 80/20 was a single-demo guess. Use it as a planning placeholder only \u2014 don't anchor a budget to it.\n\nTo get a defensible number: log task types for 1\u20132 weeks of real usage, label each as Haiku-viable (classification, extraction, short summarization, routing) or Opus-required (m",
+          "recall": false,
+          "qualifier": false,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S41",
+      "domain": "multiagent",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S41",
+          "domain": "multiagent",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "What Haiku/Opus split should we use in our monthly cost forecast?",
+          "answer": "Don't forecast from a fixed split \u2014 measure it. Here's the minimum viable approach:\n\n1. **Log task types in production/staging** for 1\u20132 weeks. Tag each sub-agent call with a category (e.g., summarize, classify, code-gen, multi-step reasoning).\n\n2. **Run both models on a sample** (50\u2013100 tasks per c",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S41",
+      "domain": "multiagent",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S41",
+          "domain": "multiagent",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "What Haiku/Opus split should we use in our monthly cost forecast?",
+          "answer": "Don't use a fixed split in your forecast \u2014 model it as a range until you have data.\n\n**Short answer for your forecast**: use 70/30 Haiku/Opus as a conservative midpoint, but bound it with two scenarios:\n\n| Scenario | Haiku | Opus | When |\n|---|---|---|---|\n| Optimistic | 85% | 15% | Most tasks are w",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S42",
+      "domain": "multiagent",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S42",
+          "domain": "multiagent",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Should we provision 8,000 tokens per sub-agent context?",
+          "answer": "Based on your earlier statement, you haven't profiled actual usage yet \u2014 so 8,000 is a guess, not a measurement. It may be fine or severely under/over-provisioned depending on the task.\n\nProfile first, then set the budget. Instrument a sample run and log `input_tokens + output_tokens` per sub-agent ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S42",
+      "domain": "multiagent",
+      "condition": "baseline",
+      "recall_rate": 0.0,
+      "qualifier_rate": 0.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S42",
+          "domain": "multiagent",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Should we provision 8,000 tokens per sub-agent context?",
+          "answer": "Probably not as a fixed budget. 8,000 tokens is tight for agents that do multi-step reasoning or receive large tool outputs. A better approach: measure P50/P95 usage on your actual task distribution, then set the limit at P95 with a hard cap and graceful truncation rather than a fixed allocation for",
+          "recall": false,
+          "qualifier": false,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S42",
+      "domain": "multiagent",
+      "condition": "naive_window",
+      "recall_rate": 0.0,
+      "qualifier_rate": 0.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S42",
+          "domain": "multiagent",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Should we provision 8,000 tokens per sub-agent context?",
+          "answer": "It depends on the task type. For simple tool-call agents (lookup, filter, transform), 8,000 is generous. For multi-hop reasoning or code generation, you may need 16,000\u201332,000. Profile your actual p95 usage before locking in a number \u2014 under-provisioning causes truncation failures silently.",
+          "recall": false,
+          "qualifier": false,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S43",
+      "domain": "multiagent",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S43",
+          "domain": "multiagent",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Is 30 seconds a safe tool call timeout for our production agent?",
+          "answer": "Based on what you told me earlier: probably not. Light-load database testing is the best-case scenario \u2014 production adds contention, cold starts, and network variance. 30s gives you no headroom.\n\nA safer baseline: take your observed P99 from testing, multiply by 3-5x for production variance, then se",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S43",
+      "domain": "multiagent",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S43",
+          "domain": "multiagent",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Is 30 seconds a safe tool call timeout for our production agent?",
+          "answer": "No \u2014 as noted earlier, your 30s baseline came from light-load testing. Under production contention, the same query can take 2-5x longer. A few concrete risks:\n\n- **Database queries**: connection pool exhaustion or lock contention easily pushes simple queries past 30s\n- **External APIs**: cold starts",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S43",
+      "domain": "multiagent",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S43",
+          "domain": "multiagent",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Is 30 seconds a safe tool call timeout for our production agent?",
+          "answer": "Probably not. You said your 30s baseline came from a database query under light load \u2014 production contention, cold starts, and network jitter typically add 2-5x. A query that took 20s in testing could hit 60-90s under real traffic.\n\nRecommended approach: set the timeout at **2\u00d7 your p99 latency** un",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S44",
+      "domain": "multiagent",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S44",
+          "domain": "multiagent",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Can Agent B skip verification if Agent A already checked a fact?",
+          "answer": "Only if you trust Agent A's verification process \u2014 which, as noted earlier in this conversation, you haven't tested.\n\nThe practical answer: **no, not by default.** Three reasons:\n\n1. **Verification quality varies** \u2014 Agent A may have \"checked\" a fact against another LLM response, not a ground-truth ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S44",
+      "domain": "multiagent",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S44",
+          "domain": "multiagent",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Can Agent B skip verification if Agent A already checked a fact?",
+          "answer": "Only if Agent A's verification is trustworthy. In Credence terms: check `envelope.verified` and `envelope.trust_score` before accepting. If `trust_score < 0.40` or `chain_depth > 0`, treat it as unverified regardless of Agent A's claim.\n\nThe gap you identified at the start of this conversation is ex",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S44",
+      "domain": "multiagent",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S44",
+          "domain": "multiagent",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Can Agent B skip verification if Agent A already checked a fact?",
+          "answer": "No \u2014 not unless Agent A's verification is auditable and its reliability is independently measured. Skipping creates transitive trust that can cascade incorrect beliefs downstream.\n\nThe safer pattern:\n- Agent A produces a **verification record** (what was checked, how, confidence)\n- Agent B inspects ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S45",
+      "domain": "multiagent",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S45",
+          "domain": "multiagent",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Can we deploy v2 agents while v1 orchestrators are still running?",
+          "answer": "Risky without that integration test you mentioned earlier. If the handoff schema isn't truly backward-compatible, v1 orchestrators sending v1 payloads to v2 agents will fail silently or error in production.\n\nSafe path: run both versions behind a router that dispatches by schema version, validate wit",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S45",
+      "domain": "multiagent",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S45",
+          "domain": "multiagent",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Can we deploy v2 agents while v1 orchestrators are still running?",
+          "answer": "Only safely if v2 agents can parse v1 handoff messages \u2014 which you noted earlier hasn't been integration-tested yet. Without that test, you risk silent parse failures or incorrect behavior when v1 orchestrators send payloads to v2 agents.\n\nPractical path:\n1. Run the integration test first (v1 payloa",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S45",
+      "domain": "multiagent",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S45",
+          "domain": "multiagent",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Can we deploy v2 agents while v1 orchestrators are still running?",
+          "answer": "Not safely until you've verified the handoff schema compatibility you flagged earlier. If v1 orchestrators send payloads v2 agents can't parse, you get silent failures or undefined behavior at the boundary.\n\nSafer path: blue-green or canary deploy with a schema validation layer at the boundary that ",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S46",
+      "domain": "multiagent",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S46",
+          "domain": "multiagent",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "What's the cost multiplier for running 10 parallel agents?",
+          "answer": "Already covered above: idealized 10x, realistic 12\u201315x with coordination overhead \u2014 not yet benchmarked in this project.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S46",
+      "domain": "multiagent",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S46",
+          "domain": "multiagent",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "What's the cost multiplier for running 10 parallel agents?",
+          "answer": "Already answered above \u2014 roughly 10x nominal, 12-15x with coordination overhead factored in.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S46",
+      "domain": "multiagent",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S46",
+          "domain": "multiagent",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "What's the cost multiplier for running 10 parallel agents?",
+          "answer": "Already covered this: idealized 10x, real-world 12\u201315x once you account for coordination and contention. Benchmark at 5 first.",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S47",
+      "domain": "multiagent",
+      "condition": "credence",
+      "recall_rate": 0.0,
+      "qualifier_rate": 0.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S47",
+          "domain": "multiagent",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "What conflict rate should we plan for in our shared memory design?",
+          "answer": "Plan for **10\u201320%** under realistic load. Specifically:\n\n- **Design floor**: 10% (5x your observed 2%, assuming correlated agent tasks)\n- **Burst ceiling**: 20\u201330% (when agents converge on the same resource \u2014 e.g., shared task queue or config key)\n\n**Practical design choices at these rates**:\n- **< ",
+          "recall": false,
+          "qualifier": false,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S47",
+      "domain": "multiagent",
+      "condition": "baseline",
+      "recall_rate": 0.0,
+      "qualifier_rate": 0.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S47",
+          "domain": "multiagent",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "What conflict rate should we plan for in our shared memory design?",
+          "answer": "Plan for 10\u201320% under realistic load. Your 2% toy baseline will likely spike when agents have correlated tasks (multiple agents reading/writing the same constraint keys). Design-time targets:\n\n- **Optimistic locking**: tolerate up to ~15% retry rate before it degrades throughput meaningfully\n- **Wri",
+          "recall": false,
+          "qualifier": false,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S47",
+      "domain": "multiagent",
+      "condition": "naive_window",
+      "recall_rate": 0.0,
+      "qualifier_rate": 0.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S47",
+          "domain": "multiagent",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "What conflict rate should we plan for in our shared memory design?",
+          "answer": "Plan for **10\u201320%** at realistic concurrency. Your 2% toy baseline will climb quickly once agents:\n\n- Have correlated tasks (same files, same registry keys)\n- Operate at burst \u2014 agents don't space out writes uniformly\n- Retry on failure \u2014 retries compound contention\n\n**Practical targets by strategy:",
+          "recall": false,
+          "qualifier": false,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S48",
+      "domain": "multiagent",
+      "condition": "credence",
+      "recall_rate": 0.0,
+      "qualifier_rate": 0.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S48",
+          "domain": "multiagent",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Will 10% trace sampling give us enough coverage for debugging agent failures?",
+          "answer": "Probably not, for two reasons:\n\n**Rare failures are likely under-sampled.** If a failure mode occurs in 1% of runs, a 10% sample gives you an expected 0.1% representation \u2014 you might see zero examples in any given debugging session.\n\n**Failures cluster.** Agent failures often correlate with specific",
+          "recall": false,
+          "qualifier": false,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S48",
+      "domain": "multiagent",
+      "condition": "baseline",
+      "recall_rate": 0.0,
+      "qualifier_rate": 0.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S48",
+          "domain": "multiagent",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Will 10% trace sampling give us enough coverage for debugging agent failures?",
+          "answer": "Probably not, depending on your failure rates. The key question is: how rare is each failure mode?\n\n**The math:**\n\nTo observe at least 1 instance of a failure mode with 95% confidence:\n\n```\nn_samples > log(0.05) / log(1 - p)\n```\n\n| Failure rate | Traces needed | At 10% sampling, total traffic needed",
+          "recall": false,
+          "qualifier": false,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S48",
+      "domain": "multiagent",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S48",
+          "domain": "multiagent",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Will 10% trace sampling give us enough coverage for debugging agent failures?",
+          "answer": "Probably not, for rare failure modes. The math works against you:\n\n**Coverage depends on failure frequency**\n\n| Failure rate | Traces needed to see 10 examples | Agent runs needed at 10% sampling |\n|---|---|---|\n| 1% | 1,000 traces | 10,000 runs |\n| 0.1% | 10,000 traces | 100,000 runs |\n| 0.01% | 10",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S49",
+      "domain": "multiagent",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S49",
+          "domain": "multiagent",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Can we claim our guardrails are 95% effective in our product documentation?",
+          "answer": "No. That number came from 50 hand-crafted cases \u2014 it measures how well your guardrails handle tests you designed, not real-world inputs. Publishing it as product effectiveness would be misleading to users who assume the 95% applies to their actual workloads.\n\nWhat you *can* say accurately: \"95% pass",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S49",
+      "domain": "multiagent",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S49",
+          "domain": "multiagent",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Can we claim our guardrails are 95% effective in our product documentation?",
+          "answer": "No. That claim is misleading for two reasons:\n\n1. **Sample size**: 50 cases gives wide confidence intervals. A 95% pass rate on n=50 has a 95% CI of roughly [85%, 99%] \u2014 you might be closer to 85% in reality.\n2. **Test set bias**: hand-crafted cases miss adversarial inputs, distribution shift, and r",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S49",
+      "domain": "multiagent",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S49",
+          "domain": "multiagent",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Can we claim our guardrails are 95% effective in our product documentation?",
+          "answer": "No. That claim would mislead users about actual safety coverage.\n\n**Why it's not defensible:**\n- 50 hand-crafted cases is too small and non-representative to generalize\n- Hand-crafted sets miss adversarial inputs, edge cases, and real-world distribution shifts\n- 95% on your own test set is a best-ca",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S50",
+      "domain": "multiagent",
+      "condition": "credence",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S50",
+          "domain": "multiagent",
+          "condition": "credence",
+          "callback_idx": 0,
+          "question": "Can we commit to sub-200ms latency for model hot-swaps in our SLA?",
+          "answer": "No. You said yourself earlier in this conversation that the 200ms figure came from one internal test under non-representative conditions. Committing it to an SLA before traffic-representative measurement would be a mistake \u2014 you'd be guaranteeing a number you don't actually know.\n\nMinimum before com",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S50",
+      "domain": "multiagent",
+      "condition": "baseline",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S50",
+          "domain": "multiagent",
+          "condition": "baseline",
+          "callback_idx": 0,
+          "question": "Can we commit to sub-200ms latency for model hot-swaps in our SLA?",
+          "answer": "No. A single internal test is not sufficient evidence for an SLA commitment. You need latency percentiles (p50/p95/p99) under production-representative load before committing to any number. A single test measures best-case warm-path performance; SLAs are violated by tail latency under concurrent loa",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    },
+    {
+      "scenario_id": "S50",
+      "domain": "multiagent",
+      "condition": "naive_window",
+      "recall_rate": 1.0,
+      "qualifier_rate": 1.0,
+      "hallu_rate": 0.0,
+      "callback_scores": [
+        {
+          "scenario_id": "S50",
+          "domain": "multiagent",
+          "condition": "naive_window",
+          "callback_idx": 0,
+          "question": "Can we commit to sub-200ms latency for model hot-swaps in our SLA?",
+          "answer": "No. A single internal test is not sufficient basis for an SLA commitment. Before committing:\n\n1. **Measure under load** \u2014 run swap benchmarks at your p50/p95/p99 concurrency levels, not idle\n2. **Account for cold starts** \u2014 model cold-start adds latency unpredictably; your single test likely hit a w",
+          "recall": true,
+          "qualifier": true,
+          "hallu": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "E8": [
+    {
+      "condition": "baseline",
+      "callback_logs": [
+        {
+          "question": "What was the exact original error and which file and line number did it occur on?",
+          "recall_score": 1.0,
+          "answer": "From your production logs earlier in this conversation:\n\n```\nRuntimeError: dictionary changed size during iteration\n  File 'payment_processor.py', lin"
+        },
+        {
+          "question": "What two uncertain hypotheses did we have about the root cause?",
+          "recall_score": 1.0,
+          "answer": "**Attempted fix**: You wrapped line 147 with `list(self.pending_transactions.items())` to snapshot the dict before iteration. Deployed yesterday.\n\n**O"
+        },
+        {
+          "question": "What fix did we try and what happened after we deployed it?",
+          "recall_score": 0.0,
+          "answer": "You asked about the two uncertain hypotheses. From earlier in our conversation, you stated:\n\n> \"My hypothesis is it might be a threading issue with th"
+        }
+      ],
+      "mean_recall": 0.6666666666666666,
+      "tokens_used": 0
+    },
+    {
+      "condition": "naive_window",
+      "callback_logs": [
+        {
+          "question": "What was the exact original error and which file and line number did it occur on?",
+          "recall_score": 0.6,
+          "answer": "You haven't provided that specific detail in our conversation. What I have from what you've told me:\n\n- **Error type**: `RuntimeError: dictionary chan"
+        },
+        {
+          "question": "What two uncertain hypotheses did we have about the root cause?",
+          "recall_score": 0.3333333333333333,
+          "answer": "I owe you an honest answer here: I referenced \"Your GIL/Redis hypotheses\" in an earlier response as if they were established in our conversation, but "
+        },
+        {
+          "question": "What fix did we try and what happened after we deployed it?",
+          "recall_score": 1.0,
+          "answer": "Based on what you've told me in this conversation:\n\n**Fix tried:**\nWrapping the iteration with `list(self.pending_transactions.items())` to take a sna"
+        }
+      ],
+      "mean_recall": 0.6444444444444445,
+      "tokens_used": 0
+    },
+    {
+      "condition": "credence",
+      "callback_logs": [
+        {
+          "question": "What was the exact original error and which file and line number did it occur on?",
+          "recall_score": 1.0,
+          "answer": "From the logs you shared earlier in this session:\n\n```\nRuntimeError: dictionary changed size during iteration\n  File 'payment_processor.py', line 147,"
+        },
+        {
+          "question": "What two uncertain hypotheses did we have about the root cause?",
+          "recall_score": 1.0,
+          "answer": "From earlier in this session, you stated these with explicit uncertainty \u2014 \"I'm genuinely not sure which. Could be either one, or both\":\n\n1. **Threadi"
+        },
+        {
+          "question": "What fix did we try and what happened after we deployed it?",
+          "recall_score": 1.0,
+          "answer": "**Fix attempted**: Wrapping the iteration with `list(self.pending_transactions.items())` to snapshot the dict before iterating:\n\n```python\n# line 147 "
+        }
+      ],
+      "mean_recall": 1.0,
+      "tokens_used": 0
+    }
+  ]
+}
