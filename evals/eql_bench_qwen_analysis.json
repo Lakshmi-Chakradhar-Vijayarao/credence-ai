@@ -1,0 +1,143 @@
+{
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "benchmark": "EQL-Bench v2",
+  "n_total": 370,
+  "n_explicit": 280,
+  "n_ghost": 90,
+  "n_probe_blocked": 126,
+  "n_unguarded": 154,
+  "probe_coverage": 0.45,
+  "probe_coverage_ci95": [
+    0.3964,
+    0.5071
+  ],
+  "ghost_fp_rate": 0.0,
+  "overall_eqlr": 0.4432,
+  "overall_eqlr_ci95": [
+    0.3919,
+    0.4973
+  ],
+  "unguarded_eqlr": 0.5,
+  "unguarded_eqlr_ci95": [
+    0.4221,
+    0.5779
+  ],
+  "probe_blocked_eqlr": 0.0,
+  "probe_blocked_eqlr_ci95": [
+    0.0,
+    0.0
+  ],
+  "ghost_eqlr": 0.9667,
+  "ghost_eqlr_ci95": [
+    0.9222,
+    1.0
+  ],
+  "by_domain": {
+    "api": {
+      "n": 26,
+      "eqlr": 0.4615,
+      "eqlr_ci95": [
+        0.2692,
+        0.6538
+      ]
+    },
+    "compliance": {
+      "n": 18,
+      "eqlr": 0.5,
+      "eqlr_ci95": [
+        0.2778,
+        0.7222
+      ]
+    },
+    "debug": {
+      "n": 18,
+      "eqlr": 0.5556,
+      "eqlr_ci95": [
+        0.3333,
+        0.7778
+      ]
+    },
+    "design": {
+      "n": 22,
+      "eqlr": 0.4545,
+      "eqlr_ci95": [
+        0.2727,
+        0.6364
+      ]
+    },
+    "finance": {
+      "n": 17,
+      "eqlr": 0.5882,
+      "eqlr_ci95": [
+        0.3529,
+        0.8235
+      ]
+    },
+    "legal": {
+      "n": 16,
+      "eqlr": 0.5625,
+      "eqlr_ci95": [
+        0.3125,
+        0.8125
+      ]
+    },
+    "medical": {
+      "n": 16,
+      "eqlr": 0.1875,
+      "eqlr_ci95": [
+        0.0,
+        0.375
+      ]
+    },
+    "multiagent": {
+      "n": 21,
+      "eqlr": 0.6667,
+      "eqlr_ci95": [
+        0.4762,
+        0.8571
+      ]
+    }
+  },
+  "by_qualifier_type": {
+    "approximation": {
+      "n": 12,
+      "eqlr": 0.3333,
+      "eqlr_ci95": [
+        0.0833,
+        0.5833
+      ]
+    },
+    "estimate": {
+      "n": 37,
+      "eqlr": 0.3784,
+      "eqlr_ci95": [
+        0.2162,
+        0.5405
+      ]
+    },
+    "preliminary": {
+      "n": 20,
+      "eqlr": 0.6,
+      "eqlr_ci95": [
+        0.4,
+        0.8
+      ]
+    },
+    "unverified_report": {
+      "n": 45,
+      "eqlr": 0.5778,
+      "eqlr_ci95": [
+        0.4444,
+        0.7111
+      ]
+    },
+    "vendor_claim": {
+      "n": 40,
+      "eqlr": 0.525,
+      "eqlr_ci95": [
+        0.375,
+        0.675
+      ]
+    }
+  }
+}

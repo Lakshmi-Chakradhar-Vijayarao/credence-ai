@@ -1464,13 +1464,13 @@ try:
           tr_default.contradictions_detected == [],
           f"got {tr_default.contradictions_detected!r}")
 
-    # S23-G: compression_faithfulness has 50 scenarios after extension
+    # S23-G: compression_faithfulness has 100 scenarios after extension
     from evals.compression_faithfulness import SCENARIOS
-    check("S23-G compression_faithfulness has 50 scenarios",
-          len(SCENARIOS) == 50,
+    check("S23-G compression_faithfulness has 100 scenarios",
+          len(SCENARIOS) == 100,
           f"got {len(SCENARIOS)} scenarios")
 
-    # S23-H: all 50 scenarios have uncertainty markers in user text
+    # S23-H: all 100 scenarios have uncertainty markers in user text
     from evals.compression_faithfulness import _build_conversation, _has_uncertainty
     missed50 = []
     for stmt, label, _ in SCENARIOS:
@@ -2423,6 +2423,115 @@ except Exception as e:
     import traceback
     for name in ["S30-A","S30-B","S30-C","S30-D","S30-E","S30-F",
                  "S30-G","S30-H","S30-I","S30-J","S30-K","S30-L"]:
+        check(name, False, f"exception: {e}")
+    traceback.print_exc()
+
+# ─────────────────────────────────────────────────────────────────────────────
+# S25 — _UNCERTAINTY_MARKERS 423-term expansion: new category smoke tests
+# ─────────────────────────────────────────────────────────────────────────────
+
+section("S31: _UNCERTAINTY_MARKERS 423-term expansion — new category coverage")
+
+try:
+    from credence.context_manager import _UNCERTAINTY_MARKERS as _UM25
+
+    # S31-A: frozenset has exactly 423 terms
+    check("S31-A frozenset has 423 terms",
+          len(_UM25) == 423,
+          f"actual count: {len(_UM25)}")
+
+    # S31-B: appearance/seeming hedges fire
+    check("S31-B 'seems to' triggers probe",
+          _has_uncertainty_fn("The cache seems to expire after an hour"))
+    check("S31-B 'appears to' triggers probe",
+          _has_uncertainty_fn("The service appears to have a rate limit of 100"))
+    check("S31-B 'appear to' triggers probe",
+          _has_uncertainty_fn("Both values appear to be correct"))
+
+    # S31-C: person-attribution hedges fire
+    check("S31-C 'colleague said' triggers probe",
+          _has_uncertainty_fn("My colleague said the timeout is 30 seconds"))
+    check("S31-C 'a colleague' triggers probe",
+          _has_uncertainty_fn("A colleague mentioned the limit might be lower"))
+    check("S31-C 'sales claimed' triggers probe",
+          _has_uncertainty_fn("Sales claimed the API can handle 10,000 requests"))
+    check("S31-C 'someone said' triggers probe",
+          _has_uncertainty_fn("Someone said the endpoint changes in v2"))
+
+    # S31-D: vendor document-type possessives fire
+    check("S31-D \"vendor's guide\" triggers probe",
+          _has_uncertainty_fn("According to the vendor's guide, the limit is 50"))
+    check("S31-D \"vendor's whitepaper\" triggers probe",
+          _has_uncertainty_fn("The vendor's whitepaper mentions 99.9% uptime"))
+
+    # S31-E: estimate markers fire
+    check("S31-E 'back-of-envelope' triggers probe",
+          _has_uncertainty_fn("Back-of-envelope: the request cost is about $0.01"))
+    check("S31-E 'rough estimate' triggers probe",
+          _has_uncertainty_fn("Rough estimate is 200ms latency"))
+
+    # S31-F: academic pre-publication markers fire
+    check("S31-F 'a preprint' triggers probe",
+          _has_uncertainty_fn("According to a preprint, the model achieves 90% accuracy"))
+    check("S31-F 'not peer-reviewed' triggers probe",
+          _has_uncertainty_fn("This result is not peer-reviewed yet"))
+
+    # S31-G: conflicting source markers fire
+    check("S31-G 'conflicting reports' triggers probe",
+          _has_uncertainty_fn("There are conflicting reports about the actual limit"))
+    check("S31-G 'conflicting data' triggers probe",
+          _has_uncertainty_fn("I've seen conflicting data from two sources"))
+
+    # S31-H: preliminary/undecided markers fire
+    check("S31-H 'nothing decided' triggers probe",
+          _has_uncertainty_fn("Nothing decided on the auth strategy yet"))
+    check("S31-H 'early exploration' triggers probe",
+          _has_uncertainty_fn("This is early exploration — approach may change"))
+
+    # S31-I: informal channel markers fire
+    check("S31-I 'slack thread' triggers probe",
+          _has_uncertainty_fn("From a Slack thread: the limit may be 500"))
+    check("S31-I 'not formally' triggers probe",
+          _has_uncertainty_fn("Not formally confirmed, but the timeout is 60s"))
+
+    # S31-J: inferential markers fire
+    check("S31-J 'logs show' triggers probe",
+          _has_uncertainty_fn("Logs show a possible 429 at 40 req/s"))
+    check("S31-J 'inferred from' triggers probe",
+          _has_uncertainty_fn("Inferred from behavior: the rate limit is 100"))
+
+    # S31-K: ghost scenarios (no hedging) do NOT fire (0% FP)
+    check("S31-K established fact does NOT trigger probe",
+          not _has_uncertainty_fn("Python 3.11 was released in October 2022"),
+          "Ghost: established fact should not fire")
+    check("S31-K vendor fact (no hedge) does NOT trigger probe",
+          not _has_uncertainty_fn("The SaaS vendor's DPA meets GDPR Article 28 requirements"),
+          "Ghost: contracted vendor fact should not fire")
+    check("S31-K config fact does NOT trigger probe",
+          not _has_uncertainty_fn("The database port is 5432"),
+          "Ghost: stated config fact should not fire")
+    check("S31-K confident assertion does NOT trigger probe",
+          not _has_uncertainty_fn("We use RS256 for JWT signing"),
+          "Ghost: confident assertion should not fire")
+
+    # S31-L: EQL-Bench v2 representative explicit scenarios fire
+    eqlv2_samples = [
+        "The vendor mentioned the rate limit might be 50 req/min",
+        "According to a colleague, the auth token expires in 3600 seconds",
+        "Logs show what appears to be a 10-second timeout",
+        "A preprint suggests the latency is roughly 200ms",
+        "Someone said the retry limit is 3 attempts — unconfirmed",
+        "Nothing decided on the pagination size yet",
+        "Conflicting reports suggest the SLA might be 99.5% or 99.9%",
+    ]
+    for i, s in enumerate(eqlv2_samples):
+        check(f"S31-L EQL-Bench-style explicit scenario #{i+1} fires probe",
+              _has_uncertainty_fn(s), f"Missed: {s!r}")
+
+except Exception as e:
+    import traceback
+    for name in ["S31-A","S31-B","S31-C","S31-D","S31-E","S31-F",
+                 "S31-G","S31-H","S31-I","S31-J","S31-K","S31-L"]:
         check(name, False, f"exception: {e}")
     traceback.print_exc()
 
