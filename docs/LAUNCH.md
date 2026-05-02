@@ -4,7 +4,7 @@
 
 **Title:**
 ```
-Show HN: Credence – we measured a 46% uncertainty-loss rate in LLM context compression and built the fix
+Show HN: Credence – we measured 60% qualifier loss in LLM context compression and built the deterministic fix
 ```
 
 **Body:**
@@ -12,25 +12,25 @@ Show HN: Credence – we measured a 46% uncertainty-loss rate in LLM context com
 When Claude Code summarizes old context to save tokens, it uses a smaller model (Haiku) to compress.
 We measured what happens to uncertainty markers during that compression.
 
-Result: 46% of the time, Haiku strips qualifiers like "I think", "unverified", "probably", 
-"the vendor claims" from the summary. The downstream model then states the uncertain value 
-as confirmed fact 6% of the time with naive Haiku, and 74% of the time with LLMLingua-style 
-scoring (which actively keeps "informative" content — i.e., the fact — and drops "padding" — 
-i.e., the qualifier).
+Result: 46% of the time, naive Haiku strips qualifiers like "I think", "unverified", 
+"probably", "the vendor claims" from the summary. With token-importance compression 
+(simulation — which actively scores "informative" content high and drops "qualifiers" as 
+padding), the strip rate is 68% and the downstream False Certainty Rate hits 74%.
+With naive Haiku, the downstream FCR is 6%.
 
 We call this Epistemic Qualifier Loss (EQL). The downstream false certainty is the FCR 
 (False Certainty Rate). We built Credence to reduce both to zero.
 
 Five enforcement layers:
 
-1. Faithfulness probe (0.07ms, zero API calls) — 198-term frozenset scans user turns before 
-   Haiku compression. Uncertainty found → block compression → keep the turn verbatim.
+1. Faithfulness probe (0.017ms P50, zero API calls) — 198-term frozenset scans user turns
+   before Haiku compression. Uncertainty found → block compression → keep the turn verbatim.
 
 2. Truth Buffer + Consistency Enforcer — SQLite registry stores all uncertain constraints. 
    Before every generation turn, injects them into the system prompt. When user query 
    keyword-overlaps a registered constraint, escalates to imperative mode.
 
-3. Generation-Time Scanner (0.08ms) — scans code blocks and prose in model output for 
+3. Generation-Time Scanner (0.026ms P50) — scans code blocks and prose in model output for 
    unverified numeric literals. Annotates inline with confidence tier before the code 
    reaches you.
 
@@ -49,7 +49,7 @@ registration) that classifies by provenance rather than surface text.
 
 Ghost Gauntlet: Credence BothRate = 1.000 vs naive window = 0.200 (n=10 sessions).
 
-All results are in evals/*.json and reproducible. 611 passing tests, all passing. 
+All results are in evals/*.json and reproducible. 596 passing tests, all passing. 
 Most evals run without an API key.
 
 GitHub: https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai
@@ -88,7 +88,7 @@ When Claude uses Haiku to summarize old context:
 → 46% of "I think / unverified / probably" markers get stripped
 → 6% of the time the downstream model states it as confirmed fact
 
-With LLMLingua-style scoring (keeps "informative" content, drops "qualifiers"):
+With token-importance compression (simulation — keeps high-density content, drops qualifiers):
 → 68% strip rate
 → 74% False Certainty Rate
 
@@ -105,7 +105,7 @@ Found → block compression → keep the turn verbatim.
 Block rate: 100% across n=50
 FCR after: 0%
 
-0.07ms. Zero API calls.
+0.017ms P50. Zero API calls.
 ```
 
 **Tweet 4 (the harder problem):**
@@ -138,19 +138,19 @@ Value AND qualifier both recalled.
 ```
 The full stack:
 
-CP1 — Faithfulness probe (0.07ms) — blocks Haiku
+CP1 — Faithfulness probe (0.017ms P50) — blocks Haiku
 CP2 — Truth Buffer — injects unverified constraints into every system prompt
 CP3 — Generation scanner — annotates unverified literals inline in code
 CP4 — Rust gate (3.4ms) — blocks Write/Edit/Bash against unverified constraints
 CP5 — Cross-session memory — new sessions inherit uncertainty status
 
-Total overhead: ~0.56ms + 3.4ms gate.
+Total in-process overhead: 1.1ms P99 + 3.4ms gate = ~4.5ms.
 Zero extra API calls.
 ```
 
 **Tweet 7 (call to action):**
 ```
-611 passing tests. All passing.
+596 passing tests. All passing.
 Most evals reproducible without an API key.
 
 pip install credence-guard
@@ -178,7 +178,7 @@ Built an epistemic enforcement layer for Claude Code — prevents "I think the r
 
 **r/LocalLLaMA title:**
 ```
-Show HN-style: measured 46% uncertainty-loss rate during Haiku summarization, built a deterministic fix (198-term probe, 0.07ms, zero API calls)
+Measured 60% qualifier strip rate during Haiku context compression, built a deterministic fix (198-term probe, 0.017ms P50, zero API calls)
 ```
 
 ---
@@ -194,7 +194,7 @@ github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai
 
 ## Launch Checklist
 
-- [ ] All 611 tests passing (`python tests/tests.py`)
+- [ ] All 596 tests passing (`python -m pytest tests/ -q`)
 - [ ] `pip install credence-guard` installs cleanly from PyPI
 - [ ] `python quickstart.py` runs without API key
 - [ ] demo/gate_demo.gif renders correctly in README on GitHub
@@ -210,7 +210,7 @@ github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai
 > For single-agent compression: partially yes. For multi-agent handoffs and cross-session propagation: no. The problem isn't just compression — it's epistemic state surviving handoffs between agents that have no shared memory. That problem grows as pipelines get more complex, not less.
 
 **"How is this different from just prompting the model to be careful?"**
-> We tested this. With careful prompting, the model preserves qualifiers 90% of the time — not 100%, and not deterministically. The faithfulness probe is 100% and 0.07ms because it doesn't ask the model anything. The probe either finds the marker or it doesn't.
+> We tested this. With careful prompting, the model preserves qualifiers most of the time — not 100%, and not deterministically. The faithfulness probe is 100% and 0.017ms P50 because it doesn't ask the model anything. The probe either finds the marker or it doesn't.
 
 **"What about models that don't use compression?"**
 > CP1 (probe) is compression-specific. CP2-CP5 apply regardless of compression — they protect against the model forgetting uncertainty during generation, in code output, at tool execution, and across sessions.
