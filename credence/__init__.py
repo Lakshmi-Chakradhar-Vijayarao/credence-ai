@@ -22,14 +22,12 @@ uncertain claims from Agent A's output, registers them, and injects an
 epistemic handoff block into Agent B's system prompt.
 """
 
-from .confidence_proxy import CredenceProxy, CredenceResult
 from .context_manager import ContextManager, TurnResult, SessionStats
 from .registry import CredenceRegistry
 from .memory import CredenceMemory
 from .pipeline_monitor import PipelineMonitor, EpistemicHandoff
 from .enforce import enforce, CredenceViolation
 from .wrap import wrap, WrapResult, measure_fcr
-from .epistemic_manifest import EpistemicManifest
 
 __version__ = "3.0.0"
 __all__ = [
@@ -43,10 +41,6 @@ __all__ = [
     "PipelineMonitor", "EpistemicHandoff",
     # Decorator-based enforcement
     "enforce", "CredenceViolation",
-    # Structured epistemic representation
-    "EpistemicManifest",
-    # J-score (offline, no API calls)
-    "CredenceProxy", "CredenceResult",
     # Full enforcement engine (requires API key — optional power-user feature)
     "ContextManager", "TurnResult", "SessionStats",
 ]

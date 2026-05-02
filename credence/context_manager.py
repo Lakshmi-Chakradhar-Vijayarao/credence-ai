@@ -79,13 +79,6 @@ _MODEL_HAIKU = "claude-haiku-4-5-20251001"
 _THINKING_MIN = 1024   # API minimum; budget_tokens must be >= 1024
 _THINKING_MAX = 5000
 
-# ---------------------------------------------------------------------------
-# Novelty guard — entity change threshold
-# If a turn introduces > this fraction of new named entities, PRESERVE.
-# ---------------------------------------------------------------------------
-_NOVELTY_THRESHOLD = 0.75   # >75% new entities → treat as new topic
-_NOVELTY_MIN_ENTITIES = 5   # require at least 5 new entities (single new names aren't pivots)
-_NOVELTY_MIN_VOCAB    = 10  # don't fire until the entity vocab is established
 _MIN_COMPRESS_TOKENS  = 150 # don't call Haiku if old segment is smaller than this
 _MIN_COMPRESS_ROI     = 50  # minimum net tokens saved (after Haiku overhead) to justify compression
 
@@ -692,13 +685,6 @@ class ContextManager:
         self._j_history:  list[float] = []
         self._drift_state: bool = False
 
-        # Novelty guard: vocabulary of named entities seen so far
-        self._content_vocab: set[str] = set()
-        # Recent-window vocabulary: last 3 turns' content words (sliding queue).
-        # Novelty is measured against THIS, not global vocab, so same-domain
-        # technical terms don't falsely trigger the pivot guard every turn.
-        self._recent_vocab_window: list[set[str]] = []
-
         # Adaptive threshold tracking: rolling J-buffer for percentile-based thresholds.
         # After _ADAPTIVE_MIN_SAMPLES turns, theta_high = P75, theta_low = P25 of buffer.
         self._j_buffer:         list[float]          = []
@@ -948,9 +934,6 @@ class ContextManager:
                     content_type = cr.content_type,
                 )
 
-        # Novelty guard: check if this turn signals a domain pivot
-        novelty_override = self._check_novelty(text)
-
         # Drift detection: 3 consecutive LOW-zone turns → proactive PRESERVE lock
         self._j_history.append(cr.j_score)
         if len(self._j_history) > 5:
@@ -992,7 +975,7 @@ class ContextManager:
         self._history_j_scores.append(cr.j_score)   # assistant message — record J
 
         # Apply Credence memory decision
-        decision, tokens_saved = self._apply_credence(cr, novelty_override)
+        decision, tokens_saved = self._apply_credence(cr)
 
         # Capture effective thresholds AFTER apply_credence so buffer is still pre-update
         eff_high = self._effective_theta_high
@@ -1009,8 +992,6 @@ class ContextManager:
         )
         self._last_faithfulness_block = False
 
-        # Update entity vocabulary and zone memory for next-turn thinking budget
-        self._update_content_vocab(text)
         self._prev_zone = cr.zone
         self._prev_j    = cr.j_score
 
@@ -1058,7 +1039,6 @@ class ContextManager:
             "decision":                  decision,
             "tokens_saved":              tokens_saved,
             "reasoning":                 cr.reasoning,
-            "novelty_override":          novelty_override,
             "semantic_entropy_override": "semantic entropy proxy" in cr.reasoning,
             "content_type":              cr.content_type,
             "thinking_tokens":           thinking_tokens,
@@ -1129,8 +1109,6 @@ class ContextManager:
         self._j_history          = []
         self._drift_state        = False
         self._last_faithfulness_block    = False
-        self._content_vocab              = set()
-        self._recent_vocab_window        = []
         self._j_buffer                   = []
         self._history_j_scores           = []
         self._compression_shadow         = None
@@ -1169,16 +1147,12 @@ class ContextManager:
     # Credence memory decisions
     # ------------------------------------------------------------------
 
-    def _apply_credence(self, cr: CredenceResult, novelty_override: bool) -> tuple[str, int]:
+    def _apply_credence(self, cr: CredenceResult) -> tuple[str, int]:
         """Returns (decision, tokens_saved)."""
         n_turns = len(self._history)
 
         # Drift state: sustained uncertainty (3+ consecutive LOW turns) → lock PRESERVE
         if self._drift_state:
-            return "PRESERVE", 0
-
-        # Novelty guard: new topic detected → preserve regardless of J
-        if novelty_override:
             return "PRESERVE", 0
 
         # Regime detection: only activate compression/trim when session shows
@@ -2351,33 +2325,6 @@ class ContextManager:
             and w not in self._CONTENT_STOPWORDS
         }
 
-    def _check_novelty(self, text: str) -> bool:
-        """
-        Novelty guard — DISABLED after empirical measurement showed 79-87% FP rate.
-
-        Technical writing introduces new vocabulary every sentence within the same domain
-        ("vacuum", "partitioning", "B-tree" are all "new" in a PostgreSQL session).
-        A vocabulary-distance signal cannot distinguish same-domain progression from
-        a real domain pivot without semantic embeddings — which are not available here.
-
-        The cases this guard was intended to protect are already covered by:
-          - Faithfulness probe: detects uncertainty in compressible segments → PRESERVE
-          - Selective J-compression: LOW/MEDIUM-J turns always kept verbatim
-          - Regime detection: low J-variance → PRESERVE mode (no compression)
-
-        Kept as a stub so the call site and decision log field remain intact.
-        Returns False always. Re-enable with a proper embedding-based implementation.
-        """
-        return False
-
-    def _update_content_vocab(self, text: str):
-        words = self._extract_content_words(text)
-        self._content_vocab.update(words)
-        # Maintain sliding window of last 3 turns
-        self._recent_vocab_window.append(words)
-        if len(self._recent_vocab_window) > 3:
-            self._recent_vocab_window.pop(0)
-
     def _has_multi_answer(self, text: str) -> bool:
         """Returns True if response signals multiple valid answers (semantic entropy proxy)."""
         lower = text.lower()
@@ -2634,7 +2581,6 @@ class ContextManager:
             "history_j_scores":  self._history_j_scores,
             "summary":           self._summary,
             "j_buffer":          self._j_buffer,
-            "content_vocab":     list(self._content_vocab),
             "turn_idx":          self._turn_idx,
             "compression_count": self._compression_count,
             "prev_zone":         self._prev_zone,
@@ -2669,7 +2615,6 @@ class ContextManager:
         self._history_j_scores  = state["history_j_scores"]
         self._summary           = state.get("summary")
         self._j_buffer          = state.get("j_buffer", [])
-        self._content_vocab     = set(state.get("content_vocab", []))
         self._turn_idx          = state.get("turn_idx", len(self._history) // 2)
         self._compression_count = state.get("compression_count", 0)
         self._prev_zone         = state.get("prev_zone", "MEDIUM")
