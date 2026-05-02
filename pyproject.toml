@@ -7,7 +7,7 @@ name = "credence-guard"
 version = "1.0.0"
 description = "Credence — epistemic enforcement layer that prevents LLMs from forgetting what they didn't know"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.11"
 authors = [
     { name = "Lakshmi-Chakradhar-Vijayarao" }
@@ -21,7 +21,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

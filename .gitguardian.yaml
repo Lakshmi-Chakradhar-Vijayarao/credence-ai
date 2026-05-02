@@ -1,0 +1,16 @@
+version: 2
+
+# Paths excluded from secret scanning — all contain test/benchmark data,
+# not real credentials. See inline `# pragma: allowlist secret` comments
+# for individual line suppressions.
+paths-ignore:
+  - "evals/eql_bench/eql_bench_v2.json"   # benchmark dataset — "password" is a policy compliance test word
+  - "evals/eql_bench/"                     # benchmark data directory
+
+# Known false-positive patterns in eval/test code:
+# - api_key="test"  | api_key="dummy"  | api_key="test-no-api-calls"
+#   These are placeholder values passed to ContextManager in offline tests
+#   that never make API calls. Real Anthropic keys have the format sk-ant-api03-…
+# - value_fragments = [..., "password", ...]  (gauntlet.py line ~971)
+#   Test scenario about NIST password-length policy — "password" is a topic
+#   keyword, not a credential.  Suppressed with # pragma: allowlist secret.

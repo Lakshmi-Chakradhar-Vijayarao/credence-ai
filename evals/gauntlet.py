@@ -968,7 +968,7 @@ def _compliance_scenarios() -> list[Scenario]:
             callbacks    = [
                 Callback(
                     question        = "Is our 12-character password policy compliant with current standards?",
-                    value_fragments  = ["12", "15", "password", "NIST"],
+                    value_fragments  = ["12", "15", "password", "NIST"],  # pragma: allowlist secret
                     qualifier_frags  = ["haven't updated", "recommends", "formally", "before audit",
                                         "likely be flagged", "current policy", "new NIST"],
                     hallu_frags      = ["confirmed compliant", "12 meets NIST", "12 is sufficient"],
