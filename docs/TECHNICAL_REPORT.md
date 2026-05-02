@@ -13,7 +13,7 @@ We measure EQL under two compression regimes (n=50): Haiku summarization produce
 
 We introduce Credence, a context safety layer that prevents EQL through five deterministic checkpoints: (1) a **faithfulness probe** blocking compression when uncertainty markers are present (198 terms, 0.017ms, zero API calls), (2) a **Truth Buffer** injecting unverified constraints into every system prompt, (3) a **Consistency Enforcer** with domain synonym expansion (52 clusters), (4) a **Generation-Time Scanner** annotating code and prose with confidence tiers, and (5) a **Rust PreToolUse gate** (3.4ms, 98× faster than Python) blocking irreversible actions on unverified constraints.
 
-Results: EQLR 46%→0%, FCR 6%→0% (Haiku, n=50); FCR 74%→0% (LLMLingua sim, n=50). Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions). Cross-session FCR: 40%→0% (n=20 callbacks). 557 passing tests, 0% false positive rate across all deterministic layers. Deployed as a 10-tool MCP server installable in Claude Code in two minutes.
+Results: EQLR 46%→0%, FCR 6%→0% (Haiku, n=50); FCR 74%→0% (token-importance simulation, n=50). Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions, synthetic). 596 passing tests, 0.5% false positive rate on probe (n=200). Deployed as a 22-tool MCP server installable in Claude Code in two minutes. Limitation: a prompt-engineering control experiment (Haiku + explicit qualifier-preservation instruction) has not yet been run; this is planned work and will determine the marginal contribution of the probe over prompting alone.
 
 ---
 
@@ -70,7 +70,7 @@ This paper:
 1. Defines EQL and EQLR as formal metrics for epistemic qualifier preservation in context compression (Section 3)
 2. Measures EQLR and FCR under Haiku and LLMLingua-inspired compression: 46.0%/68.0% EQLR, 6.0%/74.0% FCR (n=50, scorer v2)
 3. Introduces Credence with five mechanisms targeting three failure modes (Section 4)
-4. Validates Credence on E6 negative needle (all Opus 4.7), ghost constraint gauntlet (n=10), and cross-session memory (n=20 callbacks)
+4. Validates Credence on E6 negative needle (all Opus 4.7, n=23 trials) and ghost constraint gauntlet (n=10 synthetic sessions)
 5. Positions Credence against related work in Section 7
 
 ---
@@ -444,7 +444,7 @@ User message
 
 ### 6.1 MCP Interface
 
-Credence is deployed as a 10-tool FastMCP server. Tools available in Claude Code after 2-minute setup:
+Credence is deployed as a 22-tool FastMCP server. Tools available in Claude Code after 2-minute setup:
 
 | Tool | Function |
 |------|----------|
@@ -517,9 +517,9 @@ This is the missing reliability layer in AI infrastructure. Not hallucination de
 
 We identify epistemic qualifier loss as a systematic, measurable failure mode in LLM context compression: standard Haiku summarization strips uncertainty markers in 46.0% of compressions, causing downstream false certainty in 6.0% of cases (FCR, n=50, scorer v2, 95% CI [1.3%, 16.5%]). LLMLingua-simulated importance-based compression causes 74.0% FCR — 12× worse. Credence eliminates this failure through a faithfulness probe (198 markers, 0.017ms p50, zero API calls), J-selective routing, Truth Buffer injection, Consistency Enforcer (52 synonym clusters), Generation-Time Scanner, and a Rust PreToolUse gate (3.4ms, 98× faster than Python).
 
-The core validation demonstrates 100% qualifier survival (n=50, 95% CI [92.9%, 100%]) and 0% FCR (n=50, 95% CI [0%, 7.1%]) under Credence, versus 6.0%–74.0% FCR under naive/LLMLingua compression. Cross-session FCR: 40% no memory → 0% Credence Memory (n=20 callbacks). Ghost constraint BothRate: 0.200 (naive window) → 1.000 Credence (n=10 sessions × 3 conditions, ghost_gauntlet). Test coverage: 557 passing unit + integration tests, 1 skipped (offline-only). Precision eval: CE FP rate 0%, GTS string FP rate 0%, probe FP rate 0/20.
+The core validation demonstrates 100% qualifier survival (n=50, 95% CI [92.9%, 100%]) and 0% FCR (n=50, 95% CI [0%, 7.1%]) under Credence, versus 6.0%–74.0% FCR under naive/LLMLingua compression. Ghost constraint BothRate: 0.200 (naive window) → 1.000 Credence (n=10 sessions × 3 conditions, ghost_gauntlet). Test coverage: 596 passing tests, 1 skipped (API-dependent). Precision eval: CE FP rate 0%, GTS string FP rate 0%, probe FP rate 0/20.
 
-Credence is available as a 10-tool MCP server installable in Claude Code in 2 minutes.
+Credence is available as a 22-tool MCP server installable in Claude Code in 2 minutes.
 
 ---
 
