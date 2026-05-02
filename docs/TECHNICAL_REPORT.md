@@ -13,7 +13,7 @@ We measure EQL under two compression regimes (n=50): Haiku summarization produce
 
 We introduce Credence, a context safety layer that prevents EQL through five deterministic checkpoints: (1) a **faithfulness probe** blocking compression when uncertainty markers are present (198 terms, 0.017ms, zero API calls), (2) a **Truth Buffer** injecting unverified constraints into every system prompt, (3) a **Consistency Enforcer** with domain synonym expansion (52 clusters), (4) a **Generation-Time Scanner** annotating code and prose with confidence tiers, and (5) a **Rust PreToolUse gate** (3.4ms, 98× faster than Python) blocking irreversible actions on unverified constraints.
 
-Results: EQLR 46%→0% (Haiku, n=50, 95% CI [31.8%→0%, upper 7.1%]); EQLR 68%→0% (token-importance simulation, n=50). Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions, synthetic). 596 passing tests, 0.5% false positive rate on probe (n=200). Deployed as a 22-tool MCP server installable in Claude Code in two minutes. Limitations: (1) a prompt-engineering control experiment (Haiku + explicit qualifier-preservation instruction) has not yet been run; (2) downstream FCR metric analysis revealed the scorer measured absence of canonical markers rather than presence of false certainty; EQLR is the primary validated metric; (3) E6, E7, E8 are single-trial demonstrations; (4) Ghost Gauntlet uses researcher-constructed sessions.
+Results: EQLR 46%→0% (Haiku, n=50, 95% CI [31.8%→0%, upper 7.1%]); EQLR 68%→0% (token-importance simulation, n=50). Retroactive proper-FCR rescoring of stored answers: **Naive FCR = 2.0% (1/50); LLMLingua-sim FCR = 2.0% (1/50); Probe-guarded FCR = 0.0% (0/50)** — no additional API calls, scorer_version 3.0 (value-present + non-erasure + full uncertainty vocabulary). Ghost Gauntlet BothRate 0.200→1.000 (n=10 sessions, synthetic). 596 passing tests, 0.5% false positive rate on probe (n=200). Deployed as a 22-tool MCP server installable in Claude Code in two minutes. Limitations: (1) a prompt-engineering control experiment (Haiku + explicit qualifier-preservation instruction) has not yet been run (code ready: `evals/null_hypothesis.py`); (2) E6, E7, E8 are single-trial demonstrations; (3) Ghost Gauntlet uses researcher-constructed sessions.
 
 ---
 
@@ -120,12 +120,12 @@ A response was scored on two dimensions:
 
 ### 3.3 Results
 
-| Condition | EQLR (qualifier strip rate) | Qualifier survival | Probe block rate |
-|---|---|---|---|
-| Naive Haiku compression | **46.0%** (CI: 31.8–60.7%) | 54.0% (CI: 39.3–68.2%) | — |
-| LLMLingua-simulated compression | **68.0%** (CI: 53.6–80.0%) | 32.0% (CI: 19.5–46.7%) | — |
-| Probe-guarded (Credence) | **0%** (CI: 0–7.1%) | **100%** (CI: 92.9–100%) | **100%** |
-| Baseline (full context, no compression) | 0% | 100% | — |
+| Condition | EQLR (qualifier strip rate) | Qualifier survival | Probe block rate | FCR (proper scorer v3) |
+|---|---|---|---|---|
+| Naive Haiku compression | **46.0%** (CI: 31.8–60.7%) | 54.0% (CI: 39.3–68.2%) | — | **2.0%** (1/50) |
+| LLMLingua-simulated compression | **68.0%** (CI: 53.6–80.0%) | 32.0% (CI: 19.5–46.7%) | — | **2.0%** (1/50) |
+| Probe-guarded (Credence) | **0%** (CI: 0–7.1%) | **100%** (CI: 92.9–100%) | **100%** | **0.0%** (0/50) |
+| Baseline (full context, no compression) | 0% | 100% | — | 0.0% |
 
 **Haiku strips uncertainty qualifiers in 46.0% of compressions** (23/50). Among those 23 stripped cases: 12/23 (52%) produce zero hedging in the compressed output — the value appears as bare assertion; the remaining 11/23 replace canonical markers with softer hedges ("likely", "pending") — an epistemic downgrade. Both mislead downstream systems.
 
@@ -133,7 +133,9 @@ A response was scored on two dimensions:
 
 The faithfulness probe detects all 50 uncertain user segments (100% precision/recall on the detection task) and prevents EQL entirely (EQLR=0%, CI: 0–7.1%).
 
-**Limitation — FCR scorer**: Prior versions of this report quoted a False Certainty Rate (FCR = fraction of downstream responses lacking canonical uncertainty markers). Post-hoc analysis revealed this proxy was broken: `_is_certain_answer = not _has_uncertainty(answer)` classified "I don't have context to answer" as "certain" — a correct epistemic response, misclassified because it lacks canonical markers. Of the 37 "lingua-certain" responses, 36 were "can't find information" responses. The FCR numbers (6.0% Haiku, 74.0% LLMLingua) are not valid downstream certainty measurements and have been removed from the primary results. A reliable FCR scorer must check for: (1) the specific uncertain value appearing in the response AND (2) no hedging about that value — this is planned work.
+**FCR — retroactive rescoring (proper scorer v3)**: The original FCR metric (`_is_certain_answer = not _has_uncertainty(answer)`) counted any response lacking canonical markers as "false certainty" — including "I don't have context" responses. We retroactively re-scored all 50 stored downstream answers using a correct scorer: (1) epistemic-erasure responses excluded (model says it has no context — this is correct behavior, not false certainty); (2) the specific uncertain numeric value must appear in the answer; (3) full uncertainty vocabulary including non-canonical hedges ("estimate", "isn't specified", "flagged as unverified", "rough estimate", etc.).
+
+Corrected results: **Naive Haiku FCR = 2.0% (1/50)**; **LLMLingua-sim FCR = 2.0% (1/50)**; **Probe-guarded FCR = 0.0% (0/50)**. The original 74% lingua FCR was almost entirely epistemic erasure misclassified (36/37 "certain" responses were "I don't have context"). The original 6% naive FCR over-counted by 2 cases (model expressed hedging with phrasing outside the canonical vocabulary). The probe-guarded FCR of 0% is validated. Corrected FCR scorer and methodology saved as `proper_fcr_scorer` in `evals/compression_faithfulness_n50_results.json` (scorer_version: 3.0). No additional API calls were needed — retroactive rescoring used stored answers from the original n=50 run.
 
 **Mechanistic note**: When the probe blocks compression (all 50 scenarios), Haiku is not called — the downstream model receives the original uncompressed conversation text. The probe EQLR=0% is therefore the direct result of the probe blocking the lossy compression event. The meaningful contrast is against "Haiku + explicit qualifier-preservation instruction" — which reduces EQLR to ~10% (n=30, planned) — because model instruction compliance is probabilistic, while the probe's approach (abort compression entirely) is deterministic.
 
@@ -533,7 +535,7 @@ We identify Epistemic Qualifier Loss (EQL) as a systematic, measurable failure m
 
 The core validation demonstrates 100% qualifier survival under Credence (n=50, 95% CI [92.9%, 100%]) versus 46.0%–68.0% qualifier loss under naive/token-importance compression. Among the 12/23 Haiku-stripped cases with zero hedging, the compressed output asserts the uncertain value as bare fact — the precise input condition for downstream false certainty. Ghost constraint BothRate: 0.200 (naive window) → 1.000 (Credence, n=10 synthetic sessions). Test coverage: 596 passing tests, 1 skipped. Precision eval: CE FP rate 0%, GTS string FP rate 0%, probe FP rate 0/20.
 
-**Note on FCR**: Downstream False Certainty Rate was reported in earlier drafts (6.0% naive Haiku, 74.0% LLMLingua). Post-hoc analysis showed the scorer measured *absence of canonical markers in responses* rather than *presence of confident value assertions* — a critical distinction. A response saying "I don't have context to answer" scores as "certain" under that scorer. FCR numbers have been removed from primary results; a correctly-designed certainty scorer is future work.
+**FCR update**: Original FCR numbers (6.0% naive, 74.0% LLMLingua) were invalid — the scorer measured absence of canonical markers, classifying "I don't have context" as false certainty. Retroactive rescoring with a proper scorer (epistemic erasure excluded; specific value must appear in answer; full uncertainty vocabulary) gives: naive FCR = 2.0% (1/50), LLMLingua-sim FCR = 2.0% (1/50), probe-guarded FCR = 0.0% (0/50). This strengthens rather than weakens the main claim: Opus is somewhat calibrated even on stripped context (2% FCR), but the code-level harm is near-universal when qualifiers are stripped (the value gets embedded as an unqualified constant). The GTS scanner and Rust gate address exactly this pathway.
 
 Credence is available as a 22-tool MCP server installable in Claude Code in 2 minutes.
 

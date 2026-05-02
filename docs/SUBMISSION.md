@@ -39,7 +39,9 @@ Results from `evals/compression_faithfulness_n50_results.json` (saved). Latency 
 | EQL Study — Naive Haiku (n=50) | **Qualifier strip rate (EQLR)** | **0%** (CI: 0–7.1%) | **46.0%** (CI: 31.8–60.7%) | **Primary headline result** |
 | EQL Study — Naive Haiku (n=50) | Of those stripped: zero hedging | — | 52% (12/23) | Compressed output asserts value as fact |
 | EQL Study — Naive Haiku (n=50) | Of those stripped: epistemic downgrade | — | 48% (11/23) | Compressed output uses softer hedges ("likely", "pending") |
+| EQL Study — Naive Haiku (n=50) | **FCR (proper scorer v3)** | **0.0%** (0/50) | **2.0%** (1/50) | Retroactive rescore from stored answers; no new API calls |
 | EQL Study — Token-importance sim (n=50) | **Qualifier strip rate (EQLR)** | **0%** | **68.0%** (CI: 53.6–80.0%) | Simulation; not a measurement of the LLMLingua library |
+| EQL Study — Token-importance sim (n=50) | **FCR (proper scorer v3)** | **0%** | **2.0%** (1/50) | Epistemic erasure correctly excluded from FCR count |
 | EQL Study — Token-importance sim (n=50) | Failure mode | — | Epistemic erasure | User statement removed entirely; model says "no context" |
 | E6 Negative Needle (single trial, Opus 4.7) | Correction recall | **2/2** | naive: 0/2 | Truth Buffer: constraints survive 8-turn window |
 | E7 Multi-Hop Chain (single trial) | Hops recalled | **3/3** | naive: 1/3 | Dependency chain: credence preserves, naive breaks |

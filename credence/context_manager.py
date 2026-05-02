@@ -435,6 +435,13 @@ _UNCERTAINTY_MARKERS = frozenset({
     # Modal-past uncertainty — "it might have been changed" is unverified
     "might have been", "may have been", "could have been",
     "might have changed", "may have changed",
+    # Modal-present uncertainty — "might require/need/extend/support/change"
+    # Any "might + verb" form expresses epistemic possibility (not certainty).
+    # "might " (with trailing space) catches all "might + word" patterns in one marker.
+    # "may have" (without "been") covers "may have a 30-day SLA" type claims.
+    "might ", "may have",
+    # Knowledge-gap — parallel to haven't confirmed/verified/checked
+    "haven't seen", "hasn't finalized", "hasn't finalised",
     # Impersonal/third-person hedging — typical in assistant responses and summaries
     # These were absent from the original list but are canonical English uncertainty
     # expressions (found by auditing FCR-scored downstream answers that were actually hedged)

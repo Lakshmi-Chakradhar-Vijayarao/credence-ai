@@ -140,16 +140,21 @@ def main():
         print(f"  Enhanced prompt: {_ENHANCED_PROMPT[:80]}...")
         return
 
-    if not _ANTHROPIC_AVAILABLE:
-        print("ERROR: anthropic package not installed")
-        sys.exit(1)
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        print("ERROR: ANTHROPIC_API_KEY not set")
-        sys.exit(1)
-    client = anthropic.Anthropic(api_key=api_key)
+    if api_key and _ANTHROPIC_AVAILABLE:
+        client = anthropic.Anthropic(api_key=api_key)
+        print("Using Anthropic API client (Haiku for compression, Opus for downstream)")
+    else:
+        try:
+            from evals.claude_code_client import ClaudeCodeClient
+            client = ClaudeCodeClient()
+            print(f"Using Claude Code client (no API key needed): {client._version}")
+            print("Note: both compression and downstream use the same Claude Code model.")
+        except Exception as e:
+            print(f"ERROR: No API key and Claude Code client failed: {e}")
+            sys.exit(1)
 
-    n = min(args.n, len(SCENARIOS))
+    n = min(args.n, 100)  # SCENARIOS now has 100 entries
     print(f"\nNull Hypothesis Experiment — n={n}")
     print(f"Question: does Haiku + explicit qualifier-preservation instruction achieve EQLR=0%?")
     print(f"Prediction: EQLR ~10-20% (vs 46% naive, 0% probe-guarded)\n")
