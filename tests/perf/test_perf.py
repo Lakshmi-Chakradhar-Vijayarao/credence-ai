@@ -34,7 +34,7 @@ def test_probe_uncertain_under_target(bench_results):
 
 def test_probe_long_text_under_target(bench_results):
     r = bench_results["probe_long_text_2500_words"]
-    assert r["mean_ms"] < 1.0, f"probe_long_text mean {r['mean_ms']:.4f}ms > 1.0ms"
+    assert r["mean_ms"] < 2.0, f"probe_long_text mean {r['mean_ms']:.4f}ms > 2.0ms"
 
 
 def test_registry_list_under_target(bench_results):

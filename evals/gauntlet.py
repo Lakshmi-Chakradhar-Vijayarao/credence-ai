@@ -1490,11 +1490,16 @@ def main() -> None:
         return
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        print("ERROR: ANTHROPIC_API_KEY not set")
-        sys.exit(1)
-
-    client = Anthropic(api_key=api_key)
+    if api_key:
+        client = Anthropic(api_key=api_key)
+    else:
+        try:
+            from evals.claude_code_client import ClaudeCodeClient
+            client = ClaudeCodeClient()
+            print(f"Using Claude Code client (no API key): {client._version}")
+        except Exception as e:
+            print(f"ERROR: ANTHROPIC_API_KEY not set and Claude Code client failed: {e}")
+            sys.exit(1)
 
     # Load existing results for --resume
     existing: set[tuple[str, str]] = set()

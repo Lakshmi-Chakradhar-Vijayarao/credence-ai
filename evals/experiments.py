@@ -59,12 +59,18 @@ def rouge_l(hypothesis: str, reference: str) -> float:
         return 0.0
     return round(2 * precision * recall / (precision + recall), 4)
 
-_CLIENT: Optional[Anthropic] = None
+_CLIENT = None
 
-def _client() -> Anthropic:
+def _client():
     global _CLIENT
     if _CLIENT is None:
-        _CLIENT = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if api_key:
+            _CLIENT = Anthropic(api_key=api_key)
+        else:
+            from evals.claude_code_client import ClaudeCodeClient
+            _CLIENT = ClaudeCodeClient()
+            print(f"[experiments] Using Claude Code client: {_CLIENT._version}")
     return _CLIENT
 
 _MODEL = "claude-opus-4-7"
@@ -1696,8 +1702,13 @@ def main():
     args = parser.parse_args()
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("Error: ANTHROPIC_API_KEY not set.")
-        sys.exit(1)
+        try:
+            from evals.claude_code_client import ClaudeCodeClient
+            ClaudeCodeClient()  # verify binary works
+            print("No API key — using Claude Code client for all model calls.")
+        except Exception as e:
+            print(f"Error: ANTHROPIC_API_KEY not set and Claude Code client failed: {e}")
+            sys.exit(1)
 
     out_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
