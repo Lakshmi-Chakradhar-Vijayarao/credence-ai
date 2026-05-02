@@ -4,12 +4,23 @@
   "description": "Credence TypeScript SDK — epistemic guard layer for AI agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": ["dist/", "README.md"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai.git",
+    "directory": "sdk/typescript"
+  },
+  "homepage": "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai",
+  "bugs": {
+    "url": "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai/issues"
+  },
   "scripts": {
     "build": "tsc",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
-    "test:ci": "jest --coverage"
+    "test:ci": "jest --coverage",
+    "prepublishOnly": "npm run build"
   },
-  "keywords": ["credence", "epistemic", "mcp", "ai-safety", "uncertainty"],
+  "keywords": ["credence", "epistemic", "mcp", "ai-safety", "uncertainty", "context-compression", "claude"],
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^29.5.0",
