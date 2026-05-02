@@ -1311,8 +1311,8 @@ def dry_run(n: int = 5):
 def main():
     parser = argparse.ArgumentParser(
         description="Compression Faithfulness Study")
-    parser.add_argument("--n",        type=int,  default=30,
-                        help="Number of scenarios to run (default: 30)")
+    parser.add_argument("--n",        type=int,  default=100,
+                        help="Number of scenarios to run (default: 100)")
     parser.add_argument("--dry-run",  action="store_true",
                         help="Validate scenario definitions without API calls")
     parser.add_argument("--verbose",  action="store_true",
