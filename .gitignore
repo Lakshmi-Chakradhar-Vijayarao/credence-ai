@@ -36,7 +36,7 @@ kaggle_bundle.zip
 kaggle_push/
 kaggle_push_public/
 kaggle_v5/
-kaggle_v6/
+# kaggle_v6/ now contains the EQLR open-model notebook (not DPO artifacts)
 notebookc65c08d7da.log
 
 # DPO Kaggle output (checkpoints too large — epoch_results.json committed separately)

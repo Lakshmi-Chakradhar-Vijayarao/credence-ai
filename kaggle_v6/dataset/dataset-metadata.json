@@ -1,0 +1,8 @@
+{
+  "id": "chakradharvijayarao/eql-bench-v2",
+  "title": "EQL-Bench v2: Epistemic Qualifier Loss Benchmark",
+  "isPrivate": false,
+  "licenses": [{"name": "CC0-1.0"}],
+  "keywords": ["nlp", "llm", "uncertainty", "context-compression", "evaluation"],
+  "description": "370 developer scenarios for measuring Epistemic Qualifier Loss (EQL) in LLM context compression. 8 domains (api, debug, design, compliance, multiagent, medical, legal, finance), 5 qualifier types, 90 ghost scenarios (implicit uncertainty). Used to measure EQLR (Epistemic Qualifier Loss Rate) — the fraction of compressions that silently drop uncertainty qualifiers."
+}
