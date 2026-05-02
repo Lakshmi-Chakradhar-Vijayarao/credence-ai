@@ -8,7 +8,7 @@ compression the host coding agent (Claude Code, Copilot, Codex) already does.
 The agent compresses with its own model; Credence enforces epistemic safety
 before and after, entirely through deterministic string operations.
 
-Tools (12, zero LLM calls):
+Tools (12 core + growing, zero LLM calls):
     credence_pre_compress    — CP1: check text before compression (BLOCK / ALLOW)
     credence_post_compress   — CP1: measure qualifier survival after compression
     credence_register        — register an uncertain constraint explicitly
@@ -20,6 +20,7 @@ Tools (12, zero LLM calls):
     credence_memory_recall   — load project memory into a new session
     credence_session_info    — epistemic summary for a session (constraint counts)
     credence_reset           — clear a session's constraint registry
+    credence_score           — J-score diagnostic for any text (zero API)
 
 Resources (passive, epistemic:// URI scheme):
     epistemic://session/{session_id}/ledger             — all constraints
@@ -54,6 +55,8 @@ from .context_manager import (
     _GTS_QUALIFY_THRESHOLD,
 )
 from .registry import CredenceRegistry
+from .confidence_proxy import CredenceProxy
+from .envelope import CredenceEnvelope
 
 # ---------------------------------------------------------------------------
 # Server
@@ -312,34 +315,58 @@ if _FASTMCP_AVAILABLE:
 
     @mcp.tool()
     def credence_register(
-        content:    str,
-        session_id: str,
-        j_score:    float = 0.30,
-        zone:       str   = "LOW",
+        content:         str,
+        session_id:      str,
+        j_score:         float = 0.30,
+        zone:            str   = "LOW",
+        source_type:     str   = "observation",
     ) -> dict:
         """
         Register an uncertain constraint in the epistemic registry.
 
         Use whenever the user states something uncertain: an unconfirmed vendor
         claim, an assumption, a 'I think' statement, a number from a quick search.
-        The registry tracks it across the session so Truth Buffer and Consistency
-        Enforcer can enforce it on every subsequent turn.
+        The registry tracks it across the session so the gate and scan tools can
+        enforce it on every subsequent turn.
+
+        source_type classifies the epistemic origin of the claim — this affects
+        confidence decay rate and ghost detection in Phase 3:
+          "vendor_claim"  — value stated by a vendor / docs / external party (slow decay)
+          "user_estimate" — user's rough guess or approximation (fast decay)
+          "observation"   — user's direct measurement or confirmed observation (slow decay)
+          "assumption"    — working hypothesis, needs confirmation (fastest decay)
+          "compliance"    — regulatory / legal constraint (almost no decay)
+          "config"        — configuration value that could change (medium decay)
+          "inference"     — model-derived, not directly stated (medium decay)
 
         Args:
-            content:    The uncertain claim text.
-            session_id: Session identifier.
-            j_score:    Confidence 0–1 (default 0.30 = clearly uncertain).
-            zone:       "HIGH", "MEDIUM", or "LOW" (default "LOW").
+            content:     The uncertain claim text.
+            session_id:  Session identifier.
+            j_score:     Confidence 0–1 (default 0.30 = clearly uncertain).
+            zone:        "HIGH", "MEDIUM", or "LOW" (default "LOW").
+            source_type: Epistemic origin (see above). Default "observation".
 
         Returns:
-            constraint_id, status, content, j_score, zone
+            constraint_id, status, content, j_score, zone, source_type
         """
+        _VALID_SOURCE_TYPES = {
+            "vendor_claim", "user_estimate", "observation",
+            "assumption", "compliance", "config", "inference",
+        }
+        # Map user_estimate → estimate for registry internal type
+        _TYPE_MAP = {"user_estimate": "estimate", "inference": "assumption"}
+        registry_type = _TYPE_MAP.get(source_type, source_type)
+        if registry_type not in {"vendor_claim", "estimate", "observation",
+                                  "assumption", "compliance", "config", "performance"}:
+            registry_type = "observation"
+
         registry = _get_registry()
         cid = registry.register(
-            content    = content,
-            session_id = session_id,
-            j_score    = j_score,
-            zone       = zone,
+            content          = content,
+            session_id       = session_id,
+            j_score          = j_score,
+            zone             = zone,
+            constraint_type  = registry_type,
         )
         return {
             "constraint_id": cid,
@@ -348,8 +375,9 @@ if _FASTMCP_AVAILABLE:
             "session_id":    session_id,
             "j_score":       j_score,
             "zone":          zone,
+            "source_type":   source_type,
             "message": (
-                f"Registered as uncertain (id={cid}). "
+                f"Registered as uncertain [{source_type}] (id={cid}). "
                 f"Call credence_verify('{cid}', <confirmed_value>, '{session_id}') "
                 "when confirmed."
             ),
@@ -654,6 +682,295 @@ if _FASTMCP_AVAILABLE:
         )
         registry._conn.commit()
         return {"status": "reset", "session_id": session_id}
+
+    @mcp.tool()
+    def credence_score(text: str) -> dict:
+        """
+        Compute J-score (linguistic confidence) for any text — zero API calls.
+
+        J-score measures how assertive vs. hedged the text is:
+          HIGH  (≥ 0.70) — confident, resolved. Safe to compress.
+          MEDIUM (0.45–0.70) — mixed signals. Trim only.
+          LOW   (< 0.45) — heavily hedged or uncertain. Preserve verbatim.
+
+        Use as a diagnostic to understand why credence_pre_compress blocked
+        or allowed a compression, or to score any response before deciding
+        how to handle it.
+
+        Args:
+            text: Any text to score (response, user message, summary, etc.)
+
+        Returns:
+            j_score, zone, factors (hedging_rate, anchor_rate, etc.),
+            content_type, safe_to_compress, reasoning.
+        """
+        proxy  = CredenceProxy()
+        result = proxy.compute(text)
+        return {
+            "j_score":          round(result.j_score, 4),
+            "zone":             result.zone,
+            "content_type":     result.content_type,
+            "safe_to_compress": result.should_compress,
+            "factors":          {k: round(v, 4) if isinstance(v, float) else v
+                                 for k, v in result.factors.items()},
+            "reasoning":        result.reasoning,
+            "message": (
+                f"Zone {result.zone} (J={result.j_score:.3f}). "
+                + {
+                    "HIGH":   "Safe to compress — text is assertive and resolved.",
+                    "MEDIUM": "Trim only — mixed epistemic signals.",
+                    "LOW":    "Preserve verbatim — heavy hedging or uncertainty detected.",
+                }[result.zone]
+            ),
+        }
+
+
+    @mcp.tool()
+    def credence_session_brief(session_id: str, project_id: str = "") -> dict:
+        """
+        Plain-English epistemic briefing for the start of a session.
+
+        Call this at the BEGINNING of a new session (after credence_memory_recall
+        if continuing a project). Returns a human-readable summary of what is
+        currently unverified so the agent knows what to flag before writing code.
+
+        Args:
+            session_id: Current session identifier.
+            project_id: Optional project identifier (if project memory was recalled).
+
+        Returns:
+            brief (plain-English string), unverified_count, high_risk_count,
+            constraint_summaries, action_required.
+        """
+        registry  = _get_registry()
+        uncertain = registry.list_uncertain(session_id)
+
+        if not uncertain:
+            return {
+                "brief":               "All clear — no unverified constraints in this session.",
+                "unverified_count":    0,
+                "high_risk_count":     0,
+                "constraint_summaries": [],
+                "action_required":     False,
+            }
+
+        # Sort by j_score ascending (least confident first)
+        uncertain_sorted = sorted(uncertain, key=lambda c: c.get("j_score", 0.5))
+
+        summaries = []
+        high_risk = 0
+        for c in uncertain_sorted[:10]:          # cap at 10 in brief
+            j   = c.get("j_score", 0.5)
+            ct  = c.get("constraint_type", "observation")
+            cid = c.get("constraint_id", "?")
+            if j < 0.25:
+                tier = "HIGH RISK"
+                high_risk += 1
+            elif j < 0.45:
+                tier = "uncertain"
+            else:
+                tier = "low confidence"
+            summaries.append({
+                "constraint_id": cid,
+                "content":       c.get("content", ""),
+                "tier":          tier,
+                "j_score":       round(j, 3),
+                "source_type":   ct,
+            })
+
+        n     = len(uncertain)
+        lines = [
+            f"{n} unverified constraint{'s' if n != 1 else ''} inherited"
+            + (f" from project '{project_id}'" if project_id else "") + ":",
+        ]
+        for s in summaries:
+            lines.append(f"  [{s['tier']}] {s['content'][:80]} (id={s['constraint_id']})")
+        if n > 10:
+            lines.append(f"  … and {n - 10} more. Call credence_list_uncertain for full list.")
+        lines.append("Verify these before writing code that embeds their values.")
+
+        return {
+            "brief":               "\n".join(lines),
+            "unverified_count":    n,
+            "high_risk_count":     high_risk,
+            "constraint_summaries": summaries,
+            "action_required":     True,
+        }
+
+    @mcp.tool()
+    def credence_autoverify(text: str, session_id: str) -> dict:
+        """
+        Scan text for natural-language verification signals and auto-verify
+        matching unverified constraints — zero API calls.
+
+        When a user says "actually it's 3600", "confirmed: rate limit is 100",
+        or "I checked, the port is 5432", this tool detects those confirmation
+        phrases and automatically marks matching constraints as verified.
+
+        Matching: a constraint is a candidate if ≥ 2 non-stopword tokens from
+        the constraint text appear in the confirmation sentence.
+
+        Args:
+            text:       The user or assistant message to scan for confirmations.
+            session_id: Session whose constraints to check against.
+
+        Returns:
+            verified_count, verified_ids, candidates_checked, message.
+        """
+        _CONFIRM_PHRASES = frozenset({
+            "actually", "confirmed", "i checked", "turns out", "verified",
+            "it is", "it's", "the answer is", "we confirmed", "just checked",
+            "double checked", "double-checked", "in fact", "correction",
+            "to clarify", "clarification", "the actual", "the real",
+            "as per", "according to", "per the docs", "per docs",
+            "i verified", "we verified", "found out", "it turns out",
+        })
+        _AUTOVERIFY_STOPWORDS = frozenset({
+            "the", "a", "an", "is", "it", "its", "this", "that", "for",
+            "and", "or", "to", "of", "in", "on", "at", "by", "be", "are",
+        })
+
+        text_lower = text.lower()
+        has_signal = any(p in text_lower for p in _CONFIRM_PHRASES)
+        if not has_signal:
+            return {
+                "verified_count":    0,
+                "verified_ids":      [],
+                "candidates_checked": 0,
+                "message":           "No confirmation signal detected in text.",
+            }
+
+        registry  = _get_registry()
+        uncertain = registry.list_uncertain(session_id)
+        if not uncertain:
+            return {
+                "verified_count":    0,
+                "verified_ids":      [],
+                "candidates_checked": 0,
+                "message":           "Confirmation detected but no unverified constraints in session.",
+            }
+
+        text_tokens = set(re.sub(r"[^\w\s]", " ", text_lower).split()) - _AUTOVERIFY_STOPWORDS
+        verified_ids: list[str] = []
+
+        for c in uncertain:
+            c_tokens = set(
+                re.sub(r"[^\w\s]", " ", c["content"].lower()).split()
+            ) - _AUTOVERIFY_STOPWORDS
+            overlap = text_tokens & c_tokens
+            if len(overlap) >= 2:
+                registry.verify(c["constraint_id"], f"auto-verified from: {text[:80]}")
+                verified_ids.append(c["constraint_id"])
+
+        n = len(verified_ids)
+        return {
+            "verified_count":    n,
+            "verified_ids":      verified_ids,
+            "candidates_checked": len(uncertain),
+            "message": (
+                f"Auto-verified {n} constraint(s) matching confirmation signal."
+                if n > 0
+                else "Confirmation signal present but no constraints matched (< 2 token overlap)."
+            ),
+        }
+
+    @mcp.tool()
+    def credence_wrap(
+        content:    str,
+        session_id: str,
+        source:     str  = "credence",
+        j_score:    float = 0.50,
+        zone:       str   = "MEDIUM",
+        content_type: str = "text",
+        uncertainty_preserved: bool = False,
+    ) -> dict:
+        """
+        Wrap a response as a CredenceEnvelope before passing to the next agent.
+
+        Call this BEFORE handing off any response to a downstream agent or tool.
+        The envelope carries j_score, zone, trust_score, and verification status
+        so the receiving agent knows how much to trust the information.
+
+        Trust decays with each hop: trust_score = j_score - (chain_depth × 0.05)
+        Unknown sources lose an additional 0.10. Below 0.40 → should_verify=True.
+
+        Args:
+            content:               The response text to wrap.
+            session_id:            Session identifier.
+            source:                Agent/source ID ("credence", "user", "system",
+                                   or any agent name). Unknown sources get trust penalty.
+            j_score:               Confidence score 0–1 (use credence_score to compute).
+            zone:                  "HIGH" | "MEDIUM" | "LOW".
+            content_type:          "text" | "code" | "error" | "math".
+            uncertainty_preserved: True if faithfulness probe blocked compression
+                                   (uncertainty is verbatim in content).
+
+        Returns:
+            Full envelope dict with trust_score, should_verify, safe_to_compress.
+        """
+        env = CredenceEnvelope(
+            content               = content,
+            j_score               = j_score,
+            zone                  = zone,
+            source                = source,
+            verified              = False,
+            chain_depth           = 0,
+            uncertainty_preserved = uncertainty_preserved,
+            content_type          = content_type,
+            session_id            = session_id,
+        )
+        result = env.to_dict()
+        result["message"] = (
+            f"Wrapped. trust_score={env.trust_score:.3f}. "
+            + ("⚠ should_verify=True — trust below threshold." if env.should_verify
+               else "Trust sufficient for forwarding.")
+        )
+        return result
+
+    @mcp.tool()
+    def credence_unwrap(envelope: dict, new_source: str = "") -> dict:
+        """
+        Inspect an envelope received from an upstream agent.
+
+        Call this when receiving a CredenceEnvelope dict from another agent.
+        Increments chain_depth (one more hop), checks trust decay, and flags
+        whether verification is needed before acting on the content.
+
+        Args:
+            envelope:   The envelope dict from credence_wrap or a prior hop.
+            new_source: Optional — the current agent's ID (updates source field).
+
+        Returns:
+            Updated envelope with incremented chain_depth, trust_score, should_verify.
+            Includes recommendation: VERIFY | PROCEED | BLOCK_COMPRESS.
+        """
+        try:
+            env = CredenceEnvelope.from_dict(envelope)
+        except (KeyError, TypeError) as exc:
+            return {"error": f"Invalid envelope: {exc}"}
+
+        propagated = env.propagate(new_source or None)
+        result     = propagated.to_dict()
+
+        if propagated.uncertainty_preserved:
+            recommendation = (
+                "BLOCK_COMPRESS — uncertainty was explicitly preserved in this content. "
+                "Do not compress or summarize."
+            )
+        elif propagated.should_verify:
+            recommendation = (
+                "VERIFY — trust_score below threshold after propagation. "
+                "Confirm content before acting on it."
+            )
+        else:
+            recommendation = (
+                f"PROCEED — trust_score={propagated.trust_score:.3f}. "
+                "Content is safe to use."
+            )
+
+        result["recommendation"] = recommendation
+        result["hops_from_origin"] = propagated.chain_depth
+        return result
 
 
 # ---------------------------------------------------------------------------

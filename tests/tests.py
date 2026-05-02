@@ -1861,6 +1861,152 @@ except Exception as e:
     traceback.print_exc()
 
 # ─────────────────────────────────────────────────────────────────────────────
+# S27 — Phase 0: credence_score, envelope, wrap/unwrap, source_type,
+#                credence_autoverify, credence_session_brief
+# ─────────────────────────────────────────────────────────────────────────────
+
+section("S27: Phase 0 — new MCP tools (score, wrap/unwrap, source_type, autoverify, brief)")
+
+try:
+    from credence.mcp_server import (
+        credence_score, credence_wrap, credence_unwrap,
+        credence_register, credence_autoverify, credence_session_brief,
+        credence_list_uncertain, credence_verify, credence_reset,
+    )
+    from credence.envelope import CredenceEnvelope
+
+    _S27_SID = "s27_test_session"
+    credence_reset(_S27_SID)
+
+    # --- S27-A: credence_score — uncertain text scores LOW ---
+    r_low = credence_score("I think the rate limit might be around 50, but I'm not sure.")
+    check("S27-A credence_score uncertain text → zone=LOW",
+          r_low["zone"] == "LOW",
+          f"got zone={r_low['zone']}, j={r_low['j_score']}")
+
+    # --- S27-B: credence_score — confident text scores HIGH ---
+    r_high = credence_score("The rate limit is exactly 100 requests per minute per the API spec.")
+    check("S27-B credence_score confident text → zone=HIGH or MEDIUM",
+          r_high["zone"] in ("HIGH", "MEDIUM"),
+          f"got zone={r_high['zone']}, j={r_high['j_score']}")
+
+    # --- S27-C: credence_score — returns all required fields ---
+    check("S27-C credence_score returns j_score, zone, factors, content_type",
+          all(k in r_low for k in ("j_score", "zone", "factors", "content_type", "safe_to_compress")))
+
+    # --- S27-D: credence_score — LOW zone → safe_to_compress=False ---
+    check("S27-D credence_score LOW → safe_to_compress=False",
+          r_low["safe_to_compress"] is False)
+
+    # --- S27-E: CredenceEnvelope — trust_score decays with chain depth ---
+    # propagate() with a trusted source so only depth penalty (0.05) applies
+    env = CredenceEnvelope(
+        content="rate limit is 50", j_score=0.80, zone="HIGH",
+        source="credence", verified=False, chain_depth=0,
+        uncertainty_preserved=False, content_type="text", session_id=_S27_SID,
+    )
+    env_hop = env.propagate("credence")   # trusted source → only _CHAIN_DEPTH_PENALTY=0.05
+    check("S27-E envelope trust_score decays by 0.05 per hop (trusted source)",
+          abs(env.trust_score - env_hop.trust_score - 0.05) < 0.001,
+          f"base={env.trust_score}, hop={env_hop.trust_score}")
+
+    # --- S27-F: CredenceEnvelope — unknown source gets trust penalty ---
+    env_unknown = CredenceEnvelope(
+        content="some claim", j_score=0.60, zone="MEDIUM",
+        source="unknown_agent", verified=False, chain_depth=0,
+        uncertainty_preserved=False, content_type="text",
+    )
+    env_trusted = CredenceEnvelope(
+        content="some claim", j_score=0.60, zone="MEDIUM",
+        source="credence", verified=False, chain_depth=0,
+        uncertainty_preserved=False, content_type="text",
+    )
+    check("S27-F unknown source → lower trust_score than trusted source",
+          env_unknown.trust_score < env_trusted.trust_score,
+          f"unknown={env_unknown.trust_score}, trusted={env_trusted.trust_score}")
+
+    # --- S27-G: credence_wrap → returns valid envelope dict ---
+    w = credence_wrap("rate limit is 50", _S27_SID, source="user",
+                      j_score=0.35, zone="LOW")
+    check("S27-G credence_wrap returns trust_score and should_verify",
+          "trust_score" in w and "should_verify" in w)
+    check("S27-G credence_wrap low j → should_verify=True",
+          w["should_verify"] is True,
+          f"trust_score={w['trust_score']}")
+
+    # --- S27-H: credence_unwrap → increments chain_depth ---
+    u = credence_unwrap(w, new_source="agent_b")
+    check("S27-H credence_unwrap increments chain_depth",
+          u["chain_depth"] == w["chain_depth"] + 1,
+          f"wrap depth={w['chain_depth']}, unwrap depth={u['chain_depth']}")
+
+    # --- S27-I: credence_unwrap → BLOCK_COMPRESS when uncertainty_preserved ---
+    w_uncertain = credence_wrap("I think the limit might be 50", _S27_SID,
+                                j_score=0.30, zone="LOW", uncertainty_preserved=True)
+    u_uncertain = credence_unwrap(w_uncertain)
+    check("S27-I credence_unwrap uncertainty_preserved → BLOCK_COMPRESS recommendation",
+          "BLOCK_COMPRESS" in u_uncertain["recommendation"],
+          f"got: {u_uncertain['recommendation']}")
+
+    # --- S27-J: credence_unwrap — invalid envelope → error key ---
+    bad = credence_unwrap({"not": "an envelope"})
+    check("S27-J credence_unwrap invalid envelope → error key",
+          "error" in bad)
+
+    # --- S27-K: source_type stored on credence_register ---
+    cid_vc = credence_register("API rate limit is 50 req/min", _S27_SID,
+                               j_score=0.30, zone="LOW", source_type="vendor_claim")
+    check("S27-K credence_register source_type=vendor_claim → returns source_type",
+          cid_vc.get("source_type") == "vendor_claim",
+          f"got: {cid_vc.get('source_type')}")
+
+    cid_ue = credence_register("token expires after 3600 seconds", _S27_SID,
+                               j_score=0.35, zone="LOW", source_type="user_estimate")
+    check("S27-K credence_register source_type=user_estimate → returns source_type",
+          cid_ue.get("source_type") == "user_estimate")
+
+    # --- S27-L: credence_autoverify — detects confirmation and verifies match ---
+    av_hit = credence_autoverify(
+        "Actually I just checked — the token expires after 3600 seconds confirmed.",
+        _S27_SID,
+    )
+    check("S27-L credence_autoverify detects confirmation signal",
+          av_hit["verified_count"] >= 1,
+          f"verified_count={av_hit['verified_count']}, msg={av_hit['message']}")
+
+    # --- S27-M: credence_autoverify — no signal → 0 verified ---
+    av_miss = credence_autoverify("Tell me more about the API.", _S27_SID)
+    check("S27-M credence_autoverify no confirmation signal → 0 verified",
+          av_miss["verified_count"] == 0 and "No confirmation signal" in av_miss["message"])
+
+    # --- S27-N: credence_session_brief — returns brief with unverified list ---
+    credence_reset(_S27_SID)
+    credence_register("db port is 5433", _S27_SID, j_score=0.20, zone="LOW",
+                      source_type="assumption")
+    credence_register("cache TTL is 300 seconds", _S27_SID, j_score=0.35, zone="LOW",
+                      source_type="user_estimate")
+    brief = credence_session_brief(_S27_SID, project_id="test-project")
+    check("S27-N credence_session_brief returns brief string with constraint info",
+          brief["action_required"] is True
+          and brief["unverified_count"] == 2
+          and len(brief["constraint_summaries"]) == 2,
+          f"count={brief['unverified_count']}, summaries={len(brief['constraint_summaries'])}")
+
+    # --- S27-O: credence_session_brief — empty session → action_required=False ---
+    credence_reset(_S27_SID + "_empty")
+    brief_empty = credence_session_brief(_S27_SID + "_empty")
+    check("S27-O credence_session_brief empty session → action_required=False",
+          brief_empty["action_required"] is False
+          and brief_empty["unverified_count"] == 0)
+
+except Exception as e:
+    import traceback
+    for name in ["S27-A","S27-B","S27-C","S27-D","S27-E","S27-F","S27-G",
+                 "S27-H","S27-I","S27-J","S27-K","S27-L","S27-M","S27-N","S27-O"]:
+        check(name, False, f"exception: {e}")
+    traceback.print_exc()
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Results
 # ─────────────────────────────────────────────────────────────────────────────
 
