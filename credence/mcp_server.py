@@ -43,9 +43,9 @@ Install:
 No ANTHROPIC_API_KEY or any other key needed.
 """
 
-import ast
 import os
 import re
+import threading
 from typing import Optional
 
 try:
@@ -92,19 +92,20 @@ mcp = FastMCP(
 
 # Process-level registry singleton
 _registry: Optional[CredenceRegistry] = None
+_registry_lock = threading.Lock()
 
 
 def _get_registry() -> CredenceRegistry:
     global _registry
     if _registry is None:
-        # CREDENCE_DB_PATH is the canonical team-sharing env var (documented in ETP spec).
-        # CREDENCE_REGISTRY_PATH is the legacy alias — both accepted.
-        db_path = (
-            os.environ.get("CREDENCE_DB_PATH")
-            or os.environ.get("CREDENCE_REGISTRY_PATH")
-            or "epistemic_registry.db"
-        )
-        _registry = CredenceRegistry(db_path=db_path)
+        with _registry_lock:
+            if _registry is None:  # double-checked locking
+                db_path = (
+                    os.environ.get("CREDENCE_DB_PATH")
+                    or os.environ.get("CREDENCE_REGISTRY_PATH")
+                    or "epistemic_registry.db"
+                )
+                _registry = CredenceRegistry(db_path=db_path)
     return _registry
 
 

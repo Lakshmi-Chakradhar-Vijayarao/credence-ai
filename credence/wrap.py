@@ -25,15 +25,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-import sys
-from pathlib import Path
-ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT))
-
 from credence.context_manager import _UNCERTAINTY_MARKERS, ContextManager
 from credence.registry import CredenceRegistry
-
-_cm_probe = ContextManager.__new__(ContextManager)
 
 # Regex for extracting qualification markers
 _QUAL_PATTERN = re.compile(
@@ -116,7 +109,7 @@ def wrap(
                     break
 
     # Run faithfulness probe
-    probe_fired = _cm_probe._has_uncertainty(context)
+    probe_fired = ContextManager._has_uncertainty(context)
 
     if probe_fired:
         elapsed = (time.perf_counter() - t_start) * 1000

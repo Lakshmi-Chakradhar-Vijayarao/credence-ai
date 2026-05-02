@@ -81,12 +81,12 @@ class CredenceRegistry:
 
     def __init__(self, db_path: str = "epistemic_registry.db"):
         self._db_path = db_path
+        self._write_lock = threading.RLock()  # reentrant — register() holds it across nested calls
         self._conn    = sqlite3.connect(db_path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(_SCHEMA)
         self._migrate()
         self._conn.commit()
-        self._write_lock = threading.RLock()  # reentrant — register() holds it across nested calls
 
     def _migrate(self) -> None:
         """Add columns introduced after initial schema without breaking existing DBs."""
@@ -205,6 +205,8 @@ class CredenceRegistry:
                           One of: observation, vendor_claim, estimate, assumption,
                           compliance, performance, config.
         """
+        j_score = max(0.0, min(1.0, float(j_score)))
+        zone = zone if zone in ("HIGH", "MEDIUM", "LOW") else "MEDIUM"
         cid = self._content_id(content)
         now = self._now()
         expires_at = None

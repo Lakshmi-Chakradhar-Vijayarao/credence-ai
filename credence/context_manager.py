@@ -2330,7 +2330,8 @@ class ContextManager:
         lower = text.lower()
         return any(m in lower for m in _MULTI_ANSWER_MARKERS)
 
-    def _has_uncertainty(self, text: str) -> bool:
+    @staticmethod
+    def _has_uncertainty(text: str) -> bool:
         """Returns True if text contains markers that signal user-flagged uncertainty."""
         import re as _re
         # Strip markdown bold/italic markers before substring matching so that

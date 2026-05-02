@@ -141,8 +141,16 @@ fn expand_tokens<'a>(
     expanded
 }
 
+fn resolve_db_path() -> String {
+    // Match Python MCP server: CREDENCE_DB_PATH (canonical) → CREDENCE_REGISTRY_PATH (legacy) → default
+    std::env::var("CREDENCE_DB_PATH")
+        .or_else(|_| std::env::var("CREDENCE_REGISTRY_PATH"))
+        .unwrap_or_else(|_| DB_PATH.to_string())
+}
+
 fn load_constraints(session_id: &Option<String>) -> Vec<Constraint> {
-    let conn = match Connection::open(DB_PATH) {
+    let db_path = resolve_db_path();
+    let conn = match Connection::open(&db_path) {
         Ok(c) => c,
         Err(_) => return vec![],  // no registry = no constraints = ALLOW
     };
