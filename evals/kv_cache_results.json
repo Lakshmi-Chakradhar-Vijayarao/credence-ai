@@ -1,0 +1,107 @@
+{
+  "experiment": "KV-Cache Epistemic Qualifier Loss",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "quantization": "4-bit NF4",
+  "hardware": "Kaggle T4 GPU",
+  "n_scenarios": 100,
+  "scenario_composition": {
+    "multi_hop": 20,
+    "conflict": 20,
+    "ghost": 60,
+    "regular": 0
+  },
+  "runtime_seconds": 10078,
+  "results": [
+    {
+      "method": "baseline",
+      "n": 100,
+      "eqlr": 0.710,
+      "fcr": 0.350,
+      "ghost_fcr": 0.467,
+      "sem": 0.448,
+      "qual_rate": 0.290,
+      "time_s": 1291.4,
+      "budget_fraction": 1.0,
+      "notes": "Full KV cache — no eviction"
+    },
+    {
+      "method": "h2o_70",
+      "n": 100,
+      "eqlr": 0.990,
+      "fcr": 0.010,
+      "ghost_fcr": 0.017,
+      "sem": 0.111,
+      "qual_rate": 0.010,
+      "time_s": 1565.1,
+      "budget_fraction": 0.70,
+      "notes": "H2O Heavy-Hitter Oracle, 70% budget — near-total constraint amnesia"
+    },
+    {
+      "method": "h2o_50",
+      "n": 100,
+      "eqlr": 0.890,
+      "fcr": 0.170,
+      "ghost_fcr": 0.283,
+      "sem": 0.240,
+      "qual_rate": 0.110,
+      "time_s": 1490.9,
+      "budget_fraction": 0.50,
+      "notes": "H2O Heavy-Hitter Oracle, 50% budget"
+    },
+    {
+      "method": "snapkv_70",
+      "n": 100,
+      "eqlr": 0.990,
+      "fcr": 0.010,
+      "ghost_fcr": 0.017,
+      "sem": 0.111,
+      "qual_rate": 0.010,
+      "time_s": 1536.4,
+      "budget_fraction": 0.70,
+      "notes": "SnapKV, 70% budget — identical to H2O_70, same attention-score mechanism"
+    },
+    {
+      "method": "snapkv_50",
+      "n": 100,
+      "eqlr": 0.890,
+      "fcr": 0.170,
+      "ghost_fcr": 0.283,
+      "sem": 0.240,
+      "qual_rate": 0.110,
+      "time_s": 1506.1,
+      "budget_fraction": 0.50,
+      "notes": "SnapKV, 50% budget — identical to H2O_50"
+    },
+    {
+      "method": "streaming_70",
+      "n": 100,
+      "eqlr": 0.710,
+      "fcr": 0.310,
+      "ghost_fcr": 0.433,
+      "sem": 0.422,
+      "qual_rate": 0.290,
+      "time_s": 1288.3,
+      "budget_fraction": 0.70,
+      "notes": "StreamingLLM, 70% budget — matches baseline (sink + recent preserves constraints)"
+    },
+    {
+      "method": "streaming_50",
+      "n": 100,
+      "eqlr": 0.730,
+      "fcr": 0.380,
+      "ghost_fcr": 0.483,
+      "sem": 0.400,
+      "qual_rate": 0.270,
+      "time_s": 1246.0,
+      "budget_fraction": 0.50,
+      "notes": "StreamingLLM, 50% budget — slightly worse than baseline"
+    }
+  ],
+  "key_findings": {
+    "h2o_snapkv_failure_mode": "Attention-score eviction at 70% budget achieves EQLR=99% — not by stripping qualifiers but by evicting the constraint entirely. FCR drops to 1% because the model has no value to recall confidently. This is total epistemic amnesia, worse than false certainty.",
+    "streaming_preserves": "StreamingLLM matches baseline EQLR (71%) because it keeps the attention sink (early turns where constraints are planted) + recent tokens. The 71% baseline EQLR reflects Qwen2.5-7B native tendency to not hedge, not compression loss.",
+    "ghost_fcr_finding": "Ghost scenarios (no surface hedging, 60% of test set) have 47% baseline GhostFCR — nearly half of unhedged constraints get answered with false certainty. H2O/SnapKV reduce this to ~2% only because they evict the constraint, not because they preserve uncertainty.",
+    "h2o_snapkv_convergence": "H2O_70 and SnapKV_70 produce identical EQLR/FCR/GhostFCR. Both use attention-score token selection; at 70% budget they converge to the same eviction decision for epistemically uncertain tokens.",
+    "baseline_fcr_note": "Baseline FCR of 35% is higher than the n=50 Haiku study (6%) due to: (1) 60% ghost scenarios in this dataset vs 0% in Haiku study, (2) Qwen2.5-7B native calibration vs Claude Haiku"
+  }
+}

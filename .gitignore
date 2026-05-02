@@ -8,6 +8,10 @@ build/
 .venv/
 venv/
 
+# Node / TypeScript
+node_modules/
+sdk/typescript/node_modules/
+
 # Claude Code settings (may contain API keys or personal config)
 .claude/settings.json
 .claude/settings.local.json

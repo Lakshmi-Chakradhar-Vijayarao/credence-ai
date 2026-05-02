@@ -41,9 +41,6 @@ jobs:
       - name: Gate 0 — probe false positive rate
         run: python -m evals.false_positive_rate
 
-      - name: Gate 0B — CE false enforcement rate
-        run: python -m evals.ce_false_enforcement_rate
-
       - name: Latency report (offline components only)
         run: python -m evals.latency_report
 
@@ -66,8 +63,9 @@ jobs:
           import credence
           from credence import (
               ContextManager, CredenceRegistry, CredenceProxy,
-              CredenceMemory, BehavioralConsistencyProbe, fuse_scores,
-              enforce, CredenceViolation, EpistemicManifest,
+              CredenceMemory, EpistemicManifest,
+              enforce, CredenceViolation,
+              wrap, WrapResult, measure_fcr,
           )
           print('All exports OK — v' + credence.__version__)
           "

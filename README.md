@@ -42,7 +42,7 @@ The False Certainty Rate (FCR) — model states an uncertain value as confirmed 
 ## Quick Start
 
 ```bash
-pip install credence-ai
+pip install credence-guard
 python quickstart.py          # all 5 enforcement layers, no API key needed
 ```
 
@@ -299,7 +299,7 @@ memory.snapshot("my-session", project="my-api-project")
 # credence_verify      — mark a constraint as confirmed
 # credence_gate        — pre-execution agentic gate
 # credence_inspect     — BLOCK/VERIFY/PRESERVE/PROCEED recommendation
-# credence_scan_output — scan any model output for unverified literals
+# credence_scan        — scan any model output for unverified literals
 # credence_trajectory  — certainty trajectory for a constraint over time
 # credence_memory_snapshot / credence_memory_recall — cross-session
 # ... 14 more

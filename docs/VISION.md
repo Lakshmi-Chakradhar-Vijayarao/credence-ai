@@ -108,7 +108,7 @@ The engineering is serious. A Rust gate at 3.4ms, a faithfulness probe at 0.07ms
 
 ## The Standard
 
-`etp-v1.json` is a model-agnostic JSON Schema for epistemic metadata transport. It defines four primitives: `EpistemicConstraint` (a tracked uncertain claim), `EpistemicEnvelope` (a provenance wrapper for AI-generated content with trust decay per hop), `EpistemicLedger` (full session state), and `AlignmentWarning` (fired when a response is more confident than the ledger warrants).
+`etp_v1.json` is a model-agnostic JSON Schema for epistemic metadata transport. It defines four primitives: `EpistemicConstraint` (a tracked uncertain claim), `EpistemicEnvelope` (a provenance wrapper for AI-generated content with trust decay per hop), `EpistemicLedger` (full session state), and `AlignmentWarning` (fired when a response is more confident than the ledger warrants).
 
 The design principle: *every AI system today passes information between agents by value. Nobody passes it by epistemic weight.* ETP proposes to fix this by making epistemic metadata first-class in agent protocols — the same way HTTP headers made request metadata first-class in web protocols.
 

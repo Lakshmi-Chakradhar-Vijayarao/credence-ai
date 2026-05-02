@@ -53,7 +53,7 @@ All results are in evals/*.json and reproducible. 611 passing tests, all passing
 Most evals run without an API key.
 
 GitHub: https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai
-pip install credence-ai
+pip install credence-guard
 
 Happy to answer questions about methodology, the measurement design, or why 
 "just use a longer context window" doesn't fully solve this (short answer: it helps 
@@ -153,7 +153,7 @@ Zero extra API calls.
 611 passing tests. All passing.
 Most evals reproducible without an API key.
 
-pip install credence-ai
+pip install credence-guard
 
 GitHub → github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai
 
@@ -195,7 +195,7 @@ github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai
 ## Launch Checklist
 
 - [ ] All 611 tests passing (`python tests/tests.py`)
-- [ ] `pip install credence-ai` installs cleanly from PyPI
+- [ ] `pip install credence-guard` installs cleanly from PyPI
 - [ ] `python quickstart.py` runs without API key
 - [ ] demo/gate_demo.gif renders correctly in README on GitHub
 - [ ] arXiv submission queued (or preprint linked in README)

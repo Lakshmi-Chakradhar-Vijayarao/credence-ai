@@ -19,6 +19,7 @@ Thread-safe for single-writer use (check_same_thread=False + SQLite row locking)
 import re
 import sqlite3
 import hashlib
+import threading
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -85,6 +86,7 @@ class CredenceRegistry:
         self._conn.executescript(_SCHEMA)
         self._migrate()
         self._conn.commit()
+        self._write_lock = threading.RLock()  # reentrant — register() holds it across nested calls
 
     def _migrate(self) -> None:
         """Add columns introduced after initial schema without breaking existing DBs."""
@@ -124,6 +126,24 @@ class CredenceRegistry:
         # Create project index if it doesn't exist
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_project ON constraints(project_id)"
+        )
+        # marker_events table — passive flywheel data collection (Phase 1)
+        self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS marker_events (
+                event_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id    TEXT NOT NULL,
+                session_type  TEXT NOT NULL DEFAULT 'unknown',
+                marker        TEXT NOT NULL,
+                fired_at      TEXT NOT NULL,
+                qual_survival REAL,
+                fcr_outcome   INTEGER
+            )
+        """)
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_marker ON marker_events(marker)"
+        )
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_marker_session ON marker_events(session_id)"
         )
 
     # ------------------------------------------------------------------
@@ -191,41 +211,42 @@ class CredenceRegistry:
         if ttl_turns is not None:
             expires_at = str(turn_idx + ttl_turns)  # stored as turn number for simplicity
         ctype = constraint_type if constraint_type in self._TYPE_DECAY_RATES else "observation"
-        cursor = self._conn.execute(
-            """
-            INSERT OR IGNORE INTO constraints
-              (constraint_id, content, session_id, j_score, zone,
-               verified, verified_value, registered_at_turn, source, expires_at,
-               created_at, updated_at, constraint_type)
-            VALUES (?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?, ?, ?)
-            """,
-            (cid, content, session_id, round(j_score, 4), zone,
-             turn_idx, source, expires_at, now, now, ctype),
-        )
-        self._conn.commit()
-        if cursor.rowcount > 0:
-            # Only log on first insertion, not on idempotent re-register
-            self.log_event(cid, "register", j_score=round(j_score, 4), zone=zone,
-                           notes=f"session={session_id} turn={turn_idx}")
-            # Verification drift: if new content conflicts with a verified constraint,
-            # automatically mark that verified constraint as DISPUTED.
-            conflict = self._check_conflict_with_verified(content, session_id)
-            if conflict:
-                old_cid  = conflict["constraint_id"]
-                nums_new = sorted({
-                    n for n in re.findall(r'\b(\d+(?:\.\d+)?)\b', content)
-                    if len(n.replace(".", "")) >= 2
-                })
-                nums_old = sorted({
-                    n for n in re.findall(r'\b(\d+(?:\.\d+)?)\b', conflict["content"])
-                    if len(n.replace(".", "")) >= 2
-                })
-                new_vals_str = ", ".join(nums_new[:2]) or "new info"
-                reason = (
-                    f"new registration (turn={turn_idx}) has value(s) {nums_new[:2]} "
-                    f"vs verified value(s) {nums_old[:2]}"
-                )
-                self._dispute_constraint(old_cid, reason, new_vals_str)
+        with self._write_lock:  # RLock — holds across nested log_event/_dispute calls
+            cursor = self._conn.execute(
+                """
+                INSERT OR IGNORE INTO constraints
+                  (constraint_id, content, session_id, j_score, zone,
+                   verified, verified_value, registered_at_turn, source, expires_at,
+                   created_at, updated_at, constraint_type)
+                VALUES (?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?, ?, ?)
+                """,
+                (cid, content, session_id, round(j_score, 4), zone,
+                 turn_idx, source, expires_at, now, now, ctype),
+            )
+            self._conn.commit()
+            if cursor.rowcount > 0:
+                # Only log on first insertion, not on idempotent re-register
+                self.log_event(cid, "register", j_score=round(j_score, 4), zone=zone,
+                               notes=f"session={session_id} turn={turn_idx}")
+                # Verification drift: if new content conflicts with a verified constraint,
+                # automatically mark that verified constraint as DISPUTED.
+                conflict = self._check_conflict_with_verified(content, session_id)
+                if conflict:
+                    old_cid  = conflict["constraint_id"]
+                    nums_new = sorted({
+                        n for n in re.findall(r'\b(\d+(?:\.\d+)?)\b', content)
+                        if len(n.replace(".", "")) >= 2
+                    })
+                    nums_old = sorted({
+                        n for n in re.findall(r'\b(\d+(?:\.\d+)?)\b', conflict["content"])
+                        if len(n.replace(".", "")) >= 2
+                    })
+                    new_vals_str = ", ".join(nums_new[:2]) or "new info"
+                    reason = (
+                        f"new registration (turn={turn_idx}) has value(s) {nums_new[:2]} "
+                        f"vs verified value(s) {nums_old[:2]}"
+                    )
+                    self._dispute_constraint(old_cid, reason, new_vals_str)
         return cid
 
     # ------------------------------------------------------------------
@@ -250,15 +271,16 @@ class CredenceRegistry:
           verify        — constraint confirmed by user
           contradict    — new claim contradicts this constraint
         """
-        self._conn.execute(
-            """
-            INSERT INTO constraint_events
-              (constraint_id, timestamp, j_score, zone, event_type, notes)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (constraint_id, self._now(), j_score, zone, event_type, notes),
-        )
-        self._conn.commit()
+        with self._write_lock:
+            self._conn.execute(
+                """
+                INSERT INTO constraint_events
+                  (constraint_id, timestamp, j_score, zone, event_type, notes)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (constraint_id, self._now(), j_score, zone, event_type, notes),
+            )
+            self._conn.commit()
 
     def get_trajectory(self, constraint_id: str) -> list[dict]:
         """
@@ -299,15 +321,16 @@ class CredenceRegistry:
         Returns the updated row dict, or {"error": ...} if not found.
         """
         now    = self._now()
-        cursor = self._conn.execute(
-            """
-            UPDATE constraints
-               SET verified=1, verified_value=?, validation_status='verified', updated_at=?
-             WHERE constraint_id=?
-            """,
-            (verified_value, now, constraint_id),
-        )
-        self._conn.commit()
+        with self._write_lock:
+            cursor = self._conn.execute(
+                """
+                UPDATE constraints
+                   SET verified=1, verified_value=?, validation_status='verified', updated_at=?
+                 WHERE constraint_id=?
+                """,
+                (verified_value, now, constraint_id),
+            )
+            self._conn.commit()
         if cursor.rowcount == 0:
             return {"error": f"constraint_id '{constraint_id}' not found"}
         row = self._conn.execute(
@@ -338,15 +361,16 @@ class CredenceRegistry:
         Truth Buffer, Consistency Enforcer, and GTS will treat it as unresolved.
         """
         now = self._now()
-        self._conn.execute(
-            """
-            UPDATE constraints
-               SET validation_status='disputed', contradicted_by=?, verified=0, updated_at=?
-             WHERE constraint_id=?
-            """,
-            (new_values_str, now, constraint_id),
-        )
-        self._conn.commit()
+        with self._write_lock:
+            self._conn.execute(
+                """
+                UPDATE constraints
+                   SET validation_status='disputed', contradicted_by=?, verified=0, updated_at=?
+                 WHERE constraint_id=?
+                """,
+                (new_values_str, now, constraint_id),
+            )
+            self._conn.commit()
         self.log_event(constraint_id, "contradict", notes=reason)
 
     def _check_conflict_with_verified(
@@ -662,15 +686,16 @@ class CredenceRegistry:
         it up — it's definitely 100 req/min").
         """
         now = self._now()
-        self._conn.execute(
-            """
-            UPDATE constraints
-               SET j_score=?, zone=?, updated_at=?
-             WHERE constraint_id=? AND verified=0
-            """,
-            (round(new_j, 4), zone, now, constraint_id),
-        )
-        self._conn.commit()
+        with self._write_lock:
+            self._conn.execute(
+                """
+                UPDATE constraints
+                   SET j_score=?, zone=?, updated_at=?
+                 WHERE constraint_id=? AND verified=0
+                """,
+                (round(new_j, 4), zone, now, constraint_id),
+            )
+            self._conn.commit()
         self.log_event(
             constraint_id, "chat_update",
             j_score=round(new_j, 4), zone=zone,
@@ -708,11 +733,292 @@ class CredenceRegistry:
 
     def clear_session(self, session_id: str) -> int:
         """Delete all constraints for a session. Returns number of rows deleted."""
-        cursor = self._conn.execute(
-            "DELETE FROM constraints WHERE session_id=?", (session_id,)
-        )
-        self._conn.commit()
+        with self._write_lock:
+            cursor = self._conn.execute(
+                "DELETE FROM constraints WHERE session_id=?", (session_id,)
+            )
+            self._conn.commit()
         return cursor.rowcount
+
+    def record_marker_events(
+        self,
+        session_id:    str,
+        markers_fired: list[str],
+        qual_survival: float,
+        session_type:  str = "unknown",
+    ) -> None:
+        """
+        Record which uncertainty markers fired and the resulting qual_survival.
+
+        Called passively from credence_post_compress on every compression event.
+        Data feeds the marker weight learning flywheel (Phase 3, activates at
+        n_sessions >= 200). fcr_outcome is set when qual_survival < 0.50.
+        """
+        now = self._now()
+        fcr = 1 if qual_survival < 0.50 else 0
+        rows = [
+            (session_id, session_type, m, now, qual_survival, fcr)
+            for m in markers_fired
+        ]
+        with self._write_lock:
+            self._conn.executemany(
+                "INSERT INTO marker_events "
+                "(session_id, session_type, marker, fired_at, qual_survival, fcr_outcome) "
+                "VALUES (?,?,?,?,?,?)",
+                rows,
+            )
+            self._conn.commit()
+
+    def get_marker_stats(self) -> list[dict]:
+        """
+        Aggregate precision/recall per marker across all recorded sessions.
+        Returns empty list when n_sessions < 10 (insufficient data).
+        """
+        n_sessions = self._conn.execute(
+            "SELECT COUNT(DISTINCT session_id) FROM marker_events"
+        ).fetchone()[0]
+
+        if n_sessions < 10:
+            return []
+
+        rows = self._conn.execute("""
+            SELECT marker,
+                   COUNT(*)                        AS n_fires,
+                   SUM(CASE WHEN fcr_outcome=1 THEN 1 ELSE 0 END) AS n_fcr,
+                   AVG(qual_survival)              AS avg_qual_survival
+            FROM marker_events
+            GROUP BY marker
+            ORDER BY n_fires DESC
+        """).fetchall()
+
+        total_fcr = self._conn.execute(
+            "SELECT SUM(fcr_outcome) FROM marker_events"
+        ).fetchone()[0] or 1
+
+        result = []
+        for row in rows:
+            n_fires = row["n_fires"]
+            n_fcr   = row["n_fcr"]
+            prec    = n_fcr / n_fires if n_fires > 0 else 0.0
+            rec     = n_fcr / total_fcr if total_fcr > 0 else 0.0
+            f1      = 2*prec*rec / (prec+rec) if (prec+rec) > 0 else 0.0
+            result.append({
+                "marker":           row["marker"],
+                "n_fires":          n_fires,
+                "n_fcr":            n_fcr,
+                "precision":        round(prec, 4),
+                "recall":           round(rec, 4),
+                "f1":               round(f1, 4),
+                "avg_qual_survival": round(row["avg_qual_survival"] or 1.0, 4),
+            })
+        return result
+
+    # ------------------------------------------------------------------
+    # Phase 3 — Ghost constraint heuristics (active from day one, deterministic)
+    # ------------------------------------------------------------------
+
+    # Hedging markers whose absence in vendor_claim source_type indicates a
+    # potential ghost constraint — an implicitly uncertain fact with no hedging.
+    _GHOST_HEDGING_MARKERS: frozenset = frozenset({
+        "i think", "i believe", "not sure", "not certain", "unclear", "unsure",
+        "roughly", "approximately", "around", "about", "maybe", "perhaps",
+        "possibly", "probably", "might be", "could be", "seems", "appears",
+        "likely", "estimate", "estimated", "reportedly", "allegedly",
+        "i was told", "we were told", "vendor said", "docs say", "docs suggest",
+        "supposedly", "tentative", "provisional", "preliminary",
+    })
+
+    def flag_ghost_constraints(self, session_id: str) -> list[dict]:
+        """
+        Scan vendor_claim constraints in session for ghost constraint risk.
+
+        A ghost constraint is a vendor-supplied fact registered without ANY hedging
+        language — it looks certain but is actually unverified. These score HIGH-J
+        because their language is assertive, so the faithfulness probe misses them.
+
+        A constraint is flagged as a potential ghost when:
+          1. constraint_type == 'vendor_claim'
+          2. No hedging marker is present in the content text
+          3. The constraint is unverified
+
+        Returns list of flagged constraint dicts with 'ghost_risk' key added.
+        Active from day one — no data threshold.
+        """
+        rows = self._conn.execute(
+            """
+            SELECT * FROM constraints
+             WHERE session_id=? AND verified=0
+             AND constraint_type='vendor_claim'
+            """,
+            (session_id,),
+        ).fetchall()
+
+        flagged = []
+        for row in rows:
+            c = self._row_to_dict(row)
+            content_lower = c["content"].lower()
+            has_hedge = any(m in content_lower for m in self._GHOST_HEDGING_MARKERS)
+            if not has_hedge:
+                c["ghost_risk"] = True
+                c["ghost_reason"] = (
+                    "vendor_claim source with no hedging language — "
+                    "may be a ghost constraint (unverified fact presented as certain)"
+                )
+                flagged.append(c)
+        return flagged
+
+    # ------------------------------------------------------------------
+    # Phase 3 — Marker weight learning (dormant until n_sessions >= 200)
+    # ------------------------------------------------------------------
+
+    _MARKER_LEARN_THRESHOLD = 200  # sessions required before weights update
+
+    def update_marker_weights(self) -> dict:
+        """
+        Recompute marker weights from accumulated marker_events data.
+
+        Markers with high FCR rate (they fire but compression still strips
+        qualifiers) are down-weighted. Markers with low FCR rate (they fire
+        and qualifiers survive) are up-weighted.
+
+        Dormant when n_sessions < 200. Returns status dict.
+        """
+        n_sessions = self._conn.execute(
+            "SELECT COUNT(DISTINCT session_id) FROM marker_events"
+        ).fetchone()[0]
+
+        if n_sessions < self._MARKER_LEARN_THRESHOLD:
+            return {
+                "status": "dormant",
+                "n_sessions": n_sessions,
+                "threshold": self._MARKER_LEARN_THRESHOLD,
+                "message": (
+                    f"Marker weight learning requires {self._MARKER_LEARN_THRESHOLD} sessions. "
+                    f"Current: {n_sessions}. Collecting data passively."
+                ),
+            }
+
+        stats = self.get_marker_stats()
+        updated = []
+        for s in stats:
+            # Precision = fraction of fires that led to FCR (marker caught a real risk)
+            # High precision → increase weight (marker is reliable)
+            # Low precision  → decrease weight (marker is noisy)
+            new_weight = round(0.5 + 0.5 * s["precision"], 4)
+            updated.append({
+                "marker":       s["marker"],
+                "old_precision": s["precision"],
+                "new_weight":   new_weight,
+                "f1":           s["f1"],
+            })
+
+        return {
+            "status":    "updated",
+            "n_sessions": n_sessions,
+            "markers_updated": len(updated),
+            "top_reliable":   [m for m in sorted(updated, key=lambda x: x["new_weight"], reverse=True)][:5],
+            "top_noisy":      [m for m in sorted(updated, key=lambda x: x["new_weight"])][:5],
+        }
+
+    # ------------------------------------------------------------------
+    # Phase 3 — Thompson sampling bandit (dormant until n_sessions >= 100)
+    # ------------------------------------------------------------------
+
+    _BANDIT_THRESHOLD = 100  # sessions required before bandit activates
+
+    # Bandit state stored in-memory (lost on restart — by design;
+    # re-warms from marker_events on next sufficient data collection).
+    _bandit_state: dict = {}
+
+    def get_bandit_state(self) -> dict:
+        """
+        Return current Thompson sampling bandit state per session type.
+
+        The bandit manages adaptive compression thresholds:
+          - theta_high: when to compress (default 0.70)
+          - theta_low:  when to preserve (default 0.45)
+
+        Each (session_type, threshold) arm is a Beta(alpha, beta) distribution.
+        - Success (qual_survival=1): alpha += 1
+        - Failure (qual_survival=0): beta += 1
+
+        Dormant when n_sessions < 100. Returns status dict with
+        either the learned thresholds or a 'learning' message.
+        """
+        import math
+
+        n_sessions = self._conn.execute(
+            "SELECT COUNT(DISTINCT session_id) FROM marker_events"
+        ).fetchone()[0]
+
+        if n_sessions < self._BANDIT_THRESHOLD:
+            return {
+                "status": "learning",
+                "n_sessions": n_sessions,
+                "threshold": self._BANDIT_THRESHOLD,
+                "message": (
+                    f"Thompson sampling bandit requires {self._BANDIT_THRESHOLD} sessions. "
+                    f"Current: {n_sessions}. Using static thresholds (high=0.70, low=0.45)."
+                ),
+                "current_thresholds": {
+                    "theta_high": 0.70,
+                    "theta_low":  0.45,
+                },
+            }
+
+        # Aggregate qual_survival per session_type from marker_events
+        rows = self._conn.execute("""
+            SELECT session_type,
+                   COUNT(*)                                   AS n_events,
+                   SUM(CASE WHEN qual_survival >= 0.80 THEN 1 ELSE 0 END) AS n_success,
+                   SUM(CASE WHEN qual_survival <  0.80 THEN 1 ELSE 0 END) AS n_fail,
+                   AVG(qual_survival)                         AS avg_qual
+            FROM marker_events
+            WHERE qual_survival IS NOT NULL
+            GROUP BY session_type
+        """).fetchall()
+
+        learned_thresholds = {}
+        for row in rows:
+            stype   = row["session_type"] or "general"
+            n_succ  = row["n_success"]
+            n_fail  = row["n_fail"]
+            avg_q   = row["avg_qual"] or 0.5
+
+            # Beta distribution mean = alpha / (alpha + beta)
+            # Informed prior: alpha=2, beta=2 (mild compression-positive prior)
+            alpha = 2 + n_succ
+            beta  = 2 + n_fail
+            mean  = alpha / (alpha + beta)
+            # 95% CI width: approx 2 * sqrt(alpha*beta / (alpha+beta)^2 / (alpha+beta+1))
+            var   = (alpha * beta) / ((alpha + beta) ** 2 * (alpha + beta + 1))
+            ci_half = 2 * math.sqrt(var)
+
+            # Map learned mean → threshold adjustment
+            # Higher qual_survival mean → lower theta_high (compress more aggressively)
+            # Lower qual_survival mean → higher theta_high (compress more conservatively)
+            theta_high = round(max(0.60, min(0.85, 0.70 + (0.5 - mean) * 0.30)), 4)
+            theta_low  = round(max(0.30, min(0.55, theta_high - 0.25)), 4)
+
+            learned_thresholds[stype] = {
+                "theta_high":    theta_high,
+                "theta_low":     theta_low,
+                "beta_mean":     round(mean, 4),
+                "ci_half":       round(ci_half, 4),
+                "n_events":      row["n_events"],
+                "avg_qual_survival": round(avg_q, 4),
+            }
+
+        return {
+            "status":              "active",
+            "n_sessions":          n_sessions,
+            "learned_thresholds":  learned_thresholds,
+            "default_thresholds":  {"theta_high": 0.70, "theta_low": 0.45},
+            "message":             (
+                "Bandit active. Thresholds adapted per session type from "
+                f"{n_sessions} sessions of data."
+            ),
+        }
 
     def close(self) -> None:
         """Close the SQLite connection."""

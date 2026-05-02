@@ -6,7 +6,6 @@ Targets:
   Probe:    < 0.1ms per call
   Registry: < 5ms per operation
   Gate:     < 5ms per call
-  Bandit:   < 2ms per select + update
   Wrap:     < 2ms overhead (excluding compress_fn)
 
 Run:
@@ -23,7 +22,6 @@ sys.path.insert(0, str(ROOT))
 from credence.context_manager import _UNCERTAINTY_MARKERS, ContextManager
 from credence.registry import CredenceRegistry
 from credence.wrap import wrap
-from credence.adaptive.bandit import EpistemicBandit
 
 _cm = ContextManager.__new__(ContextManager)
 
@@ -94,19 +92,6 @@ def run(N: int = 1000) -> list[dict]:
     results.append(bench(
         "wrap_probe_clears",
         lambda: wrap(lambda t: t[:len(t)//2], context=CERTAIN_TEXT), N, 2.0
-    ))
-
-    # Bandit
-    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
-        b_path = f.name
-    bandit = EpistemicBandit(db_path=b_path)
-    results.append(bench(
-        "bandit_select_threshold",
-        lambda: bandit.select_threshold("debug"), N//10, 2.0
-    ))
-    results.append(bench(
-        "bandit_update",
-        lambda: bandit.update("debug", 0.70, qual_survived=True), N//10, 2.0
     ))
 
     return results

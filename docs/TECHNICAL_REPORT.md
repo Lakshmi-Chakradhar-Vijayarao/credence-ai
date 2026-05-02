@@ -452,8 +452,8 @@ Credence is deployed as a 10-tool FastMCP server. Tools available in Claude Code
 | `credence_gate` | Agentic gate: block tool calls touching unverified constraints |
 | `credence_register` | Manual constraint registration with j_score + zone |
 | `credence_verify` | Write-back: mark a constraint as confirmed |
-| `credence_list_uncertain` | Audit all unverified constraints for a session |
-| `credence_scan_output` | Scan any model output for unverified numeric literals |
+| `credence_constraints` | Audit all unverified constraints for a session |
+| `credence_scan` | Scan any model output for unverified numeric literals |
 | `credence_memory_snapshot` | Snapshot unverified constraints to a project |
 | `credence_memory_recall` | Inject project memories into a new session |
 | `credence_stats` | Session statistics (compression count, trust_buffer_count) |

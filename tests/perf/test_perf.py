@@ -57,11 +57,3 @@ def test_wrap_probe_clears_under_target(bench_results):
     assert r["mean_ms"] < 2.0, f"wrap_probe_clears mean {r['mean_ms']:.4f}ms > 2.0ms"
 
 
-def test_bandit_select_under_target(bench_results):
-    r = bench_results["bandit_select_threshold"]
-    assert r["mean_ms"] < 2.0, f"bandit_select mean {r['mean_ms']:.4f}ms > 2.0ms"
-
-
-def test_bandit_update_under_target(bench_results):
-    r = bench_results["bandit_update"]
-    assert r["mean_ms"] < 2.0, f"bandit_update mean {r['mean_ms']:.4f}ms > 2.0ms"

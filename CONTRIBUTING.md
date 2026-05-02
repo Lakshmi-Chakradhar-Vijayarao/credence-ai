@@ -83,4 +83,4 @@ evals/                        — validation studies
 Use the GitHub issue templates. Include:
 - Which layer failed (probe / Truth Buffer / GTS / Rust gate / memory)
 - The uncertain constraint text that triggered (or didn't trigger) the behavior
-- Python version and `pip show credence-ai` output
+- Python version and `pip show credence-guard` output

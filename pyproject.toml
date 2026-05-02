@@ -3,8 +3,8 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "credence-ai"
-version = "2.0.0"
+name = "credence-guard"
+version = "1.0.0"
 description = "Credence — epistemic enforcement layer that prevents LLMs from forgetting what they didn't know"
 readme = "README.md"
 license = { text = "MIT" }
@@ -33,7 +33,7 @@ dependencies = [
 
 [project.optional-dependencies]
 mcp = [
-    "fastmcp>=0.1.0",
+    "fastmcp>=1.0.0",
 ]
 demo = [
     "streamlit>=1.30.0",
@@ -51,6 +51,7 @@ Homepage = "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai"
 Repository = "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai"
 Documentation = "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai/blob/main/docs/TECHNICAL_REPORT.md"
 "Bug Tracker" = "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai/issues"
+"PyPI" = "https://pypi.org/project/credence-guard/"
 
 [tool.setuptools.packages.find]
 include = ["credence*", "evals*", "demo*"]

@@ -150,7 +150,7 @@ def main() -> int:
         "  ACTION REQUIRED:",
         "  Verify the constraint(s) above before proceeding.",
         "  Use credence_verify(<id>, <confirmed_value>) to resolve.",
-        "  Or call credence_list_uncertain to review all pending constraints.",
+        "  Or call credence_constraints to review all pending constraints.",
         "",
     ]
     print("\n".join(lines), file=sys.stderr)

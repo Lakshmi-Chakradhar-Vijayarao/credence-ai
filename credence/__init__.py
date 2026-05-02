@@ -28,8 +28,10 @@ from .memory import CredenceMemory
 from .pipeline_monitor import PipelineMonitor, EpistemicHandoff
 from .enforce import enforce, CredenceViolation
 from .wrap import wrap, WrapResult, measure_fcr
+from .confidence_proxy import CredenceProxy, CredenceResult
+from .epistemic_manifest import EpistemicManifest
 
-__version__ = "3.0.0"
+__version__ = "1.0.0"
 __all__ = [
     # Model-agnostic wrapper — primary open-source API
     "wrap", "WrapResult", "measure_fcr",
@@ -43,4 +45,8 @@ __all__ = [
     "enforce", "CredenceViolation",
     # Full enforcement engine (requires API key — optional power-user feature)
     "ContextManager", "TurnResult", "SessionStats",
+    # J-score proxy and confidence result
+    "CredenceProxy", "CredenceResult",
+    # Structured epistemic manifest (XML injection)
+    "EpistemicManifest",
 ]

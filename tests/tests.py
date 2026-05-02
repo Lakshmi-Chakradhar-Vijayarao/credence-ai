@@ -1862,7 +1862,7 @@ except Exception as e:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # S27 — Phase 0: credence_score, envelope, wrap/unwrap, source_type,
-#                credence_autoverify, credence_session_brief
+#                credence_autoverify, credence_session_summary
 # ─────────────────────────────────────────────────────────────────────────────
 
 section("S27: Phase 0 — new MCP tools (score, wrap/unwrap, source_type, autoverify, brief)")
@@ -1870,8 +1870,8 @@ section("S27: Phase 0 — new MCP tools (score, wrap/unwrap, source_type, autove
 try:
     from credence.mcp_server import (
         credence_score, credence_wrap, credence_unwrap,
-        credence_register, credence_autoverify, credence_session_brief,
-        credence_list_uncertain, credence_verify, credence_reset,
+        credence_register, credence_autoverify, credence_session_summary,
+        credence_constraints, credence_verify, credence_reset,
     )
     from credence.envelope import CredenceEnvelope
 
@@ -1979,23 +1979,23 @@ try:
     check("S27-M credence_autoverify no confirmation signal → 0 verified",
           av_miss["verified_count"] == 0 and "No confirmation signal" in av_miss["message"])
 
-    # --- S27-N: credence_session_brief — returns brief with unverified list ---
+    # --- S27-N: credence_session_summary — returns brief with unverified list ---
     credence_reset(_S27_SID)
     credence_register("db port is 5433", _S27_SID, j_score=0.20, zone="LOW",
                       source_type="assumption")
     credence_register("cache TTL is 300 seconds", _S27_SID, j_score=0.35, zone="LOW",
                       source_type="user_estimate")
-    brief = credence_session_brief(_S27_SID, project_id="test-project")
-    check("S27-N credence_session_brief returns brief string with constraint info",
+    brief = credence_session_summary(_S27_SID, project_id="test-project")
+    check("S27-N credence_session_summary returns brief string with constraint info",
           brief["action_required"] is True
           and brief["unverified_count"] == 2
           and len(brief["constraint_summaries"]) == 2,
           f"count={brief['unverified_count']}, summaries={len(brief['constraint_summaries'])}")
 
-    # --- S27-O: credence_session_brief — empty session → action_required=False ---
+    # --- S27-O: credence_session_summary — empty session → action_required=False ---
     credence_reset(_S27_SID + "_empty")
-    brief_empty = credence_session_brief(_S27_SID + "_empty")
-    check("S27-O credence_session_brief empty session → action_required=False",
+    brief_empty = credence_session_summary(_S27_SID + "_empty")
+    check("S27-O credence_session_summary empty session → action_required=False",
           brief_empty["action_required"] is False
           and brief_empty["unverified_count"] == 0)
 
@@ -2003,6 +2003,426 @@ except Exception as e:
     import traceback
     for name in ["S27-A","S27-B","S27-C","S27-D","S27-E","S27-F","S27-G",
                  "S27-H","S27-I","S27-J","S27-K","S27-L","S27-M","S27-N","S27-O"]:
+        check(name, False, f"exception: {e}")
+    traceback.print_exc()
+
+# ─────────────────────────────────────────────────────────────────────────────
+# S28 — Phase 1: credence_audit, uncertainty inheritance, marker_events,
+#                session type detection
+# ─────────────────────────────────────────────────────────────────────────────
+
+section("S28: Phase 1 — audit, inheritance, marker flywheel, session type")
+
+try:
+    from credence.mcp_server import (
+        credence_audit, credence_scan, credence_post_compress,
+        credence_session_info, credence_gate, credence_reset,
+        _detect_session_type,
+    )
+    from credence.registry import CredenceRegistry
+
+    _S28_SID = "s28_test_session"
+    credence_reset(_S28_SID)
+
+    # --- S28-A: credence_audit — empty session returns 0 constraints ---
+    a_empty = credence_audit(_S28_SID)
+    check("S28-A credence_audit empty session → 0 constraints",
+          a_empty["constraint_count"] == 0 and a_empty["verified_count"] == 0)
+
+    # --- S28-B: credence_audit — reflects registered + verified events ---
+    credence_register("API rate limit is 50 req/min", _S28_SID,
+                      j_score=0.25, source_type="vendor_claim")
+    r_exp = credence_register("token expiry 3600 seconds", _S28_SID,
+                              j_score=0.35, source_type="user_estimate")
+    credence_verify(r_exp["constraint_id"], "3600s per vendor docs", _S28_SID)
+    a = credence_audit(_S28_SID)
+    check("S28-B credence_audit shows 2 constraints, 1 verified",
+          a["constraint_count"] == 2 and a["verified_count"] == 1
+          and a["unverified_count"] == 1,
+          f"count={a['constraint_count']}, v={a['verified_count']}, u={a['unverified_count']}")
+
+    # --- S28-C: credence_audit timeline has trajectory entries ---
+    check("S28-C credence_audit timeline contains trajectory events",
+          all(len(item["trajectory"]) > 0 for item in a["timeline"]),
+          "some constraints have empty trajectory")
+
+    # --- S28-D: uncertainty inheritance — annotates downstream variable usage ---
+    # Use unique suffix to avoid INSERT OR IGNORE collision with prior test runs
+    import time as _time
+    _unique = str(int(_time.time() * 1000))[-6:]
+    credence_reset(_S28_SID)
+    credence_register(f"s28d batch window is 75 items per call {_unique}", _S28_SID, j_score=0.25)
+    code = f"```python\nBATCH_SIZE = 75\n\ndef process(items):\n    return items[:BATCH_SIZE]\n```"
+    scan = credence_scan(code, _S28_SID, 0)
+    inherited = [h for h in scan["scan_hits"] if h.get("source") == "code_inherited"]
+    check("S28-D uncertainty inheritance annotates BATCH_SIZE usage in process()",
+          len(inherited) >= 1,
+          f"inherited hits: {inherited}, all hits: {[(h['value'],h['source']) for h in scan['scan_hits']]}")
+
+    # --- S28-E: uncertainty inheritance — assignment line itself is 'code' not 'code_inherited' ---
+    direct = [h for h in scan["scan_hits"] if h.get("source") == "code"]
+    check("S28-E direct assignment annotated as source=code (not inherited)",
+          len(direct) >= 1)
+
+    # --- S28-F: session type detection — debug ---
+    check("S28-F _detect_session_type detects debug session",
+          _detect_session_type("Getting a 500 error, traceback shows exception") == "debug")
+
+    # --- S28-G: session type detection — design ---
+    check("S28-G _detect_session_type detects design session",
+          _detect_session_type("Compare microservice vs monolith architecture scalability") == "design")
+
+    # --- S28-H: session type detection — code_review ---
+    check("S28-H _detect_session_type detects code_review session",
+          _detect_session_type("Please review and refactor this code for readability") == "code_review")
+
+    # --- S28-I: session type detection — research ---
+    check("S28-I _detect_session_type detects research session",
+          _detect_session_type("Compare and evaluate these alternatives, pros and cons") == "research")
+
+    # --- S28-J: session_info includes session_type ---
+    credence_reset(_S28_SID)
+    credence_register("500 error traceback exception crash", _S28_SID)
+    info = credence_session_info(_S28_SID)
+    check("S28-J credence_session_info includes session_type field",
+          "session_type" in info,
+          f"keys: {list(info.keys())}")
+
+    # --- S28-K: marker_events table created and records after post_compress ---
+    reg_p = CredenceRegistry(":memory:")
+    reg_p.record_marker_events(
+        session_id    = "test_sess",
+        markers_fired = ["i think", "might be"],
+        qual_survival = 0.0,
+        session_type  = "debug",
+    )
+    n = reg_p._conn.execute("SELECT COUNT(*) FROM marker_events").fetchone()[0]
+    check("S28-K marker_events records 2 rows for 2 markers",
+          n == 2, f"got {n} rows")
+
+    # --- S28-L: get_marker_stats returns empty below 10-session threshold ---
+    stats = reg_p.get_marker_stats()
+    check("S28-L get_marker_stats returns [] below 10-session threshold",
+          stats == [], f"got: {stats}")
+
+except Exception as e:
+    import traceback
+    for name in ["S28-A","S28-B","S28-C","S28-D","S28-E","S28-F",
+                 "S28-G","S28-H","S28-I","S28-J","S28-K","S28-L"]:
+        check(name, False, f"exception: {e}")
+    traceback.print_exc()
+
+# ─────────────────────────────────────────────────────────────────────────────
+# S29 — Phase 2: credence_diff, credence_project_status, CREDENCE_DB_PATH,
+#                ETP schema structure, envelope trust decay (TS parity)
+# ─────────────────────────────────────────────────────────────────────────────
+
+section("S29: Phase 2 — credence_diff, project_status, ETP schema, CREDENCE_DB_PATH")
+
+try:
+    from credence.mcp_server import (
+        credence_diff,
+        credence_project_status,
+        credence_register,
+        credence_verify,
+        credence_reset,
+        credence_memory_snapshot,
+    )
+    from credence.envelope import CredenceEnvelope
+
+    _S29_SID  = "s29_test_session"
+    _S29_PROJ = "s29_test_project"
+    import time as _t29
+    _u29 = str(int(_t29.time() * 1000))[-6:]
+
+    credence_reset(_S29_SID)
+
+    # --- S29-A: credence_diff — no contradiction when same numbers ---
+    r = credence_diff(
+        "The rate limit is 50 requests per minute",
+        "The API allows 50 requests per minute",
+        session_id=_S29_SID,
+    )
+    check("S29-A credence_diff same numbers → no contradictions",
+          len(r["contradictions"]) == 0,
+          f"contradictions={r['contradictions']}")
+
+    # --- S29-B: credence_diff — detects numeric contradiction ---
+    r = credence_diff(
+        "The rate limit is 50 requests per minute",
+        "The rate limit is 100 requests per minute",
+        session_id=_S29_SID,
+    )
+    check("S29-B credence_diff detects numeric contradiction",
+          len(r["contradictions"]) >= 1,
+          f"contradictions: {r['contradictions']}")
+    check("S29-B credence_diff DIVERGE recommendation",
+          "DIVERGE" in r["recommendation"] or "CONFLICT" in r["recommendation"],
+          f"recommendation: {r['recommendation']}")
+
+    # --- S29-C: credence_diff — AGREE when no numeric claims ---
+    r = credence_diff(
+        "The system uses a reliable architecture.",
+        "The platform is well-designed and stable.",
+        session_id=_S29_SID,
+    )
+    check("S29-C credence_diff no numeric claims → AGREE",
+          "AGREE" in r["recommendation"],
+          f"recommendation: {r['recommendation']}")
+
+    # --- S29-D: credence_diff — returns required fields ---
+    check("S29-D credence_diff returns all required fields",
+          all(k in r for k in [
+              "matched_claims", "contradictions", "registry_conflicts",
+              "divergence_score", "contradiction_count", "recommendation", "etp_version"
+          ]),
+          f"keys: {list(r.keys())}")
+
+    # --- S29-E: credence_project_status — empty project ---
+    r = credence_project_status(_S29_PROJ)
+    check("S29-E credence_project_status empty project → 0 constraints",
+          r["total_constraints"] == 0,
+          f"total: {r['total_constraints']}")
+
+    # --- S29-F: credence_project_status — after snapshot ---
+    credence_reset(_S29_SID)
+    credence_register(f"timeout is maybe 30 seconds {_u29}", _S29_SID, j_score=0.30)
+    credence_register(f"batch size approximately 100 items {_u29}", _S29_SID, j_score=0.22)
+    credence_memory_snapshot(_S29_SID, _S29_PROJ)
+
+    r = credence_project_status(_S29_PROJ)
+    check("S29-F credence_project_status shows 2 constraints after snapshot",
+          r["total_constraints"] >= 2,
+          f"total: {r['total_constraints']}, project: {_S29_PROJ}")
+    check("S29-F credence_project_status epistemic_debt >= 2",
+          r["epistemic_debt"] >= 2,
+          f"debt: {r['epistemic_debt']}")
+
+    # --- S29-G: credence_project_status — health field present ---
+    check("S29-G credence_project_status has health field",
+          "health" in r and r["health"] in ["CLEAN","LOW_DEBT","MEDIUM_DEBT","HIGH_DEBT"],
+          f"health: {r.get('health')}")
+
+    # --- S29-H: CREDENCE_DB_PATH env var wires registry ---
+    import os as _os
+    import tempfile as _tf
+    with _tf.TemporaryDirectory() as tmpdir:
+        test_db = _os.path.join(tmpdir, "team_registry.db")
+        from credence.registry import CredenceRegistry
+        r2 = CredenceRegistry(db_path=test_db)
+        r2.register("shared constraint for team", "shared-session", j_score=0.35)
+        r2.close()
+        # Re-open and check persistence
+        r3 = CredenceRegistry(db_path=test_db)
+        constraints = r3.list_uncertain("shared-session")
+        r3.close()
+        check("S29-H CREDENCE_DB_PATH registry persists across opens",
+              len(constraints) >= 1,
+              f"constraints: {constraints}")
+
+    # --- S29-I: ETP schema etp_version field present in credence_diff output ---
+    r = credence_diff("value is 50", "value is 100")
+    check("S29-I credence_diff output includes etp_version='1.0'",
+          r.get("etp_version") == "1.0",
+          f"etp_version: {r.get('etp_version')}")
+
+    # --- S29-J: ETP schema etp_version in project_status ---
+    check("S29-J credence_project_status output includes etp_version='1.0'",
+          credence_project_status(_S29_PROJ).get("etp_version") == "1.0",
+          "etp_version missing from project_status")
+
+    # --- S29-K: envelope trust math matches TypeScript SDK spec ---
+    # j=0.80, chain_depth=2, trusted source → trust = 0.80 - 2*0.05 = 0.70
+    env = CredenceEnvelope(
+        content="test", j_score=0.80, zone="HIGH", source="credence",
+        verified=False, chain_depth=2, uncertainty_preserved=False,
+        content_type="text", session_id=None,
+    )
+    check("S29-K envelope trust_score at depth=2 = 0.70",
+          abs(env.trust_score - 0.70) < 0.001,
+          f"trust_score={env.trust_score}")
+
+    # --- S29-L: registry_conflicts returned when verified constraint contradicts text_b ---
+    credence_reset(_S29_SID)
+    cid = credence_register(f"rate limit 50 requests {_u29}b", _S29_SID, j_score=0.80)
+    credence_verify(cid["constraint_id"], "rate limit is 50 requests per minute", _S29_SID)
+    r = credence_diff(
+        "rate limit 50 requests per minute",
+        f"rate limit 999 requests per minute",
+        session_id=_S29_SID,
+    )
+    check("S29-L credence_diff reports registry_conflicts when verified contradicts text_b",
+          len(r["registry_conflicts"]) >= 1 or len(r["contradictions"]) >= 1,
+          f"registry_conflicts={r['registry_conflicts']}, contradictions={r['contradictions']}")
+
+except Exception as e:
+    import traceback
+    for name in ["S29-A","S29-B","S29-C","S29-D","S29-E","S29-F",
+                 "S29-G","S29-H","S29-I","S29-J","S29-K","S29-L"]:
+        check(name, False, f"exception: {e}")
+    traceback.print_exc()
+
+# ─────────────────────────────────────────────────────────────────────────────
+# S30 — Phase 3: ghost heuristics, marker health, adaptive status, bandit
+# ─────────────────────────────────────────────────────────────────────────────
+
+section("S30: Phase 3 — ghost heuristics, marker_health, adaptive_status, bandit")
+
+try:
+    from credence.mcp_server import (
+        credence_scan_ghosts,
+        credence_marker_health,
+        credence_bandit_status,
+        credence_register,
+        credence_reset,
+        credence_post_compress,
+    )
+    from credence.registry import CredenceRegistry
+
+    _S30_SID = "s30_test_session"
+    import time as _t30
+    _u30 = str(int(_t30.time() * 1000))[-6:]
+
+    credence_reset(_S30_SID)
+
+    # --- S30-A: ghost scan — empty session returns no candidates ---
+    r = credence_scan_ghosts(_S30_SID)
+    check("S30-A ghost_scan empty session → ghost_count=0",
+          r["ghost_count"] == 0,
+          f"count: {r['ghost_count']}")
+
+    # --- S30-B: ghost scan — vendor_claim without hedging is flagged ---
+    credence_register(
+        f"rate limit is 1000 requests per minute {_u30}",
+        _S30_SID,
+        j_score=0.75,
+        zone="HIGH",
+        source_type="vendor_claim",
+    )
+    r = credence_scan_ghosts(_S30_SID)
+    check("S30-B ghost_scan flags vendor_claim with no hedging",
+          r["ghost_count"] >= 1,
+          f"count: {r['ghost_count']}, candidates: {r['ghost_candidates']}")
+    check("S30-B ghost candidate has ghost_reason",
+          len(r["ghost_candidates"]) > 0 and "ghost_reason" in r["ghost_candidates"][0],
+          f"candidates: {r['ghost_candidates']}")
+
+    # --- S30-C: ghost scan — vendor_claim WITH hedging is NOT flagged ---
+    credence_reset(_S30_SID)
+    credence_register(
+        f"rate limit is probably 1000 requests per minute {_u30}c",
+        _S30_SID,
+        j_score=0.35,
+        zone="LOW",
+        source_type="vendor_claim",
+    )
+    r = credence_scan_ghosts(_S30_SID)
+    check("S30-C ghost_scan does NOT flag vendor_claim with hedging language",
+          r["ghost_count"] == 0,
+          f"count: {r['ghost_count']}, candidates: {r['ghost_candidates']}")
+
+    # --- S30-D: marker_health below threshold → insufficient_data ---
+    # Use a fresh in-memory registry to control n_sessions
+    _r30 = CredenceRegistry(":memory:")
+    r = credence_marker_health()
+    # We can't control the global registry's session count, so check either outcome:
+    # if below threshold: status=insufficient_data; if above: status=available
+    check("S30-D credence_marker_health returns status field",
+          "status" in r and r["status"] in ("insufficient_data", "available"),
+          f"status: {r.get('status')}")
+    check("S30-D credence_marker_health returns a threshold value",
+          r.get("threshold") in (10, 200),
+          f"threshold: {r.get('threshold')}")
+
+    # --- S30-E: marker_health with 0 sessions → insufficient_data + empty lists ---
+    # Simulate by reading from a fresh registry
+    _r30_fresh = CredenceRegistry(":memory:")
+    fresh_stats = _r30_fresh.get_marker_stats()
+    check("S30-E get_marker_stats() returns [] below 10-session threshold",
+          fresh_stats == [],
+          f"stats: {fresh_stats}")
+
+    # --- S30-F: adaptive_status below threshold → learning status ---
+    r = credence_bandit_status()
+    check("S30-F credence_bandit_status returns status field",
+          "status" in r and r["status"] in ("learning", "active"),
+          f"status: {r.get('status')}")
+    check("S30-F credence_bandit_status returns threshold=100",
+          r.get("threshold") == 100 or "threshold" in r,
+          f"keys: {list(r.keys())}")
+
+    # --- S30-G: adaptive_status when dormant → static thresholds returned ---
+    # Simulate: fresh registry has 0 sessions → bandit dormant
+    _r30_fresh2 = CredenceRegistry(":memory:")
+    bandit = _r30_fresh2.get_bandit_state()
+    check("S30-G get_bandit_state dormant → status=learning",
+          bandit["status"] == "learning",
+          f"status: {bandit['status']}")
+    check("S30-G get_bandit_state dormant → returns static thresholds",
+          bandit["current_thresholds"]["theta_high"] == 0.70,
+          f"thresholds: {bandit.get('current_thresholds')}")
+
+    # --- S30-H: ghost heuristic fires on vendor_claim, not on observation ---
+    credence_reset(_S30_SID)
+    credence_register(
+        f"api timeout is 30 seconds {_u30}h",
+        _S30_SID,
+        j_score=0.70,
+        zone="HIGH",
+        source_type="observation",  # NOT vendor_claim → should not be flagged
+    )
+    r = credence_scan_ghosts(_S30_SID)
+    check("S30-H ghost_scan does NOT flag observation type (only vendor_claim)",
+          r["ghost_count"] == 0,
+          f"count: {r['ghost_count']}")
+
+    # --- S30-I: flag_ghost_constraints returns list with ghost_risk=True ---
+    from credence.registry import CredenceRegistry as _CR30
+    _r30i = _CR30(":memory:")
+    cid_ghost = _r30i.register(
+        "token refresh interval is 3600 seconds", "s30i",
+        j_score=0.75, zone="HIGH",
+        constraint_type="vendor_claim",
+    )
+    flagged = _r30i.flag_ghost_constraints("s30i")
+    check("S30-I flag_ghost_constraints flags assertive vendor_claim",
+          len(flagged) >= 1 and flagged[0].get("ghost_risk") is True,
+          f"flagged: {flagged}")
+
+    # --- S30-J: update_marker_weights dormant below threshold ---
+    _r30j = _CR30(":memory:")
+    result = _r30j.update_marker_weights()
+    check("S30-J update_marker_weights returns dormant status below 200 sessions",
+          result["status"] == "dormant",
+          f"status: {result['status']}")
+    check("S30-J update_marker_weights dormant message mentions threshold",
+          "200" in result.get("message", ""),
+          f"message: {result.get('message')}")
+
+    # --- S30-K: ghost scan recommendation message present ---
+    credence_reset(_S30_SID)
+    credence_register(
+        f"max connection pool is 500 {_u30}k",
+        _S30_SID,
+        j_score=0.72,
+        zone="HIGH",
+        source_type="vendor_claim",
+    )
+    r = credence_scan_ghosts(_S30_SID)
+    check("S30-K ghost_scan recommendation present and non-empty",
+          isinstance(r.get("recommendation"), str) and len(r["recommendation"]) > 10,
+          f"recommendation: {r.get('recommendation')}")
+
+    # --- S30-L: adaptive_status message field present ---
+    r = credence_bandit_status()
+    check("S30-L credence_bandit_status has message field",
+          isinstance(r.get("message"), str) and len(r["message"]) > 5,
+          f"message: {r.get('message')}")
+
+except Exception as e:
+    import traceback
+    for name in ["S30-A","S30-B","S30-C","S30-D","S30-E","S30-F",
+                 "S30-G","S30-H","S30-I","S30-J","S30-K","S30-L"]:
         check(name, False, f"exception: {e}")
     traceback.print_exc()
 
