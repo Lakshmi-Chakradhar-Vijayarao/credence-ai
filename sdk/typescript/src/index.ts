@@ -20,7 +20,7 @@ export {
   CredenceRegistryClient,
   type Constraint,
   type RegisterResult,
-  type SessionBrief,
+  type SessionSummary,
   type ProjectStatus,
   type DiffResult,
 } from "./registry-client";
