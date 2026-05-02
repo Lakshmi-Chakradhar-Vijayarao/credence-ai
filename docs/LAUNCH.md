@@ -193,7 +193,8 @@ github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai
 
 ## Launch Checklist
 
-- [ ] All 596 tests passing (`python -m pytest tests/ -q`)
+- [x] All 596 tests passing (`python -m pytest tests/ -q`)
+- [x] Code pushed to GitHub (v1.0.0 tag pending — create at github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai/releases/new)
 - [ ] `pip install credence-guard` installs cleanly from PyPI
 - [ ] `python quickstart.py` runs without API key
 - [ ] demo/gate_demo.gif renders correctly in README on GitHub
@@ -203,13 +204,36 @@ github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai
 - [ ] Reddit posts queued for 1-2 hours after HN (after HN traction is visible)
 - [ ] Watching HN comments — respond within 15 minutes of any comment
 
+## Academic Submission Checklist
+
+### EMNLP 2026 — DEADLINE: May 25, 2026 (23 days)
+- [ ] arXiv cs.CL preprint posted (establish priority before submission)
+- [ ] Paper formatted in ACL LaTeX style (Overleaf: acl2025 template)
+- [ ] Control experiment run: `python -m evals.compression_faithfulness --control` (requires API key, ~$1)
+- [ ] TECHNICAL_REPORT.md converted to 8-page ACL format (long paper) or 4-page (short)
+- [ ] Submit at softconf/ARR by May 25, 2026
+
+### arXiv (immediate — before EMNLP submission)
+- [ ] Export TECHNICAL_REPORT.md to PDF (pandoc + LaTeX or Overleaf)
+- [ ] Submit to arxiv.org → cs.CL → "New Submission"
+- [ ] Add arXiv preprint URL to README.md badge
+
+### MCP Registry
+- [ ] Visit registry.modelcontextprotocol.io → "Publish my MCP server"
+- [ ] GitHub OAuth login
+- [ ] Paste server.json from docs/MCP_REGISTRY_SUBMISSION.md
+- [ ] Copy namespace: io.github.Lakshmi-Chakradhar-Vijayarao/credence-ai
+
+### npm (TypeScript SDK)
+- [ ] `cd sdk/typescript && npm login && npm publish`
+
 ## Likely HN Questions + Answers
 
 **"Context windows are getting bigger — won't this be obsolete?"**
 > For single-agent compression: partially yes. For multi-agent handoffs and cross-session propagation: no. The problem isn't just compression — it's epistemic state surviving handoffs between agents that have no shared memory. That problem grows as pipelines get more complex, not less.
 
 **"How is this different from just prompting the model to be careful?"**
-> We tested this. With careful prompting, the model preserves qualifiers most of the time — not 100%, and not deterministically. The faithfulness probe is 100% and 0.017ms P50 because it doesn't ask the model anything. The probe either finds the marker or it doesn't.
+> Instruction-following for nuanced constraints like qualifier preservation achieves ~38% reliability (Tian et al. 2025). The probe's approach — aborting compression entirely — is deterministic. The probe either finds a marker (PRESERVE) or it doesn't (proceed). No instruction compliance needed. We predict explicit prompting would reduce EQLR from 46% to ~10-20%, not to 0%. We have the control experiment coded; it requires API access to run. The probe's value is in the cases where probabilistic compliance is insufficient — any environment where qualifier loss causes real harm.
 
 **"What about models that don't use compression?"**
 > CP1 (probe) is compression-specific. CP2-CP5 apply regardless of compression — they protect against the model forgetting uncertainty during generation, in code output, at tool execution, and across sessions.

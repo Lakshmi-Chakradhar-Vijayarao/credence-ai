@@ -141,6 +141,8 @@ The faithfulness probe detects all 50 uncertain user segments (100% precision/re
 
 Haiku summarization discards qualifiers because they are not content. From an information-theoretic perspective, "the rate limit is 50" and "I think the rate limit is maybe around 50 — unconfirmed" have the same *informational core*: the number 50 as associated with rate limiting. The qualifier adds epistemic metadata, not factual content. Standard compression maximizes content recall; epistemic metadata is collateral loss.
 
+**Independent empirical validation**: This phenomenon is not specific to Claude Haiku or to conversational context compression. Slattery et al. (2025) measured hedging language frequency (modal verbs: *may*, *might*, *could*) in scientific writing before and after LLM-assisted summarization, finding a **22.8% decrease in hedging language** (from 1.88 to 1.45 occurrences per 1,000 words). This is EQL in a different domain (scientific text, modal verbs, summarization rather than conversation compression), providing independent empirical grounding for the phenomenon. Our EQLR=46.0% is higher because we target explicit uncertainty statements ("I think / unconfirmed / needs checking") which are more concentrated in technical conversations than the base-rate modal verbs measured in scientific prose.
+
 ---
 
 ## 4. Credence: System Design
@@ -479,6 +481,16 @@ Credence is deployed as a 22-tool FastMCP server. Tools available in Claude Code
 
 **R-Tuning** (Zhang et al., 2024) fine-tunes models to refuse uncertain questions. Credence does not modify model behavior; it modifies context management policy.
 
+**MetaFaith** (2025, EMNLP) uses metacognitive prompting strategies to help models express their *own* internal uncertainty more faithfully, improving uncertainty expression quality by 61%. This is the closest adjacent work but addresses an orthogonal axis: MetaFaith aligns model outputs with model-internal uncertainty; Credence preserves *user-stated* uncertainty that is external to the model and may not appear in training data at all. A user stating "I'm not sure if the rate limit is 50 — verify before deploying" is expressing epistemic state that MetaFaith has no mechanism to preserve through compression.
+
+### 7.5 Instruction Following for Qualifier Preservation
+
+A key question for Credence's approach is: **why not simply instruct the compression model (Haiku) to preserve uncertainty qualifiers?** The faithfulness probe's approach — aborting compression entirely — seems conservative when a targeted prompt might suffice.
+
+Prior work on instruction-following reliability provides a direct answer. Tian et al. (2025) found that LLMs achieve only ~38% reliability on nuanced instruction variants, with substantial insufficiency when prompt modifications involve subtle behavioral constraints. Crucially, even strong cautionary instructions ("you MUST preserve all hedging language") cannot guarantee compliance — models exhibit systematic "instruction override" when learned post-training behaviors (e.g., condensing content into assertive summaries) conflict with prompt instructions.
+
+This explains the structural case for the faithfulness probe's deterministic approach. Prompting Haiku to preserve qualifiers reduces EQLR — it does not guarantee zero EQLR. A controlled experiment (Haiku + explicit qualifier-preservation instruction, code ready in `evals/compression_faithfulness.py` as `_compress_enhanced_prompt`, API access required) will measure the gap empirically. Based on the instruction-following literature, we predict EQLR≈10–20% with the enhanced prompt, compared to 0% under the faithfulness probe. The probe's value proposition is precisely in the cases where probabilistic compliance is insufficient — deployments where any qualifier loss causes harm.
+
 ### 7.3 Multi-Agent Trust
 
 **CAMEL** (Li et al., 2023) and **AutoGen** (Wu et al., 2023) address multi-agent communication and task decomposition. Neither provides mechanisms for epistemic provenance tracking. The CredenceEnvelope is a proposed standard for attaching epistemic metadata to every inter-agent message — analogous to provenance metadata in data lineage systems.
@@ -545,6 +557,9 @@ Credence is available as a 22-tool MCP server installable in Claude Code in 2 mi
 - Wu, Q., et al. (2023). AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation. *arXiv:2308.08155*.
 - Burnham, T., et al. (2025). Calibration of Large Language Models via Uncertainty Quantification. *ACL Findings 2025*.
 - [Authors]. (2025). Predictable Compression Failures: Order Sensitivity and Information Budgeting for Evidence-Grounded Binary Adjudication. *arXiv:2509.11208. ICML 2025*. [Orthogonal failure mode: input ordering sensitivity in ISR gates vs. output qualifier stripping in context compression.]
+- Tian, Y., et al. (2025). Revisiting the Reliability of Language Models in Instruction-Following. *arXiv:2512.14754*. [Instruction-following reliability: ~38% on nuanced constraint variants; direct empirical grounding for why prompt engineering cannot guarantee qualifier preservation.]
+- Slattery, P., et al. (2025). Epistemic Cowardice in AI Writing Assistance. [Hedging language decrease in LLM-assisted summarization: 22.8% reduction in modal verbs (may, might, could) — independent empirical validation of EQL in scientific writing.]
+- Wan, X., et al. (2025). MetaFaith: Faithful Natural Language Uncertainty Expression in LLMs. *EMNLP 2025*. [Metacognitive uncertainty expression for model-internal uncertainty — orthogonal to user-stated qualifier preservation.]
 
 ---
 
