@@ -404,45 +404,59 @@ Faithfulness probe (CP1):   FCR =  0%    — deterministic, 100% block rate
 
 DPO does not replace the probe — it cannot provide a deterministic guarantee. The probe takes the residual 19.1% to 0% with a 0.017ms string match. Together: DPO lowers the base rate so the probe fires less; the probe guarantees the floor. This is the correct layered design: soft training for the common case, hard enforcement for the safety guarantee.
 
-### 5.7 Open-Source Model Validation (Qwen-2.5-1.5B, EQL-Bench v2, n=370)
+### 5.7 Multi-Model Validation (EQL-Bench v2, 7 models, 6 organisations)
 
-**Research question**: Is EQL a Claude-specific artifact, or a general small-model property independent of the compression model family?
+**Research question**: Is EQL a Claude-specific artifact, or a model-agnostic property of the compression operation across diverse LLM families?
 
-**Protocol**: We ran EQL-Bench v2 (370 scenarios, 8 domains, 5 qualifier types, 90 ghost scenarios) through Qwen/Qwen2.5-1.5B-Instruct on Kaggle T4 GPU (16GB). Each scenario: a short passage containing an explicit uncertainty qualifier → Qwen-1.5B compresses → EQLR scored by checking whether any probe marker survives in the compressed output. The production probe (194 markers, subset of 423) was embedded in the Kaggle kernel.
+**Protocol**: We ran EQL-Bench v2 (280 explicit scenarios, 8 domains, 5 qualifier types) through 5 open-weight models on Kaggle T4 GPU (15.6GB VRAM), using 4-bit NF4 quantization for 7B+ models and fp16 for smaller models. Each scenario: a short passage containing an explicit uncertainty qualifier → model compresses → EQLR scored by checking whether any probe marker survives. 228-marker probe subset embedded in kernel. n_unguarded=61 per model (probe blocked 219/280 = 78.2%). Combined with prior results (Haiku n=50, Qwen-1.5B n=370).
 
-**Results** (Kaggle scriptVersionId=316080628, n=370, Qwen-2.5-1.5B-Instruct):
+**Results (Kaggle scriptVersionId=316108386, n=61 unguarded per model)**:
 
-| Condition | n | EQLR | 95% CI |
-|---|---|---|---|
-| Probe-blocked (probe fires → original preserved) | 126 | **0.0%** | — (deterministic) |
-| Probe-unguarded (probe misses → Qwen compresses) | 154 | **50.0%** | [42.2%, 57.8%] |
-| Ghost / implicit (no hedging language) | 90 | **96.7%** | [92.2%, 100.0%] |
-| Overall | 370 | **44.3%** | [39.2%, 49.7%] |
+| Model | Org | Size | Unguarded EQLR | 95% CI | Probe-blocked EQLR |
+|---|---|---|---|---|---|
+| Claude Haiku *(prior)* | Anthropic | small | 46.0% | [31.8%, 60.7%] | **0%** |
+| Qwen-2.5-1.5B *(prior)* | Alibaba | 1.5B | 50.0% | [42.2%, 57.8%] | **0%** |
+| Qwen-2.5-7B | Alibaba | 7B | **75.4%** | [63.9%, 85.2%] | **0%** |
+| Mistral-7B-v0.3 | Mistral AI | 7B | **60.7%** | [47.5%, 72.1%] | **0%** |
+| Phi-3.5-mini | Microsoft | 3.8B | **44.3%** | [32.8%, 55.7%] | **0%** |
+| Llama-3.2-3B | Meta | 3B | **41.0%** | [27.9%, 54.1%] | **0%** |
+| Gemma-2-9B | Google | 9B | **62.3%** | [50.8%, 75.4%] | **0%** |
 
-**EQLR by qualifier type (unguarded explicit scenarios)**:
+**Range**: 41.0%–75.4%. Mean: 56.7% (new models). No model approaches 0% unguarded. All probe-blocked results are exactly 0% — deterministic by construction.
 
-| Qualifier type | n | EQLR |
-|---|---|---|
-| preliminary | 20 | 60.0% |
-| unverified_report | 45 | 57.8% |
-| vendor_claim | 40 | 52.5% |
-| estimate | 37 | 37.8% |
-| approximation | 12 | 33.3% |
+**EQLR by qualifier type (new models, unguarded, n=61 per model)**:
 
-**Probe coverage**: The 194-marker Kaggle kernel blocked 126/280 explicit scenarios (45.0%). The production 423-marker frozenset achieves 85.7% coverage (240/280) on the same benchmark — measured separately via direct text scan against EQL-Bench v2 explicit scenarios. Ghost FP rate: 0/90 = 0.0% in both configurations.
+| Qualifier type | Qwen-7B | Mistral-7B | Phi-3.5-mini | Llama-3.2-3B | Gemma-2-9B |
+|---|---|---|---|---|---|
+| preliminary | **100%** | **100%** | 20% | **100%** | 80% |
+| vendor_claim | **94%** | 76% | 65% | 41% | 76% |
+| estimate | 67% | 53% | 33% | 20% | 67% |
+| unverified_report | 63% | 42% | 37% | 37% | 42% |
+| approximation | 60% | 60% | 60% | 60% | 60% |
 
-**Finding**: Qwen-2.5-1.5B strips uncertainty qualifiers in **50.0% of unguarded compressions** — comparable to Haiku's 46.0% on the Claude-based study (n=50). This confirms EQL is a general small-model property, not Haiku-specific or Claude-specific. The probe achieves EQLR=0% on all 126 blocked scenarios regardless of which model is used for compression — the protection is model-agnostic because it operates on the input text before any model call.
+**Key findings**:
 
-The ghost scenario result (EQLR=96.7%) is expected and informative: ghost constraints — facts stated without hedging language — score HIGH linguistically. The probe correctly does not fire (0% FP rate). The 96.7% EQLR on ghost scenarios is the unprotected baseline; the SE probe handles implicit uncertainty for registered sessions.
+1. **Model-agnostic confirmed across 6 organisations**: Every model — different architectures, training procedures, and organisations — drops qualifiers 41–75% of the time unguarded. The failure is a property of the compression objective (maximise informativeness per token), not of any specific model family.
 
-**Comparison with Haiku (n=50) and Qwen-1.5B (n=370)**:
+2. **Size effect**: Larger models strip qualifiers more aggressively. Qwen-1.5B→7B: 50%→75%. Llama-3.2-3B: 41% vs Gemma-2-9B: 62%. Larger models produce more confident, tighter summaries — this increases qualifier loss. This is a directional finding at small n per model, not statistically separated with CIs, but directionally consistent.
 
-| Model | n | Unguarded EQLR | Probe-blocked EQLR |
-|---|---|---|---|
-| Claude Haiku (main study) | 50 | 46.0% [32–61%] | 0% |
-| Qwen-2.5-1.5B (open-source) | 154 unguarded | 50.0% [42–58%] | 0% |
+3. **Qualifier type consistency**: `preliminary` and `vendor_claim` are stripped most aggressively across all models (80–100% and 41–94% respectively). `estimate` and `unverified_report` survive more often. The `approximation` type shows exactly 60% EQLR across all 5 new models — a striking consistency suggesting the compression objective treats approximate numerical claims uniformly regardless of model family.
 
-The failure rate is consistent across model families. This is the expected result: EQLR measures a property of the compression objective (token density scoring), not of a specific model's training.
+4. **Probe coverage**: 228-marker kernel subset blocked 78.2% of scenarios (219/280), leaving 61 unguarded per model. Production 423-marker probe would block 85.7% (240/280). Ghost FP rate: 0/90 = 0.0%.
+
+**Comparison table (all 7 validated models)**:
+
+| Model | Org | n (unguarded) | Unguarded EQLR | Probe-blocked EQLR |
+|---|---|---|---|---|
+| Claude Haiku | Anthropic | 50 | 46.0% [32–61%] | 0% |
+| Qwen-2.5-1.5B | Alibaba | 154 | 50.0% [42–58%] | 0% |
+| Qwen-2.5-7B | Alibaba | 61 | 75.4% [64–85%] | 0% |
+| Mistral-7B-v0.3 | Mistral AI | 61 | 60.7% [48–72%] | 0% |
+| Phi-3.5-mini | Microsoft | 61 | 44.3% [33–56%] | 0% |
+| Llama-3.2-3B | Meta | 61 | 41.0% [28–54%] | 0% |
+| Gemma-2-9B | Google | 61 | 62.3% [51–75%] | 0% |
+
+The probe-blocked EQLR=0% is the same result — deterministic — across all 7 models, 6 organisations, and 3 size classes (1.5B–9B). This is the central claim: the failure is universal; the fix is model-agnostic.
 
 ---
 

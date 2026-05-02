@@ -226,7 +226,12 @@ Naive sliding window              BothRate = 0.200
 |---|---|---|---|---|
 | Haiku compression — EQLR (qualifier strip rate) | **0%** | **46%** [32–60%] | 50 | ✓ Probe block rate 100% [100–100%] |
 | Token-importance sim — EQLR | **0%** | **68%** [54–80%] | 50 | ✓ Direct text measurement |
-| Qwen-1.5B EQLR — open-source validation | **0%** (blocked) | **44.3%** (unguarded) | 370 | ✓ Model-agnostic confirmation |
+| Qwen-1.5B EQLR — open-source validation | **0%** (blocked) | **50.0%** (unguarded) | 370 | ✓ Model-agnostic confirmation |
+| Qwen-2.5-7B EQLR | **0%** (blocked) | **75.4%** [64–85%] | 61 | ✓ Multi-model benchmark |
+| Mistral-7B EQLR | **0%** (blocked) | **60.7%** [48–72%] | 61 | ✓ Multi-model benchmark |
+| Phi-3.5-mini EQLR | **0%** (blocked) | **44.3%** [33–56%] | 61 | ✓ Multi-model benchmark |
+| Llama-3.2-3B EQLR | **0%** (blocked) | **41.0%** [28–54%] | 61 | ✓ Multi-model benchmark |
+| Gemma-2-9B EQLR | **0%** (blocked) | **62.3%** [51–75%] | 61 | ✓ Multi-model benchmark |
 | Probe coverage on EQL-Bench v2 explicit | **85.7%** | — | 280 | ✓ 0% ghost false-positive rate |
 | E6: Long-session constraint recall (Truth Buffer) | **100%** | 19.6% (naive window) | 23 trials | ✓ Multi-trial |
 | E7: Multi-hop 3-step reasoning chain | **3/3 hops** | 0/3 (naive) | 1 | ⚠ Single trial |
