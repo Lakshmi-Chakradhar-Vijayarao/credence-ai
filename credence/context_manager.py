@@ -456,6 +456,118 @@ _UNCERTAINTY_MARKERS = frozenset({
     # "awaiting" (administrative, not epistemic),
     # "pending decision" (workflow, not epistemic),
     # "under discussion" (process state, not factual uncertainty)
+    # Appearance/seeming hedges — "seems to", "appears to" are canonical English uncertainty
+    # expressions; absent from prior list despite being among the most common hedging forms.
+    # Found by auditing 77/154 unguarded EQL-Bench v2 explicit scenarios with EQLR events.
+    "seems to", "seem to", "appears to", "appear to",
+    "seems like", "seem like", "appears like",
+    # Person-attribution — second-hand from colleague/peer (not vendor/rep)
+    "colleague said", "a colleague", "colleague mentioned", "colleague told",
+    "my colleague", "team member said", "teammate said", "coworker said",
+    # Sales channel — "sales claimed/said" not covered by "sales rep said"
+    "sales claimed", "sales said", "sales told us", "sales mentioned",
+    # Inferential / log-derived — empirical but not officially confirmed
+    "inferred from", "inferred based", "we inferred",
+    "logs show", "from the logs", "log timestamps", "the logs show",
+    "log shows", "log suggests", "logs suggest",
+    "observed from", "observed in logs", "observed in testing",
+    # Absence-of-documentation markers — no official source confirms the claim
+    "not documented", "undocumented", "no documentation", "no official documentation",
+    "no official", "not officially", "no official confirmation",
+    "unofficially", "off the record",
+    # Source-qualified indirect attribution — "based on our" is often unconfirmed
+    "based on our understanding", "based on our assumption", "based on what we heard",
+    "based on feedback", "based on what they said", "based on the conversation",
+    # Issue/chat-tracker sourced — informal channels, not authoritative docs
+    "github issue", "from a github issue", "per the github issue",
+    "per the issue", "from the issue tracker",
+    "from a slack", "per the slack",
+    # Vendor assertion (not contracted) — "vendor says X" without confirmation in contracts
+    "vendor says", "vendor claims",
+    # Group/personal estimate — "we estimate", "we think" parallel to "i think"/"i estimate"
+    "we estimate", "we think", "we suspect", "i suspect",
+    # Not verified / not reproduced — explicit statement of missing verification
+    "not verified", "not reproduced", "not been reproduced", "haven't reproduced",
+    "haven't measured", "haven't reviewed the",
+    # Back-of-envelope / rough estimate — explicit informal calculation
+    "back-of-envelope", "back of envelope", "rough estimate", "envelope math",
+    # Informal source — blog post, conference talk, anecdote
+    "blog post", "a blog post", "the blog post", "blog post claims", "blog post says",
+    "conference talk", "conference session", "a conference", "at the conference",
+    "anecdotal", "anecdotally", "informal observation", "informally observed",
+    "informally", "verbal quote", "verbal commitment", "not from a formal",
+    # Preliminary / provisional determination — "is preliminarily X"
+    "is preliminarily", "preliminarily", "preliminary finding",
+    # Not in contracts / not official — claim not backed by formal agreement
+    "not in our contracts", "not in the contract", "not in the sla",
+    "subject to change", "may change", "could change without",
+    # Personal/org attribution from external parties
+    "company said", "engineer said", "architect said", "manager said", "someone said",
+    "a researcher said", "an analyst said", "an expert said", "specialist said",
+    # Vendor possessive + document type — "vendor's guide says", "vendor's whitepaper claims"
+    # "vendor's" alone is too broad (fires on "vendor's DPA meets X" with no hedging);
+    # only match when followed by a document type that implies the claim is uncontracted.
+    "vendor's guide", "vendor's blog", "vendor's whitepaper", "vendor's documentation",
+    "vendor's readme", "vendor's docs", "vendor's roadmap",
+    # Early-stage / nothing-decided — preliminary design markers
+    "early discussion", "early exploration", "early spike", "early thinking",
+    "nothing finalized", "nothing decided", "nothing ratified",
+    "not yet ratified", "nothing committed", "no adr",
+    # Academic pre-publication — preprints are explicitly unreviewed
+    "a preprint", "preprint claims", "preprint says", "preprint suggests",
+    "not yet peer-reviewed", "not peer-reviewed", "awaiting peer review",
+    # Informal guidance / advice — not from authoritative source
+    "informal guidance", "informal advice", "informal claim", "informal post",
+    "informal assessment", "informal interpretation",
+    # Extrapolation — inference beyond the data
+    "extrapolated from", "extrapolated based", "extrapolating from",
+    # Not tested in / against — explicitly untested deployment context
+    "not tested in", "not tested on", "not tested with", "not tested against",
+    "not tested under", "untested in",
+    # Marketing materials — explicitly promotional, not technical verification
+    "marketing materials", "marketing collateral", "marketing deck",
+    # Consultant said / suggested — external informal guidance
+    "consultant suggested", "consultant mentioned", "consultant said",
+    "a consultant", "the consultant", "outside counsel", "informally advised",
+    # Conflicting sources — two authoritative sources disagree → claim is unresolved
+    "conflicting reports", "conflicting data", "conflicting results",
+    "conflicting studies", "conflicting benchmarks", "conflicting estimates",
+    "two reports", "two studies", "two benchmarks",
+    # May not apply / hold — explicit conditional limitation
+    "may not apply", "may not hold", "may not generalize", "may not transfer",
+    "may not be applicable", "may not be representative",
+    # Forum post — expanding forum source coverage beyond "per a forum post"
+    "forum post", "forum thread", "forum says", "forum suggests",
+    # Rough reading — informal measurement
+    "rough reading", "rough calculation", "rough numbers",
+    # Quick/general read — casual interpretation, not reviewed by expert
+    "quick read", "quick reading", "general reading", "general interpretation",
+    "not reviewed by counsel", "not reviewed by legal",
+    # "Someone said" — anonymous/person attribution without context
+    "someone said", "someone told", "someone mentioned",
+    # Slack-specific — "internal slack thread suggests" (vs "from a slack message" already present)
+    "slack thread", "slack channel suggested", "slack discussion",
+    # Team hasn't decided — preliminary state
+    "hasn't decided", "haven't decided", "not been decided",
+    # Not formally — claim not officially processed/triaged
+    "not formally", "not formally confirmed", "not formally reviewed",
+    # Medical/scientific study type qualifiers
+    "a case report", "case report described", "case report suggests",
+    "phase 1 study", "phase 1 safety", "phase 1 trial", "phase i study",
+    "single case", "no control group",
+    # Not yet assessed — explicitly unevaluated
+    "not yet assessed", "not been assessed", "not assessed",
+    "not yet evaluated", "not been evaluated",
+    # Not announced — future feature without official announcement
+    "not announced", "not officially announced",
+    # Sales/marketing materials as source
+    "sales deck", "sales presentation", "the sales deck",
+    # Paper citation without peer review signal
+    "a paper claimed", "a paper claims", "a paper says", "a paper suggests",
+    "a case study claimed", "case study claims",
+    # Status page ≠ SLA — operational data without contractual backing
+    "status page shows", "status page claims", "dashboard shows",
+    "hasn't been verified by",
 })
 
 # Semantic entropy proxy — markers that signal multiple valid answers.

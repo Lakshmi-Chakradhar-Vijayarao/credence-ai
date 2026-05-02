@@ -14,7 +14,7 @@ The Ghost Detector — powered by Opus 4.7 — catches implicit uncertainty with
 
 As AI agents make higher-stakes decisions, uncertainty is not a weakness to hide — it is the most honest signal a system can carry. Credence is the first enforcement layer built around that principle.
 
-22-tool MCP server. 596 tests. Built entirely with Claude Code.
+22-tool MCP server. 821 tests. Built entirely with Claude Code.
 
 ---
 
@@ -41,6 +41,8 @@ Results from `evals/compression_faithfulness_n50_results.json` (saved). Latency 
 | EQL Study — Naive Haiku (n=50) | Of those stripped: epistemic downgrade | — | 48% (11/23) | Compressed output uses softer hedges ("likely", "pending") |
 | EQL Study — Naive Haiku (n=50) | **FCR (proper scorer v3)** | **0.0%** (0/50) | **2.0%** (1/50) | Retroactive rescore from stored answers; no new API calls |
 | EQL Study — Token-importance sim (n=50) | **Qualifier strip rate (EQLR)** | **0%** | **68.0%** (CI: 53.6–80.0%) | Simulation; not a measurement of the LLMLingua library |
+| EQL-Bench v2 — Qwen-2.5-1.5B (n=370, open-source) | **EQLR (probe-blocked)** | **0%** (126 blocked) | **48.7%** (154 unguarded) | Model-agnostic: failure exists outside Claude |
+| EQL-Bench v2 — Probe coverage | Coverage of explicit scenarios | **85.7%** (240/280) | 0% ghost FP (0/90) | 423 markers, 0.07ms, zero API calls |
 | EQL Study — Token-importance sim (n=50) | **FCR (proper scorer v3)** | **0%** | **2.0%** (1/50) | Epistemic erasure correctly excluded from FCR count |
 | EQL Study — Token-importance sim (n=50) | Failure mode | — | Epistemic erasure | User statement removed entirely; model says "no context" |
 | E6 Negative Needle (single trial, Opus 4.7) | Correction recall | **2/2** | naive: 0/2 | Truth Buffer: constraints survive 8-turn window |
@@ -51,9 +53,9 @@ Results from `evals/compression_faithfulness_n50_results.json` (saved). Latency 
 | Probe latency (n=4000, offline) | P50 / P99 | **0.017ms / 0.026ms** | — | Zero API calls |
 | Rust gate latency (n=4000, measured) | P50 | **3.4ms** | Python hook: 331ms | 98× faster |
 | All checkpoints P99 sum (n=1000, offline) | Total in-process | **1.1ms** + 3.4ms gate | — | ~0.09% of Opus call latency |
-| Test suite | Tests passing | **596 / 597** | — | 1 skipped (requires API key) |
+| Test suite | Tests passing | **821 / 822** | — | 1 skipped (requires API key) |
 
-**EQLR (EQL Rate)** = fraction of hedged user statements that lose their canonical uncertainty marker after compression. Direct text measurement — no LLM calls needed to verify. Computed using 198-marker frozenset (same as production probe), user turns only.
+**EQLR (EQL Rate)** = fraction of hedged user statements that lose their canonical uncertainty marker after compression. Direct text measurement — no LLM calls needed to verify. Computed using 423-marker frozenset (same as production probe), user turns only. 95% bootstrap CIs (2000 resamples) saved in `evals/compression_faithfulness_n50_results.json`.
 
 **BothRate** = fraction of ghost-constraint callbacks where model recalls both the value AND expresses uncertainty about it.
 
@@ -102,7 +104,7 @@ Total deterministic enforcement overhead: **~0.29ms P50 / ~1.1ms P99** (measured
 
 | Checkpoint | Mechanism | Type | Latency | Invariant Enforcement |
 |---|---|---|---|---|
-| **Compression** | Faithfulness Probe + Uncertainty-Weighted Prompt | Deterministic | 0.017ms (P50) | Blocks Haiku before it strips qualifiers — 198 markers, user-turns-only; registered constraints quoted verbatim in compression prompt |
+| **Compression** | Faithfulness Probe + Uncertainty-Weighted Prompt | Deterministic | 0.017ms (P50) | Blocks Haiku before it strips qualifiers — 423 markers, user-turns-only; registered constraints quoted verbatim in compression prompt |
 | **Generation** | Truth Buffer + Consistency Enforcer | Deterministic injection + imperative block | ~0ms | ALL unverified constraints injected every turn; direct match → imperative prohibition |
 | **Code output** | Generation-Time Scanner | Deterministic | 0.024ms (P50) | Annotates numeric AND string literals (`"RS256"`, `"/api/v2"`, `us-east-1`) with confidence tier |
 | **Tool execution** | credence-gate (Rust) | Deterministic | 3.4ms | Blocks Write/Edit/Bash before execution if arguments overlap unverified constraint |
@@ -278,7 +280,7 @@ A context safety layer for Claude Code sessions that prevents uncertain constrai
 
 **Credence vs. RAG:** RAG retrieves facts from external knowledge bases and injects them into context. Credence tracks which facts *already in the session* were stated with uncertainty, and ensures that uncertainty travels with the fact through compression, generation, and agent handoffs. The problems are orthogonal: RAG can introduce ghost constraints (retrieved facts stated as certain from unverified vendor docs); Credence's Ghost Detector catches these regardless of how they entered the conversation. You can use both: RAG populates context, Credence enforces the epistemic weight of what RAG injects.
 
-**FCR definition:** FCR = fraction of responses that *lack any uncertainty qualifier* about the compressed constraint. This is a proxy for the harmful outcome (user acts on unverified value as if confirmed). Scorer v1 (184 markers) reported naive FCR=34% — an adversarial audit found that 14/17 "certain" responses actually contained hedging language outside the vocabulary ("pending verification", "not definitively", "unresolved", etc.). Scorer v2 (198 markers + markdown stripping) corrects this to 6% naive FCR. LLMLingua sim FCR is robust to the correction (74%) because aggressive compression eliminates the epistemic signal, leaving the downstream model no qualifier to echo.
+**FCR definition:** FCR = fraction of responses that *lack any uncertainty qualifier* about the compressed constraint. This is a proxy for the harmful outcome (user acts on unverified value as if confirmed). Scorer v1 (184 markers) reported naive FCR=34% — an adversarial audit found that 14/17 "certain" responses actually contained hedging language outside the vocabulary ("pending verification", "not definitively", "unresolved", etc.). Scorer v2 (423 markers + markdown stripping) corrects this to 6% naive FCR. LLMLingua sim FCR is robust to the correction (74%) because aggressive compression eliminates the epistemic signal, leaving the downstream model no qualifier to echo.
 
 **Probe condition mechanics**: When the faithfulness probe blocks compression (all 50 scenarios in the n=50 study), the downstream model receives the original uncompressed conversation text — the same input as the baseline condition. FCR=0% for the probe condition follows directly from this: the probe prevents the lossy compression event entirely. The contrast that matters is against "Haiku + prompt instruction" (EQLR 10%), which *does* attempt compression with an instruction to preserve qualifiers but achieves only 90% qualifier survival. The probe's approach is to block compression at the source rather than attempt to compress while preserving.
 

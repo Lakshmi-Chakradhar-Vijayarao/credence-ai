@@ -322,7 +322,7 @@ User message
   Key findings: EM > naive on recall (EM 0.669 vs naive 0.593). EM > baseline on chain complete (33% vs 22%). Zero propagation errors all conditions. EM always chose PRESERVE (faithfulness probe fired on uncertain seed segments — correct behavior). Scenario C (System Design) hardest — scale numbers hardest for Claude to recall explicitly; naive drops to 0.437 on this scenario. Results: `experiments/flagship/flagship_results.json`.
 
 ## Key constants updated in this session
-- `_UNCERTAINTY_MARKERS`: 40 terms (was 21 at project start, 29 after fifth pass)
+- `_UNCERTAINTY_MARKERS`: 423 terms (was 40 at seventh pass, 108 after adversarial audit, 423 after EQL-Bench v2 systematic expansion)
 - Scenario filler turn count: 8 per scenario (up from 6)
 - All scenarios: 4 seed + 8 filler + 3 callbacks = 12 turn-pairs → n_turns=24 with callback → TRIM fires (n_turns > TRIM_WINDOW*2=20)
 
@@ -748,6 +748,22 @@ Prior count: ~100. New count: 108. This closes two specific audit counterexample
 - Scenario 27 ("P1 SLA: ambiguous contract language") — `ambiguous` now triggers probe
 
 All 30 compression_faithfulness.py study scenarios now fire the probe on **user turns only**, without requiring the hardcoded echo turn.
+
+#### Further expansion — `_UNCERTAINTY_MARKERS` expanded to 423 terms (EQL-Bench v2 audit)
+
+A systematic audit of all 280 explicit EQL-Bench v2 scenarios identified patterns not covered by the 108-term list. Three expansion rounds added:
+- Appearance/seeming hedges: `"seems to"`, `"appear to"`, etc.
+- Person-attribution: `"colleague said"`, `"sales claimed"`, etc.
+- Source-inference: `"inferred from"`, `"logs show"`, `"not documented"`, `"undocumented"`
+- Vendor assertions (non-contracted): `"vendor says"`, `"vendor's guide"`, `"vendor's whitepaper"`
+- Estimate markers: `"we estimate"`, `"we think"`, `"back-of-envelope"`, `"rough estimate"`
+- Not verified / not reproduced / not tested variants
+- Academic pre-publication: `"a preprint"`, `"not peer-reviewed"`
+- Informal guidance / marketing materials / sales deck
+- Conflicting sources: `"conflicting reports"`, `"conflicting data"`, etc.
+- Preliminary state: `"early exploration"`, `"nothing decided"`, `"hasn't decided"`
+
+Result: **85.7% probe coverage on EQL-Bench v2 explicit scenarios (240/280), 0.0% ghost false positive rate (0/90)**. The remaining 14.3% are implicitly uncertain (ghost-style, no hedging language) — correctly handled by the SE probe, not the faithfulness probe. Tests: 821 passing.
 
 #### Fix 2 — `_compress_with_probe()` scans user turns only (`evals/compression_faithfulness.py`)
 

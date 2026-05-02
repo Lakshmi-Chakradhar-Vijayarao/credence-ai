@@ -55,7 +55,7 @@ Results:  evals/compression_faithfulness_results.json
 
 import os, sys, json, re, time, random, argparse, math
 from dataclasses import dataclass, field, asdict
-from typing import Optional
+from typing import Optional, List
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -1192,32 +1192,70 @@ def run_scenario(
 # Aggregate
 # ---------------------------------------------------------------------------
 
+def _bootstrap_ci(values: List[float], n_boot: int = 2000, ci: float = 0.95) -> tuple:
+    """Non-parametric bootstrap CI for the mean of a 0/1 list."""
+    n = len(values)
+    if n == 0:
+        return (0.0, 0.0)
+    boot_means = sorted(
+        sum(values[random.randint(0, n - 1)] for _ in range(n)) / n
+        for _ in range(n_boot)
+    )
+    lo_idx = int((1 - ci) / 2 * n_boot)
+    hi_idx = int((1 - (1 - ci) / 2) * n_boot)
+    return (boot_means[lo_idx], boot_means[hi_idx])
+
+
 def aggregate(results: list[ScenarioResult]) -> dict:
     n = len(results)
     if n == 0:
         return {}
 
-    naive_qual_survival    = sum(r.naive_qualifier_survived    for r in results) / n
-    naive_downstream_cert  = sum(r.naive_downstream_certain    for r in results) / n
-    probe_block_rate       = sum(r.probe_blocked               for r in results) / n
-    probe_downstream_cert  = sum(r.probe_downstream_certain    for r in results) / n
-    baseline_cert          = sum(r.baseline_downstream_certain for r in results) / n
-    lingua_qual_survival   = sum(r.lingua_qualifier_survived   for r in results) / n
-    lingua_downstream_cert = sum(r.lingua_downstream_certain   for r in results) / n
-    enhanced_qual_survival  = sum(r.enhanced_qualifier_survived  for r in results) / n
-    enhanced_downstream_cert= sum(r.enhanced_downstream_certain  for r in results) / n
+    naive_qual_list    = [int(r.naive_qualifier_survived)    for r in results]
+    naive_cert_list    = [int(r.naive_downstream_certain)    for r in results]
+    probe_block_list   = [int(r.probe_blocked)               for r in results]
+    probe_cert_list    = [int(r.probe_downstream_certain)    for r in results]
+    baseline_cert_list = [int(r.baseline_downstream_certain) for r in results]
+    lingua_qual_list   = [int(r.lingua_qualifier_survived)   for r in results]
+    lingua_cert_list   = [int(r.lingua_downstream_certain)   for r in results]
+    enhanced_qual_list  = [int(r.enhanced_qualifier_survived)  for r in results]
+    enhanced_cert_list  = [int(r.enhanced_downstream_certain)  for r in results]
+
+    naive_qual_survival    = sum(naive_qual_list)    / n
+    naive_downstream_cert  = sum(naive_cert_list)    / n
+    probe_block_rate       = sum(probe_block_list)   / n
+    probe_downstream_cert  = sum(probe_cert_list)    / n
+    baseline_cert          = sum(baseline_cert_list) / n
+    lingua_qual_survival   = sum(lingua_qual_list)   / n
+    lingua_downstream_cert = sum(lingua_cert_list)   / n
+    enhanced_qual_survival  = sum(enhanced_qual_list)  / n
+    enhanced_downstream_cert= sum(enhanced_cert_list) / n
+
+    # 95% bootstrap CIs (2000 resamples) on key proportions
+    ci_naive_qual    = _bootstrap_ci(naive_qual_list)
+    ci_naive_cert    = _bootstrap_ci(naive_cert_list)
+    ci_probe_cert    = _bootstrap_ci(probe_cert_list)
+    ci_lingua_cert   = _bootstrap_ci(lingua_cert_list)
+    ci_baseline_cert = _bootstrap_ci(baseline_cert_list)
+    ci_probe_block   = _bootstrap_ci(probe_block_list)
 
     return {
         "n": n,
         "naive_qualifier_survival":           round(naive_qual_survival,     3),
+        "naive_qualifier_survival_ci95":      [round(ci_naive_qual[0], 3),    round(ci_naive_qual[1], 3)],
         "naive_downstream_certainty":         round(naive_downstream_cert,   3),
+        "naive_downstream_certainty_ci95":    [round(ci_naive_cert[0], 3),    round(ci_naive_cert[1], 3)],
         "lingua_qualifier_survival":          round(lingua_qual_survival,    3),
         "lingua_downstream_certainty":        round(lingua_downstream_cert,  3),
+        "lingua_downstream_certainty_ci95":   [round(ci_lingua_cert[0], 3),   round(ci_lingua_cert[1], 3)],
         "enhanced_prompt_qualifier_survival": round(enhanced_qual_survival,  3),
         "enhanced_prompt_downstream_certainty": round(enhanced_downstream_cert, 3),
         "probe_block_rate":                   round(probe_block_rate,         3),
+        "probe_block_rate_ci95":              [round(ci_probe_block[0], 3),   round(ci_probe_block[1], 3)],
         "probe_downstream_certainty":         round(probe_downstream_cert,    3),
+        "probe_downstream_certainty_ci95":    [round(ci_probe_cert[0], 3),    round(ci_probe_cert[1], 3)],
         "baseline_downstream_certainty":      round(baseline_cert,            3),
+        "baseline_downstream_certainty_ci95": [round(ci_baseline_cert[0], 3), round(ci_baseline_cert[1], 3)],
         # Derived: how much does each condition reduce FCR vs. naive?
         "fcr_reduction_naive_vs_probe":    round(naive_downstream_cert - probe_downstream_cert,    3),
         "fcr_reduction_naive_vs_enhanced": round(naive_downstream_cert - enhanced_downstream_cert, 3),
@@ -1225,8 +1263,8 @@ def aggregate(results: list[ScenarioResult]) -> dict:
         # Key research question: probe vs. enhanced prompt (marginal value of the probe)
         "probe_marginal_vs_enhanced_prompt": round(enhanced_downstream_cert - probe_downstream_cert, 3),
         "scorer_version": "2.0-corrected",
-        "vocabulary_size": 198,
-        "scorer_notes": "v2: user-turns-only scanning + 198-marker vocab; enhanced_prompt control added v2.1",
+        "vocabulary_size": len(_UNCERTAINTY_MARKERS),
+        "scorer_notes": "v2: user-turns-only scanning; enhanced_prompt control added v2.1; CI added v2.2",
     }
 
 
@@ -1236,17 +1274,26 @@ def print_summary(agg: dict):
     print("=" * 72)
     print(f"  Scenarios run:                          {agg['n']}")
     print()
+    def _fmt_ci(key):
+        ci = agg.get(key + "_ci95")
+        if ci:
+            return f"  [95% CI {ci[0]:.1%}–{ci[1]:.1%}]"
+        return ""
+
     print("  NAIVE COMPRESSION (Haiku, no probe):")
     print(f"    Qualifier survival rate:              "
-          f"{agg['naive_qualifier_survival']:.1%}")
+          f"{agg['naive_qualifier_survival']:.1%}"
+          f"{_fmt_ci('naive_qualifier_survival')}")
     print(f"    Downstream false-certainty rate:      "
-          f"{agg['naive_downstream_certainty']:.1%}")
+          f"{agg['naive_downstream_certainty']:.1%}"
+          f"{_fmt_ci('naive_downstream_certainty')}")
     print()
     print("  TOKEN-IMPORTANCE SIMULATION (30% compression, no epistemic awareness):")
     print(f"    Qualifier survival rate:              "
           f"{agg['lingua_qualifier_survival']:.1%}")
     print(f"    Downstream false-certainty rate:      "
-          f"{agg['lingua_downstream_certainty']:.1%}")
+          f"{agg['lingua_downstream_certainty']:.1%}"
+          f"{_fmt_ci('lingua_downstream_certainty')}")
     print()
     print("  ENHANCED PROMPT CONTROL (Haiku + explicit qualifier-preservation instruction):")
     print(f"    Qualifier survival rate:              "
@@ -1256,13 +1303,16 @@ def print_summary(agg: dict):
     print()
     print("  PROBE-GUARDED COMPRESSION (faithfulness probe, no Haiku call):")
     print(f"    Compression blocked rate:             "
-          f"{agg['probe_block_rate']:.1%}")
+          f"{agg['probe_block_rate']:.1%}"
+          f"{_fmt_ci('probe_block_rate')}")
     print(f"    Downstream false-certainty rate:      "
-          f"{agg['probe_downstream_certainty']:.1%}")
+          f"{agg['probe_downstream_certainty']:.1%}"
+          f"{_fmt_ci('probe_downstream_certainty')}")
     print()
     print("  BASELINE (full context, no compression — oracle upper bound):")
     print(f"    Downstream false-certainty rate:      "
-          f"{agg['baseline_downstream_certainty']:.1%}")
+          f"{agg['baseline_downstream_certainty']:.1%}"
+          f"{_fmt_ci('baseline_downstream_certainty')}")
     print()
     print("  KEY COMPARISONS:")
     print(f"    FCR reduction (naive → enhanced prompt):  "
@@ -1308,6 +1358,34 @@ def dry_run(n: int = 5):
 # Main
 # ---------------------------------------------------------------------------
 
+def ci_from_file(path: str):
+    """Compute and print bootstrap CIs from an existing results JSON (no API needed)."""
+    with open(path) as f:
+        data = json.load(f)
+    scenarios = data.get("scenarios", [])
+    n = len(scenarios)
+    if n == 0:
+        print("No scenario-level data found.")
+        return
+
+    fields_map = {
+        "naive_qualifier_survival":   "naive_qualifier_survived",
+        "naive_downstream_certainty": "naive_downstream_certain",
+        "lingua_downstream_certainty":"lingua_downstream_certain",
+        "probe_block_rate":           "probe_blocked",
+        "probe_downstream_certainty": "probe_downstream_certain",
+        "baseline_downstream_certainty": "baseline_downstream_certain",
+    }
+    print(f"\nBootstrap CIs (95%, n={n}, 2000 resamples) — {path}")
+    print("-" * 72)
+    for label, field_key in fields_map.items():
+        vals = [int(s.get(field_key, 0)) for s in scenarios]
+        mean = sum(vals) / n
+        lo, hi = _bootstrap_ci(vals)
+        print(f"  {label:<40} {mean:.1%}  [95% CI {lo:.1%}–{hi:.1%}]")
+    print()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Compression Faithfulness Study")
@@ -1319,7 +1397,13 @@ def main():
                         help="Print per-scenario results")
     parser.add_argument("--out",      default="evals/compression_faithfulness_results.json",
                         help="Output path for results JSON")
+    parser.add_argument("--ci",       type=str,  default=None,
+                        help="Compute bootstrap CIs from existing results file (no API)")
     args = parser.parse_args()
+
+    if args.ci:
+        ci_from_file(args.ci)
+        return
 
     scenarios_to_run = SCENARIOS[:args.n]
 

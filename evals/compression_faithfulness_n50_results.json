@@ -11,13 +11,37 @@
     "epistemic_error_reduction_naive_vs_probe": 0.06,
     "epistemic_error_reduction_lingua_vs_probe": 0.74,
     "scorer_version": "2.0-corrected",
-    "vocabulary_size": 198,
-    "scorer_notes": "v2: markdown stripping + 14 impersonal hedging phrases added (pending verification, unresolved, not definitively, etc.)",
+    "vocabulary_size": 423,
+    "scorer_notes": "v2: user-turns-only scanning; CI added v2.2; marker vocab expanded to 423 terms",
     "naive_proper_fcr": 0.02,
     "lingua_proper_fcr": 0.02,
     "probe_proper_fcr": 0.0,
     "proper_fcr_scorer_version": "3.0",
-    "proper_fcr_scorer_notes": "v3 proper scorer: (1) epistemic erasure excluded \u2014 model saying no context is NOT FCR; (2) specific numeric value must appear in answer; (3) full uncertainty vocab including is not / isnt specified, estimate, rough estimate, flagged as unverified, etc. Old v2 scorer counted absence of canonical markers as certain \u2014 misclassified 36/37 lingua epistemic-erasure responses as FCR (actually 1/50=2%). Old naive 6% (3/50): two were NOT FCR (missed hedging with new vocab), one borderline [41]."
+    "proper_fcr_scorer_notes": "v3 proper scorer: (1) epistemic erasure excluded \u2014 model saying no context is NOT FCR; (2) specific numeric value must appear in answer; (3) full uncertainty vocab including is not / isnt specified, estimate, rough estimate, flagged as unverified, etc. Old v2 scorer counted absence of canonical markers as certain \u2014 misclassified 36/37 lingua epistemic-erasure responses as FCR (actually 1/50=2%). Old naive 6% (3/50): two were NOT FCR (missed hedging with new vocab), one borderline [41].",
+    "naive_qualifier_survival_ci95": [
+      0.4,
+      0.68
+    ],
+    "naive_downstream_certainty_ci95": [
+      0.0,
+      0.14
+    ],
+    "lingua_downstream_certainty_ci95": [
+      0.62,
+      0.86
+    ],
+    "probe_block_rate_ci95": [
+      1.0,
+      1.0
+    ],
+    "probe_downstream_certainty_ci95": [
+      0.0,
+      0.0
+    ],
+    "baseline_downstream_certainty_ci95": [
+      0.0,
+      0.0
+    ]
   },
   "scenarios": [
     {
