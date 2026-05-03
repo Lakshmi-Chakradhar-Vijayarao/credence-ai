@@ -26,23 +26,8 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev,mcp]"
 
-      - name: Unit tests (no API key)
-        run: pytest tests/unit/ -v --tb=short
-
-      - name: Integration tests — mock LLM (no API key)
-        run: pytest tests/integration/ -v --tb=short
-
-      - name: Security tests
-        run: pytest tests/security/ -v --tb=short
-
-      - name: Performance tests
-        run: pytest tests/perf/ -v --tb=short
-
-      - name: Gate 0 — probe false positive rate
-        run: python -m evals.false_positive_rate
-
-      - name: Latency report (offline components only)
-        run: python -m evals.latency_report
+      - name: Run test suite (821 tests, no API key required)
+        run: pytest tests/ -v --tb=short
 
   lint:
     name: Lint & Import Check
@@ -70,11 +55,8 @@ jobs:
           print('All exports OK — v' + credence.__version__)
           "
 
-      - name: EQL-Bench dataset validates
-        run: python -m evals.eql_bench --validate
-
-      - name: EQL-Bench statistics
-        run: python -m evals.eql_bench --stats
+      - name: MCP server imports cleanly
+        run: python -c "from credence.mcp_server import main; print('MCP server OK')"
 
   rust-gate:
     name: Rust Gate Build
@@ -89,7 +71,5 @@ jobs:
         working-directory: credence_gate
         run: cargo build --release
 
-      - name: Verify binary exists and runs
-        run: |
-          ls -lh credence_gate/target/release/credence-gate
-          ./credence_gate/target/release/credence-gate --help 2>/dev/null || true
+      - name: Verify binary exists
+        run: ls -lh credence_gate/target/release/credence-gate

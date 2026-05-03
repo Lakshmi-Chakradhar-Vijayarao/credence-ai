@@ -4,15 +4,11 @@
 uncertainty machine-readable, transferable, and enforceable across any AI agent,
 any compression, any session, any handoff.
 
-**Current baseline** (2026-05-02):
-- 11 MCP tools, 2 MCP resources
-- Tests: 166 passing, 0 failing
-- Core: faithfulness probe (0.017ms, 0% FCR), Rust gate (3.4ms)
-
-**Phase 0–3 complete** (2026-05-02):
-- 22 MCP tools, 2 MCP resources (TypeScript SDK in sdk/typescript/)
-- Tests: 226 passing, 0 failing, 12 skipped
-- All invariants holding: zero API key, zero config, deterministic probe, Rust gate < 10ms
+**Current state** (2026-05-04):
+- 22 MCP tools
+- Tests: 821 passing, 0 failing, 1 skipped
+- Core: faithfulness probe (0.07ms, 0% FCR with Haiku/Opus), Rust gate (3.4ms, 98× faster than Python hook)
+- Free-tier validated: EQLR 51% → 0% blocked on llama-3.1-8b-instant (n=98, Groq)
 
 ---
 
