@@ -151,13 +151,14 @@ User states uncertain claim
                        │
     ▼ across sessions
 ┌──────────────────────────────────────────────┐
-│  CP5 — Cross-Session Memory (P99=1.03ms)     │  DETERMINISTIC
-│  New sessions inherit uncertainty status,    │
-│  not just values. Epistemic debt survives    │
-│  restarts.                                   │
+│  CP5 — Cross-Session Memory                  │  DETERMINISTIC
+│  New sessions inherit uncertainty status,    │  snapshot: P50=66ms
+│  not just values. Epistemic debt survives    │  recall: P50=429ms, P99=625ms
+│  restarts.                                   │  (async recommended at scale)
 └──────────────────────────────────────────────┘
 
-Total in-session overhead (P99): 1.1ms in-process + 3.4ms gate = ~4.5ms. Zero extra API calls.
+Total per-turn overhead (P99): 1.1ms in-process + 3.4ms gate = ~4.5ms. Zero extra API calls.
+Cross-session memory recall adds ~429ms at session start (measured, P50). Not included in the per-turn figure above.
 LLM call overhead: ~0.09% of typical Claude Opus latency (3,000–8,000ms).
 ```
 
@@ -174,6 +175,7 @@ Credence prevents **explicitly stated uncertainty from being silently erased** d
 | Tool calls that embed unverified numeric literals (Rust gate) | Claude Code's internal context summarization (model-level, outside hook coverage) |
 | Compressed context from stripping explicit qualifiers | Implicit uncertainty with no surface markers |
 | Epistemic state across agent handoffs (ETP envelope) | Unregistered constraints |
+| — | **Sessions shorter than ~16 turns** — the compression mechanism does not fire below threshold; only the registration and GTS layers are active |
 
 **The one-sentence scope:** Credence deterministically prevents the loss of explicitly hedged uncertainty during LLM context compression and tracks those constraints across sessions.
 
@@ -234,10 +236,10 @@ Naive sliding window              BothRate = 0.200
 | Gemma-2-9B EQLR | **0%** (blocked) | **62.3%** [51–75%] | 61 | ✓ Multi-model benchmark |
 | Llama-3.1-8B EQLR | **0%** (blocked) | **42.6%** [31–56%] | 61 | ✓ Multi-model benchmark |
 | Probe coverage on EQL-Bench v2 explicit | **85.7%** | — | 280 | ✓ 0% ghost false-positive rate |
-| E6: Long-session constraint recall (Truth Buffer) | **100%** | 19.6% (naive window) | 23 trials | ✓ Multi-trial |
-| E7: Multi-hop 3-step reasoning chain | **3/3 hops** | 0/3 (naive) | 1 | ⚠ Single trial |
-| E8: Real debugging session recall | **1.000** | 0.522 (naive) | 1 | ⚠ Single trial |
-| Ghost Gauntlet BothRate | **1.000** | 0.200 (naive) | 10 sessions | ⚠ Synthetic |
+| E6: Constraint recall vs. sliding window | **100%** | 19.6% (naive window) | 1 trial | ⚠ Tests full-context vs. 6-turn window — compression does not fire at 10 turns |
+| E7: Multi-hop 3-step reasoning chain | **3/3 hops** | 0/3 (naive) | 1 | ⚠ Tests context recall — 3-turn session, compression does not fire |
+| E8: Real debugging session recall | **1.000** | 0.522 (naive) | 1 | ⚠ Tests context recall — below compression threshold |
+| Ghost Gauntlet BothRate | **1.000** | 0.200 (naive) | 10 sessions | ⚠ Tests windowing: seeds in turns 1–4, naive drops them structurally |
 | Rust gate latency | **3.4ms** | 331ms (Python hook) | 4000 calls | ✓ Measured |
 | Total in-process overhead (P99) | **1.1ms** | — | 1000 calls | ✓ Measured |
 
@@ -253,7 +255,7 @@ python quickstart.py                     # live demo, no API needed
 python -m pytest tests/ -q               # 821 tests
 python -m evals.adversarial_tests        # 5 adversarial robustness tests
 python -m evals.latency_report --n 1000  # P50/P95/P99 for all 5 checkpoints
-python -m evals.false_positive_rate      # probe FPR (target < 5%)
+python -m evals.false_positive_rate      # probe FPR at 198-marker subset (target < 5%); note 423-marker production probe has higher FPR on technical text containing "approximately", "roughly"
 ```
 
 ```bash
@@ -263,7 +265,7 @@ python -m evals.compression_faithfulness --ci evals/compression_faithfulness_n50
 
 **With API key — core evidence (~$7 total):**
 ```bash
-python -m evals.compression_faithfulness --n 50   # Haiku: 46% strip / sim: 74% → 0% with probe  (~$3)
+python -m evals.compression_faithfulness --n 50   # Haiku: 46% qualifier strip / sim: 68% → 0% with probe  (~$3)
 python -m evals.ghost_gauntlet                     # BothRate 0.200→1.000                          (~$2)
 python -m evals.experiments --exp E6               # long-session recall 100% vs 19.6%            (~$0.50)
 python -m evals.experiments --exp E7               # 3-hop chain: 3/3 vs 0/3                      (~$0.20)
@@ -337,8 +339,7 @@ evals/                  Validation studies
 evals/eql_bench/        EQL-Bench v2 (370 scenarios, open-source)
   eql_bench_v2.json
 
-kaggle_v6/              Qwen-1.5B EQLR notebook (Kaggle T4 GPU)
-kaggle_fcr/             Qwen-1.5B+7B FCR downstream notebook (Kaggle T4 GPU)
+kaggle_multimodel/      Multi-model EQLR benchmark — 6 open-weight models on T4 GPU (Kaggle)
 
 credence_gate/          Rust PreToolUse hook — 3.4ms P50
 sdk/typescript/         TypeScript SDK — runProbe(), CredenceEnvelope
