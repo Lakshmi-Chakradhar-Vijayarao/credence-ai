@@ -49,6 +49,8 @@ We ran 50 compression scenarios across three conditions (n=50, Claude Haiku + Op
 | Token-importance compression ¹ | **68%** (34/50) | [54%–80%] | Epistemic erasure — entire uncertain statement removed |
 | **Credence (faithfulness probe)** | **0%** (0/50) | [0%–0%] | — both failure modes prevented — |
 
+**Free-tier validation (llama-3.1-8b-instant via Groq, n=98):** EQLR 51% [41–60%] → 0% blocked (100% block rate). Downstream FCR: naive 52% [43–62%], probe 8.2% [3.1–14.3%], enhanced-prompt 12.2%. The probe prevents 44pp of FCR; explicit prompting alone ("preserve uncertainty qualifiers") prevents 40pp but remains at 12% — demonstrating the probe's value beyond instruction compliance.
+
 Model-agnostic validation: **Qwen-2.5-1.5B-Instruct (open-source)** shows 44.3% EQLR on EQL-Bench v2 (n=370 scenarios), confirming the failure is a general small-model property, not Haiku-specific.
 
 > ¹ Simulates compression that scores sentences by technical token density with no epistemic awareness. Not a measurement of the LLMLingua library itself.
@@ -235,6 +237,8 @@ Naive sliding window              BothRate = 0.200
 | Llama-3.2-3B EQLR | **0%** (blocked) | **41.0%** [28–54%] | 61 | ✓ Multi-model benchmark |
 | Gemma-2-9B EQLR | **0%** (blocked) | **62.3%** [51–75%] | 61 | ✓ Multi-model benchmark |
 | Llama-3.1-8B EQLR | **0%** (blocked) | **42.6%** [31–56%] | 61 | ✓ Multi-model benchmark |
+| **llama-3.1-8b-instant EQLR (Groq free tier)** | **0%** (blocked, 100% block rate) | **51%** [41–60%] | **98** | ✓ Free-tier validation, n=98 unique scenarios |
+| **Enhanced-prompt control (explicit qualifier instruction)** | — | **12.2% FCR** vs naive **52% FCR** | 98 | ✓ Prompting alone insufficient; probe reduces to 8.2% FCR |
 | Probe coverage on EQL-Bench v2 explicit | **85.7%** | — | 280 | ✓ 0% ghost false-positive rate |
 | E6: Constraint recall vs. sliding window | **100%** | 19.6% (naive window) | 1 trial | ⚠ Tests full-context vs. 6-turn window — compression does not fire at 10 turns |
 | E7: Multi-hop 3-step reasoning chain | **3/3 hops** | 0/3 (naive) | 1 | ⚠ Tests context recall — 3-turn session, compression does not fire |

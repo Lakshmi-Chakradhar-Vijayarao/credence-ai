@@ -67,9 +67,14 @@ except ImportError:
 
 from credence.context_manager import _UNCERTAINTY_MARKERS
 from credence.confidence_proxy import CredenceProxy
+from credence.providers import make_client, HF_COMPRESS_MODEL, HF_DOWNSTREAM_MODEL, GROQ_COMPRESS_MODEL, GROQ_DOWNSTREAM_MODEL
 
 _MODEL_HAIKU = "claude-haiku-4-5-20251001"
 _MODEL_OPUS  = "claude-opus-4-7"
+
+# Active models — overridden in main() when --provider hf is set
+_COMPRESS_MODEL    = _MODEL_HAIKU
+_DOWNSTREAM_MODEL  = _MODEL_OPUS
 
 # ---------------------------------------------------------------------------
 # 30 realistic uncertain technical constraints
@@ -825,20 +830,8 @@ FILLER_PAIRS = [
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _make_client():
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if api_key and _ANTHROPIC_AVAILABLE:
-        return anthropic.Anthropic(api_key=api_key)
-    # Fall back to Claude Code binary (no API key needed)
-    try:
-        from evals.claude_code_client import ClaudeCodeClient
-        client = ClaudeCodeClient()
-        print(f"  [client] Using Claude Code binary: {client._version}")
-        return client
-    except Exception as e:
-        raise EnvironmentError(
-            f"ANTHROPIC_API_KEY not set and Claude Code client failed: {e}"
-        )
+def _make_client(provider: str = "anthropic"):
+    return make_client(provider)
 
 
 def _call(client, model: str, messages: list[dict],
@@ -907,12 +900,12 @@ _COMPRESS_PROMPT_ENHANCED = (
 
 
 def _compress_naive(client, conversation: list[dict]) -> str:
-    """Haiku summarises the full conversation. No epistemic safety check."""
+    """Compression model summarises the full conversation. No epistemic safety check."""
     conv_text = "\n".join(
         f"{m['role'].upper()}: {m['content']}" for m in conversation
     )
     return _call(
-        client, _MODEL_HAIKU,
+        client, _COMPRESS_MODEL,
         [{"role": "user", "content": f"{_COMPRESS_PROMPT}\n\n{conv_text}"}],
         max_tokens=200,
     )
@@ -932,7 +925,7 @@ def _compress_enhanced_prompt(client, conversation: list[dict]) -> str:
         f"{m['role'].upper()}: {m['content']}" for m in conversation
     )
     return _call(
-        client, _MODEL_HAIKU,
+        client, _COMPRESS_MODEL,
         [{"role": "user", "content": f"{_COMPRESS_PROMPT_ENHANCED}\n\n{conv_text}"}],
         max_tokens=250,
     )
@@ -1057,7 +1050,7 @@ def _ask_downstream(client, context: str, callback_question: str) -> str:
             f"Context from earlier in our session:\n\n{context}\n\n"
             f"Question: {callback_question}"},
     ]
-    return _call(client, _MODEL_OPUS, msgs, system=system, max_tokens=150)
+    return _call(client, _DOWNSTREAM_MODEL, msgs, system=system, max_tokens=150)
 
 
 # ---------------------------------------------------------------------------
@@ -1387,6 +1380,8 @@ def ci_from_file(path: str):
 
 
 def main():
+    global _COMPRESS_MODEL, _DOWNSTREAM_MODEL
+
     parser = argparse.ArgumentParser(
         description="Compression Faithfulness Study")
     parser.add_argument("--n",        type=int,  default=100,
@@ -1399,6 +1394,10 @@ def main():
                         help="Output path for results JSON")
     parser.add_argument("--ci",       type=str,  default=None,
                         help="Compute bootstrap CIs from existing results file (no API)")
+    parser.add_argument("--provider", default="anthropic", choices=["anthropic", "hf", "groq"],
+                        help="Inference provider: anthropic (default) | hf (HuggingFace free)")
+    parser.add_argument("--resume",   action="store_true",
+                        help="Resume from existing results file")
     args = parser.parse_args()
 
     if args.ci:
@@ -1411,17 +1410,40 @@ def main():
         dry_run(n=args.n)
         return
 
-    if not _ANTHROPIC_AVAILABLE:
-        print("ERROR: anthropic package not installed.")
+    if args.provider == "hf":
+        _COMPRESS_MODEL   = HF_COMPRESS_MODEL
+        _DOWNSTREAM_MODEL = HF_DOWNSTREAM_MODEL
+    elif args.provider == "groq":
+        _COMPRESS_MODEL   = GROQ_COMPRESS_MODEL
+        _DOWNSTREAM_MODEL = GROQ_DOWNSTREAM_MODEL
+    elif not _ANTHROPIC_AVAILABLE:
+        print("ERROR: anthropic package not installed. Use --provider groq")
         sys.exit(1)
 
-    client = _make_client()
+    client = _make_client(args.provider)
     print(f"\nRunning compression faithfulness study ({len(scenarios_to_run)} scenarios)...")
-    print(f"Models: compress={_MODEL_HAIKU}  downstream={_MODEL_OPUS}")
-    print(f"Conditions: naive_compress | probe_guard | baseline\n")
+    print(f"Provider:  {args.provider}")
+    print(f"Models:    compress={_COMPRESS_MODEL}  downstream={_DOWNSTREAM_MODEL}")
+    print(f"Conditions: naive_compress | probe_guard | baseline | lingua_sim | enhanced_prompt\n")
 
-    results = []
+    # Resume: load already-completed scenarios and skip them
+    out_path = args.out
+    completed_labels: set[str] = set()
+    results: list[ScenarioResult] = []
+    if args.resume and os.path.exists(out_path):
+        with open(out_path) as f:
+            prior = json.load(f)
+        for s in prior.get("scenarios", []):
+            completed_labels.add(s["constraint_label"])
+            # Re-inflate as ScenarioResult
+            results.append(ScenarioResult(**{k: v for k, v in s.items()
+                                             if k in ScenarioResult.__dataclass_fields__}))
+        print(f"  [resume] Loaded {len(results)} completed scenarios, skipping them.\n")
+
     for i, (stmt, label, question) in enumerate(scenarios_to_run):
+        if label in completed_labels:
+            print(f"  [{i+1:02d}] {label[:35]:<35} SKIP (already done)")
+            continue
         r = run_scenario(
             client=client,
             index=i,
@@ -1432,20 +1454,27 @@ def main():
             verbose=args.verbose,
         )
         results.append(r)
+        # Crash-safe: save after every scenario
+        _save(results, out_path, args.provider)
 
     agg = aggregate(results)
     print_summary(agg)
+    _save(results, out_path, args.provider, final_agg=agg)
+    print(f"\nResults saved to {out_path}")
 
-    # Save
+
+def _save(results, out_path, provider, final_agg=None):
+    agg = final_agg or aggregate(results)
     output = {
         "summary": agg,
+        "provider": provider,
+        "compress_model": _COMPRESS_MODEL,
+        "downstream_model": _DOWNSTREAM_MODEL,
         "scenarios": [asdict(r) for r in results],
     }
-    out_path = args.out
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(output, f, indent=2)
-    print(f"\nResults saved to {out_path}")
 
 
 if __name__ == "__main__":

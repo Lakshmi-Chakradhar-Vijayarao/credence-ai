@@ -42,6 +42,8 @@ Results from `evals/compression_faithfulness_n50_results.json` (saved). Latency 
 | EQL Study — Naive Haiku (n=50) | **FCR (proper scorer v3)** | **0.0%** (0/50) | **2.0%** (1/50) | Retroactive rescore from stored answers; no new API calls |
 | EQL Study — Token-importance sim (n=50) | **Qualifier strip rate (EQLR)** | **0%** | **68.0%** (CI: 53.6–80.0%) | Simulation; not a measurement of the LLMLingua library |
 | EQL-Bench v2 — Qwen-2.5-1.5B (n=370, open-source) | **EQLR (probe-blocked)** | **0%** (126 blocked) | **48.7%** (154 unguarded) | Model-agnostic: failure exists outside Claude |
+| **Free-tier validation — llama-3.1-8b-instant (n=98)** | **EQLR** | **0%** (probe blocked 100%) | **51%** [41–60%] | Zero-cost replication on Groq free tier |
+| **Enhanced-prompt control (n=98)** | **FCR downstream** | **12.2%** | naive: **52%** | Explicit qualifier-preservation instruction insufficient vs probe (8.2%) |
 | EQL-Bench v2 — Probe coverage | Coverage of explicit scenarios | **85.7%** (240/280) | 0% ghost FP (0/90) | 423 markers, 0.07ms, zero API calls |
 | EQL Study — Token-importance sim (n=50) | **FCR (proper scorer v3)** | **0%** | **2.0%** (1/50) | Epistemic erasure correctly excluded from FCR count |
 | EQL Study — Token-importance sim (n=50) | Failure mode | — | Epistemic erasure | User statement removed entirely; model says "no context" |
@@ -61,8 +63,8 @@ Results from `evals/compression_faithfulness_n50_results.json` (saved). Latency 
 
 > Single-trial experiments (E6, E7, E8) are single demonstrations. They show the mechanism working but are not statistically validated. Multi-trial versions are planned.
 
-**The null hypothesis:** Does adding "preserve uncertainty qualifiers" to the Haiku prompt fix this without any middleware?
-→ Measured in `evals/null_hypothesis_results.json` (n=100, `evals/null_hypothesis.py`). Results: naive Haiku instruction-only EQLR=0.0% (qualifier survival 100%); enhanced-prompt EQLR=0.02% (survival 98%). Key caveat: the null hypothesis construction uses shorter conversations than the n=50 study and may not produce the same compression pressure. In the primary study (n=50, `compression_faithfulness.py`), naive qualifier survival is 54% — showing that compression pressure matters. The probe's advantage is determinism: it achieves 0% EQLR by aborting compression regardless of conversation structure, rather than relying on instruction compliance in any specific scenario.
+**The null hypothesis:** Does adding "preserve uncertainty qualifiers" to the compressor prompt fix this without any middleware?
+→ Measured two ways. (1) `evals/null_hypothesis_results.json` (n=100, short conversations, Haiku): naive EQLR≈0% — compression pressure too low to show failure. (2) `evals/compression_faithfulness_results_groq.json` (n=98, realistic conversations, llama-3.1-8b-instant): enhanced-prompt qualifier survival 98% but FCR **12.2%** vs probe **8.2%** and naive **52%**. Even when the compressor faithfully retains qualifiers in its summary, the downstream model can still express false certainty — because a summary lacks the full epistemic signal of the original context. The probe preserves the FULL ORIGINAL CONTEXT, not just the qualifier text, which is what drives the downstream model's epistemic behaviour.
 
 ---
 

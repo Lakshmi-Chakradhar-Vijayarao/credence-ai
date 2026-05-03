@@ -54,9 +54,14 @@ except ImportError:
     _ANTHROPIC_AVAILABLE = False
 
 from credence.context_manager import _UNCERTAINTY_MARKERS
+from credence.providers import make_client, HF_COMPRESS_MODEL, HF_DOWNSTREAM_MODEL, GROQ_COMPRESS_MODEL, GROQ_DOWNSTREAM_MODEL
 
 _MODEL_HAIKU = "claude-haiku-4-5-20251001"
 _MODEL_OPUS  = "claude-opus-4-7"
+
+# Active models — overridden in main() when --provider hf
+_COMPRESS_MODEL   = _MODEL_HAIKU
+_ANSWER_MODEL     = _MODEL_OPUS
 
 # --------------------------------------------------------------------------
 # Session designs
@@ -343,40 +348,37 @@ def _score_callback(answer: str, value_frag: str, qualifier_frag: str | None) ->
 # Conditions
 # --------------------------------------------------------------------------
 
-def _build_haiku_summary(conversation: list[dict]) -> str:
-    """Naive Haiku compression — no probe, no special instructions."""
-    client = anthropic.Anthropic()
+def _build_summary(client, conversation: list[dict]) -> str:
+    """Compression model summarises — no probe, no special instructions."""
     conv_text = "\n".join(f"{m['role'].upper()}: {m['content']}" for m in conversation)
     prompt = (
         "Summarise this conversation in 3-4 sentences, preserving key facts and numbers."
     )
     resp = client.messages.create(
-        model=_MODEL_HAIKU,
+        model=_COMPRESS_MODEL,
         max_tokens=300,
         messages=[{"role": "user", "content": f"{prompt}\n\n{conv_text}"}],
     )
     return resp.content[0].text.strip()
 
 
-def _ask_opus(context_messages: list[dict], question: str) -> str:
-    client = anthropic.Anthropic()
+def _ask(client, context_messages: list[dict], question: str) -> str:
     messages = context_messages + [{"role": "user", "content": question}]
     resp = client.messages.create(
-        model=_MODEL_OPUS,
+        model=_ANSWER_MODEL,
         max_tokens=400,
         messages=messages,
     )
     return resp.content[0].text.strip()
 
 
-def run_condition(session: dict, condition: str) -> dict:
+def run_condition(session: dict, condition: str, client) -> dict:
     """
     Run one session under one condition.
 
     condition:
-        haiku_compress  — Haiku compression of early turns, no probe
-        credence        — Compression only fires for HIGH-J turns; probe blocks
-                          seeded uncertainty turns from being compressed
+        haiku_compress  — compression model, no probe (baseline risk)
+        credence        — probe blocks seeded turns; only filler gets compressed
         full_context    — No compression (oracle ceiling)
         naive_window    — Keep only last 6 turns
     """
@@ -386,13 +388,12 @@ def run_condition(session: dict, condition: str) -> dict:
 
     # Build the full conversation: seed turns + filler turns
     full_history: list[dict] = []
-    client = anthropic.Anthropic()
 
     # Phase 1: seed turns (planted uncertain constraints)
     for seed in seeds:
         full_history.append({"role": "user", "content": seed["user"]})
         resp = client.messages.create(
-            model=_MODEL_OPUS, max_tokens=150,
+            model=_ANSWER_MODEL, max_tokens=150,
             messages=full_history,
         )
         full_history.append({"role": "assistant", "content": resp.content[0].text.strip()})
@@ -402,7 +403,7 @@ def run_condition(session: dict, condition: str) -> dict:
     for filler_q in filler:
         full_history.append({"role": "user", "content": filler_q})
         resp = client.messages.create(
-            model=_MODEL_OPUS, max_tokens=150,
+            model=_ANSWER_MODEL, max_tokens=150,
             messages=full_history,
         )
         full_history.append({"role": "assistant", "content": resp.content[0].text.strip()})
@@ -430,7 +431,7 @@ def run_condition(session: dict, condition: str) -> dict:
 
         if old_segment:
             # Compress old segment without probe
-            summary_text = _build_haiku_summary(old_segment)
+            summary_text = _build_summary(client, old_segment)
             summary_msg = {
                 "role": "user",
                 "content": f"<context_summary>{summary_text}</context_summary>",
@@ -467,7 +468,7 @@ def run_condition(session: dict, condition: str) -> dict:
             # Compress only the filler pairs
             if compress_pairs:
                 compress_msgs = [m for pair in compress_pairs for m in pair]
-                summary_text = _build_haiku_summary(compress_msgs)
+                summary_text = _build_summary(client, compress_msgs)
                 summary_msg = {
                     "role": "user",
                     "content": f"<context_summary>{summary_text}</context_summary>",
@@ -484,7 +485,7 @@ def run_condition(session: dict, condition: str) -> dict:
     # Phase 4: ask callback questions
     callback_results = []
     for cb in callbacks:
-        answer = _ask_opus(context_messages, cb["question"])
+        answer = _ask(client, context_messages, cb["question"])
         scores = _score_callback(answer, cb["value_frag"], cb.get("qualifier_frag"))
         callback_results.append({
             "question": cb["question"][:80],
@@ -597,6 +598,8 @@ def main() -> None:
                         help="Comma-separated conditions to run")
     parser.add_argument("--out",      default="evals/end_to_end_compression_results.json",
                         help="Output file path")
+    parser.add_argument("--provider", default="anthropic", choices=["anthropic", "hf", "groq"],
+                        help="Inference provider: anthropic | hf (HuggingFace free tier)")
     args = parser.parse_args()
 
     conditions = [c.strip() for c in args.conditions.split(",")]
@@ -611,22 +614,33 @@ def main() -> None:
             print(f"  {s['id']}: {n_total} turns ({len(s['seeds'])} seed + "
                   f"{len(s['filler'])} filler) → {n_cbs} callbacks")
             print(f"    Compression fires at n_turns > 16: {n_total > 16}")
-            # Check all seeds have explicit markers
             for seed in s["seeds"]:
                 has_m = any(m in seed["user"].lower() for m in _UNCERTAINTY_MARKERS)
                 print(f"    Seed marker detected: {has_m} → \"{seed['user'][:60]}\"")
         print(f"\nConditions: {conditions}")
-        print(f"Estimated cost: ~${len(sessions) * len(conditions) * 2.5:.1f}")
+        print(f"Estimated cost: ~$0 (HuggingFace free tier)" if args.provider == "hf"
+              else f"Estimated cost: ~${len(sessions) * len(conditions) * 2.5:.1f}")
         return
 
-    if not _ANTHROPIC_AVAILABLE:
-        print("ERROR: anthropic package not installed")
+    global _COMPRESS_MODEL, _ANSWER_MODEL
+    if args.provider == "hf":
+        _COMPRESS_MODEL = HF_COMPRESS_MODEL
+        _ANSWER_MODEL   = HF_DOWNSTREAM_MODEL
+    elif args.provider == "groq":
+        _COMPRESS_MODEL = GROQ_COMPRESS_MODEL
+        _ANSWER_MODEL   = GROQ_DOWNSTREAM_MODEL
+    elif not _ANTHROPIC_AVAILABLE:
+        print("ERROR: anthropic package not installed. Use --provider groq")
         sys.exit(1)
+    else:
+        key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not key or key == "your-key-here":
+            print("ERROR: ANTHROPIC_API_KEY not set. Use --provider groq")
+            sys.exit(1)
 
-    key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not key:
-        print("ERROR: ANTHROPIC_API_KEY not set")
-        sys.exit(1)
+    client = make_client(args.provider)
+    print(f"\nProvider:  {args.provider}")
+    print(f"Models:    compress={_COMPRESS_MODEL}  answer={_ANSWER_MODEL}\n")
 
     out_path = args.out
 
@@ -650,7 +664,7 @@ def main() -> None:
             print(f"  Running {session['id']} / {condition} ... ", end="", flush=True)
             t0 = time.time()
             try:
-                result = run_condition(session, condition)
+                result = run_condition(session, condition, client)
                 elapsed = time.time() - t0
                 print(f"done ({elapsed:.1f}s)  "
                       f"both={result['both_rate']:.1%} fcr={result['downstream_fcr']:.1%}")
