@@ -3,7 +3,8 @@
   "n_explicit_scenarios": 280,
   "probe_markers_kaggle": 228,
   "probe_block_rate": 0.782,
-  "note": "Llama-3.1-8B pending (v10 run in progress). Results file will be updated.",
+  "kaggle_kernel": "chakradharvijayarao/credence-multi-model-eqlr-benchmark",
+  "kaggle_version": 14,
   "prior_results": [
     {
       "model": "Claude Haiku",
@@ -175,7 +176,7 @@
           "eqlr": 0.7647
         }
       },
-      "model_label": "Mistral-7B-v0.3"
+      "model_label": "Mistral-7B"
     },
     {
       "model_id": "microsoft/Phi-3.5-mini-instruct",
@@ -252,7 +253,7 @@
     },
     {
       "model_id": "meta-llama/Llama-3.2-3B-Instruct",
-      "family": "Llama",
+      "family": "Llama-3B",
       "size": "3B",
       "use_4bit": false,
       "n_total": 280,
@@ -264,7 +265,7 @@
         0.2787,
         0.541
       ],
-      "elapsed_s": 146.3,
+      "elapsed_s": 122.1,
       "by_domain": {
         "api": {
           "n": 7,
@@ -395,6 +396,79 @@
         }
       },
       "model_label": "Gemma-2-9B"
+    },
+    {
+      "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "family": "Llama-8B",
+      "size": "8B",
+      "use_4bit": true,
+      "n_total": 280,
+      "n_blocked": 219,
+      "n_unguarded": 61,
+      "probe_block_rate": 0.7821,
+      "unguarded_eqlr": 0.4262,
+      "eqlr_ci95": [
+        0.3115,
+        0.5574
+      ],
+      "elapsed_s": 255.7,
+      "by_domain": {
+        "api": {
+          "n": 7,
+          "eqlr": 0.5714
+        },
+        "compliance": {
+          "n": 8,
+          "eqlr": 0.125
+        },
+        "debug": {
+          "n": 9,
+          "eqlr": 0.4444
+        },
+        "design": {
+          "n": 6,
+          "eqlr": 0.6667
+        },
+        "finance": {
+          "n": 11,
+          "eqlr": 0.4545
+        },
+        "legal": {
+          "n": 6,
+          "eqlr": 0.1667
+        },
+        "medical": {
+          "n": 10,
+          "eqlr": 0.7
+        },
+        "multiagent": {
+          "n": 4,
+          "eqlr": 0.0
+        }
+      },
+      "by_qualifier_type": {
+        "approximation": {
+          "n": 5,
+          "eqlr": 0.4
+        },
+        "estimate": {
+          "n": 15,
+          "eqlr": 0.4
+        },
+        "preliminary": {
+          "n": 5,
+          "eqlr": 0.6
+        },
+        "unverified_report": {
+          "n": 19,
+          "eqlr": 0.4211
+        },
+        "vendor_claim": {
+          "n": 17,
+          "eqlr": 0.4118
+        }
+      },
+      "model_label": "Llama-3.1-8B"
     }
   ],
   "summary": {
@@ -402,16 +476,19 @@
       0.4098,
       0.7541
     ],
-    "eqlr_mean": 0.5672,
+    "eqlr_mean": 0.5437,
     "probe_blocked_eqlr_all_models": 0.0,
     "model_agnostic_confirmed": true,
-    "orgs_tested": [
+    "total_models": 8,
+    "total_orgs": 6,
+    "orgs": [
       "Anthropic",
       "Alibaba",
       "Mistral AI",
       "Microsoft",
       "Meta",
       "Google"
-    ]
+    ],
+    "size_range": "1.5B \u2013 9B"
   }
 }

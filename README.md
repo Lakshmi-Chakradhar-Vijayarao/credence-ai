@@ -232,6 +232,7 @@ Naive sliding window              BothRate = 0.200
 | Phi-3.5-mini EQLR | **0%** (blocked) | **44.3%** [33–56%] | 61 | ✓ Multi-model benchmark |
 | Llama-3.2-3B EQLR | **0%** (blocked) | **41.0%** [28–54%] | 61 | ✓ Multi-model benchmark |
 | Gemma-2-9B EQLR | **0%** (blocked) | **62.3%** [51–75%] | 61 | ✓ Multi-model benchmark |
+| Llama-3.1-8B EQLR | **0%** (blocked) | **42.6%** [31–56%] | 61 | ✓ Multi-model benchmark |
 | Probe coverage on EQL-Bench v2 explicit | **85.7%** | — | 280 | ✓ 0% ghost false-positive rate |
 | E6: Long-session constraint recall (Truth Buffer) | **100%** | 19.6% (naive window) | 23 trials | ✓ Multi-trial |
 | E7: Multi-hop 3-step reasoning chain | **3/3 hops** | 0/3 (naive) | 1 | ⚠ Single trial |

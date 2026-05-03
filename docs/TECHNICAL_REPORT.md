@@ -421,8 +421,9 @@ DPO does not replace the probe — it cannot provide a deterministic guarantee. 
 | Phi-3.5-mini | Microsoft | 3.8B | **44.3%** | [32.8%, 55.7%] | **0%** |
 | Llama-3.2-3B | Meta | 3B | **41.0%** | [27.9%, 54.1%] | **0%** |
 | Gemma-2-9B | Google | 9B | **62.3%** | [50.8%, 75.4%] | **0%** |
+| Llama-3.1-8B | Meta | 8B | **42.6%** | [31.1%, 55.7%] | **0%** |
 
-**Range**: 41.0%–75.4%. Mean: 56.7% (new models). No model approaches 0% unguarded. All probe-blocked results are exactly 0% — deterministic by construction.
+**Range**: 41.0%–75.4%. Mean: 54.4% (6 new models). No model approaches 0% unguarded. All probe-blocked results are exactly 0% — deterministic by construction.
 
 **EQLR by qualifier type (new models, unguarded, n=61 per model)**:
 
@@ -455,6 +456,7 @@ DPO does not replace the probe — it cannot provide a deterministic guarantee. 
 | Phi-3.5-mini | Microsoft | 61 | 44.3% [33–56%] | 0% |
 | Llama-3.2-3B | Meta | 61 | 41.0% [28–54%] | 0% |
 | Gemma-2-9B | Google | 61 | 62.3% [51–75%] | 0% |
+| Llama-3.1-8B | Meta | 61 | 42.6% [31–56%] | 0% |
 
 The probe-blocked EQLR=0% is the same result — deterministic — across all 7 models, 6 organisations, and 3 size classes (1.5B–9B). This is the central claim: the failure is universal; the fix is model-agnostic.
 
