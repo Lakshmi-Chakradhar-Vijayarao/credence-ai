@@ -404,13 +404,13 @@ Faithfulness probe (CP1):   FCR =  0%    — deterministic, 100% block rate
 
 DPO does not replace the probe — it cannot provide a deterministic guarantee. The probe takes the residual 19.1% to 0% with a 0.017ms string match. Together: DPO lowers the base rate so the probe fires less; the probe guarantees the floor. This is the correct layered design: soft training for the common case, hard enforcement for the safety guarantee.
 
-### 5.7 Multi-Model Validation (EQL-Bench v2, 7 models, 6 organisations)
+### 5.7 Multi-Model Validation (EQL-Bench v2, 8 models, 6 organisations)
 
 **Research question**: Is EQL a Claude-specific artifact, or a model-agnostic property of the compression operation across diverse LLM families?
 
-**Protocol**: We ran EQL-Bench v2 (280 explicit scenarios, 8 domains, 5 qualifier types) through 5 open-weight models on Kaggle T4 GPU (15.6GB VRAM), using 4-bit NF4 quantization for 7B+ models and fp16 for smaller models. Each scenario: a short passage containing an explicit uncertainty qualifier → model compresses → EQLR scored by checking whether any probe marker survives. 228-marker probe subset embedded in kernel. n_unguarded=61 per model (probe blocked 219/280 = 78.2%). Combined with prior results (Haiku n=50, Qwen-1.5B n=370).
+**Protocol**: We ran EQL-Bench v2 (280 explicit scenarios, 8 domains, 5 qualifier types) through 6 open-weight models on Kaggle T4 GPU (15.6GB VRAM), using 4-bit NF4 quantization for 7B+ models and fp16 for smaller models. Each scenario: a short passage containing an explicit uncertainty qualifier → model compresses → EQLR scored by checking whether any probe marker survives in the compressed output. 228-marker probe subset embedded in kernel. n_unguarded=61 per model (probe blocked 219/280 = 78.2%). Combined with prior results (Haiku n=50, Qwen-1.5B n=370).
 
-**Results (Kaggle scriptVersionId=316108386, n=61 unguarded per model)**:
+**Results (Kaggle kernel chakradharvijayarao/credence-multi-model-eqlr-benchmark v14, n=61 unguarded per model)**:
 
 | Model | Org | Size | Unguarded EQLR | 95% CI | Probe-blocked EQLR |
 |---|---|---|---|---|---|
@@ -427,13 +427,13 @@ DPO does not replace the probe — it cannot provide a deterministic guarantee. 
 
 **EQLR by qualifier type (new models, unguarded, n=61 per model)**:
 
-| Qualifier type | Qwen-7B | Mistral-7B | Phi-3.5-mini | Llama-3.2-3B | Gemma-2-9B |
-|---|---|---|---|---|---|
-| preliminary | **100%** | **100%** | 20% | **100%** | 80% |
-| vendor_claim | **94%** | 76% | 65% | 41% | 76% |
-| estimate | 67% | 53% | 33% | 20% | 67% |
-| unverified_report | 63% | 42% | 37% | 37% | 42% |
-| approximation | 60% | 60% | 60% | 60% | 60% |
+| Qualifier type | Qwen-7B | Mistral-7B | Phi-3.5-mini | Llama-3.2-3B | Gemma-2-9B | Llama-3.1-8B |
+|---|---|---|---|---|---|---|
+| preliminary | **100%** | **100%** | 20% | **100%** | 80% | 60% |
+| vendor_claim | **94%** | 76% | 65% | 41% | 76% | 41% |
+| estimate | 67% | 53% | 33% | 20% | 67% | 40% |
+| unverified_report | 63% | 42% | 37% | 37% | 42% | 42% |
+| approximation | 60% | 60% | 60% | 60% | 60% | 40% |
 
 **Key findings**:
 
@@ -445,7 +445,7 @@ DPO does not replace the probe — it cannot provide a deterministic guarantee. 
 
 4. **Probe coverage**: 228-marker kernel subset blocked 78.2% of scenarios (219/280), leaving 61 unguarded per model. Production 423-marker probe would block 85.7% (240/280). Ghost FP rate: 0/90 = 0.0%.
 
-**Comparison table (all 7 validated models)**:
+**Comparison table (all 8 validated models)**:
 
 | Model | Org | n (unguarded) | Unguarded EQLR | Probe-blocked EQLR |
 |---|---|---|---|---|
@@ -458,7 +458,7 @@ DPO does not replace the probe — it cannot provide a deterministic guarantee. 
 | Gemma-2-9B | Google | 61 | 62.3% [51–75%] | 0% |
 | Llama-3.1-8B | Meta | 61 | 42.6% [31–56%] | 0% |
 
-The probe-blocked EQLR=0% is the same result — deterministic — across all 7 models, 6 organisations, and 3 size classes (1.5B–9B). This is the central claim: the failure is universal; the fix is model-agnostic.
+The probe-blocked EQLR=0% is the same result — deterministic — across all 8 models, 6 organisations, and 3 size classes (1.5B–9B). This is the central claim: the failure is universal; the fix is model-agnostic.
 
 ---
 
@@ -474,7 +474,7 @@ The probe-blocked EQLR=0% is the same result — deterministic — across all 7 
 
 **Sample size**: The compression faithfulness study is n=50. The probe block rate CI is [92.9%, 100%] and FCR CI is [0%, 7.1%]. These are honest bounds at n=50. A planned n=200 replication (same design) would tighten the CI to approximately [98%, 100%] probe block rate if the result holds. All raw results are available for inspection; replication requires Anthropic API access.
 
-**Claude-specific measurements**: E6, E7, E8, Ghost Gauntlet, and the compression faithfulness study were all run on Claude Opus 4.7 and Haiku. Model-agnostic behavior — whether the probe achieves the same FCR=0% with GPT-4o or Llama-3 as the compressor — is future work. The probe itself is model-agnostic (pure Python string match); only the compression model and downstream answering model vary.
+**Claude-specific answering measurements**: E6, E7, E8, Ghost Gauntlet, and the compression faithfulness study used Claude Opus 4.7 as the downstream answering model. For the compression model (the component Credence guards), model-agnostic behavior has been validated: 8 models across 6 organisations all exhibit EQLR=41–75% unguarded and 0% probe-blocked (§5.7). Whether the probe achieves FCR=0% with GPT-4o or Llama-3 as the *answering* model remains future work. The probe itself is model-agnostic (pure Python string match).
 
 ---
 
