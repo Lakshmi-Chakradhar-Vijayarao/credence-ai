@@ -239,6 +239,7 @@ Naive sliding window              BothRate = 0.200
 | Llama-3.1-8B EQLR | **0%** (blocked) | **42.6%** [31–56%] | 61 | ✓ Multi-model benchmark |
 | **llama-3.1-8b-instant EQLR (Groq free tier)** | **0%** (blocked, 100% block rate) | **51%** [41–60%] | **98** | ✓ Free-tier validation, n=98 unique scenarios |
 | **Enhanced-prompt control (explicit qualifier instruction)** | — | **12.2% FCR** vs naive **52% FCR** | 98 | ✓ Prompting alone insufficient; probe reduces to 8.2% FCR |
+| **End-to-end session recall (Groq, 3 sessions)** | **67% both-rate** (= full-context oracle) | haiku_compress **0%**, naive_window **0%** | 12 condition-runs | ⚠ llama-3.1-8b-instant; credence matches oracle ceiling |
 | Probe coverage on EQL-Bench v2 explicit | **85.7%** | — | 280 | ✓ 0% ghost false-positive rate |
 | E6: Constraint recall vs. sliding window | **100%** | 19.6% (naive window) | 1 trial | ⚠ Tests full-context vs. 6-turn window — compression does not fire at 10 turns |
 | E7: Multi-hop 3-step reasoning chain | **3/3 hops** | 0/3 (naive) | 1 | ⚠ Tests context recall — 3-turn session, compression does not fire |

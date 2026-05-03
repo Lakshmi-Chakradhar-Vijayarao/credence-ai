@@ -50,6 +50,7 @@ Results from `evals/compression_faithfulness_n50_results.json` (saved). Latency 
 | E6 Negative Needle (single trial, Opus 4.7) | Correction recall | **2/2** | naive: 0/2 | Truth Buffer: constraints survive 8-turn window |
 | E7 Multi-Hop Chain (single trial) | Hops recalled | **3/3** | naive: 1/3 | Dependency chain: credence preserves, naive breaks |
 | E8 Real Debugging (single trial) | Mean recall | **1.000** | naive: 0.522 | Credence 2× better recall; real session |
+| **End-to-end session recall (Groq, 3 sessions × 4 conditions)** | **67% both-rate** (matches oracle) | haiku_compress: **0%**, naive_window: **0%** | 12 condition-runs | ⚠ llama-3.1-8b-instant; credence matches full-context oracle ceiling |
 | Ghost Gauntlet (n=10, synthetic sessions) | BothRate | **1.000** | naive_window: 0.200 | Ghost Detector: implicit uncertainty classified correctly |
 | Probe FP rate (n=200, offline) | False positive rate | **0.5%** | — | 1/200 non-uncertain phrases triggers probe |
 | Probe latency (n=4000, offline) | P50 / P99 | **0.017ms / 0.026ms** | — | Zero API calls |

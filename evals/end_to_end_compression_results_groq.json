@@ -374,6 +374,669 @@
           "downstream_fcr": false
         }
       ]
+    },
+    {
+      "session_id": "e2e_debug_01",
+      "domain": "debugging",
+      "condition": "credence",
+      "n_turns_seeded": 17,
+      "n_seed_turns": 3,
+      "n_filler_turns": 14,
+      "n_callbacks": 6,
+      "qualifier_survival": 1.0,
+      "value_survival": 0.8333333333333334,
+      "both_rate": 0.8333333333333334,
+      "downstream_fcr": 0.0,
+      "callbacks": [
+        {
+          "question": "What was the connection pool limit I mentioned earlier, and was that confirmed?",
+          "value_frag": "100",
+          "qualifier_frag": "believe",
+          "answer_snippet": "You mentioned earlier that the connection pool limit in your auth service was likely around 100 connections, but it hadn't been confirmed. We discussed several steps to investigate the issue, includin",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What latency spike did I observe, and how certain was I about that measurement?",
+          "value_frag": "2000",
+          "qualifier_frag": "not confident",
+          "answer_snippet": "You observed a latency spike of approximately 2000ms (2 seconds), but you mentioned that you weren't entirely confident in that exact number due to noisy monitoring data.",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What memory usage percentage did I mention, and was I confident in that observat",
+          "value_frag": "85",
+          "qualifier_frag": "think",
+          "answer_snippet": "You mentioned that memory usage peaked around 85% on the affected nodes, but you weren't entirely confident in that observation, noting that it might have been an anomaly.",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Based on what I told you at the start, write a brief incident summary with appro",
+          "value_frag": "100",
+          "qualifier_frag": null,
+          "answer_snippet": "Here's a brief incident summary based on our conversation:\n\n**Incident Summary:**\n\n**Title:** Intermittent 503 Errors on Auth Service\n\n**Summary:** The auth service experienced intermittent 503 errors",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "If I were to page on-call, which of the early observations should I treat as con",
+          "value_frag": "100",
+          "qualifier_frag": "suspected",
+          "answer_snippet": "When paging on-call, it's essential to be cautious and consider the information available before making conclusions. Based on our earlier observations, here's a suggested classification:\n\n1. **Confirm",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Remind me of all three metrics I mentioned at the start \u2014 connection pool, laten",
+          "value_frag": "100",
+          "qualifier_frag": "believe",
+          "answer_snippet": "At the start of our conversation, you mentioned three metrics:\n\n1. **Connection pool**: You suspected that a connection pool limit of around 100 connections might be causing intermittent 503s on your ",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        }
+      ]
+    },
+    {
+      "session_id": "e2e_debug_01",
+      "domain": "debugging",
+      "condition": "full_context",
+      "n_turns_seeded": 17,
+      "n_seed_turns": 3,
+      "n_filler_turns": 14,
+      "n_callbacks": 6,
+      "qualifier_survival": 0.5,
+      "value_survival": 0.6666666666666666,
+      "both_rate": 0.3333333333333333,
+      "downstream_fcr": 0.3333333333333333,
+      "callbacks": [
+        {
+          "question": "What was the connection pool limit I mentioned earlier, and was that confirmed?",
+          "value_frag": "100",
+          "qualifier_frag": "believe",
+          "answer_snippet": "You mentioned earlier that the connection pool limit was likely around 100 connections. However, it was not explicitly confirmed whether this was indeed the issue or not.",
+          "qualifier_survival": false,
+          "value_survival": true,
+          "both": false,
+          "downstream_fcr": true
+        },
+        {
+          "question": "What latency spike did I observe, and how certain was I about that measurement?",
+          "value_frag": "2000",
+          "qualifier_frag": "not confident",
+          "answer_snippet": "You mentioned earlier that you observed a latency spike of approximately 2000ms (2 seconds), but you were not confident in that exact measurement, citing that the monitoring data was noisy.",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What memory usage percentage did I mention, and was I confident in that observat",
+          "value_frag": "85",
+          "qualifier_frag": "think",
+          "answer_snippet": "You mentioned that the memory usage percentage was around 85%. You also mentioned that you were not very confident in that observation, as it was a one-time event and you didn't have enough data to co",
+          "qualifier_survival": false,
+          "value_survival": true,
+          "both": false,
+          "downstream_fcr": true
+        },
+        {
+          "question": "Based on what I told you at the start, write a brief incident summary with appro",
+          "value_frag": "100",
+          "qualifier_frag": null,
+          "answer_snippet": "**Incident Summary: Intermitent 503 Errors on Auth Service**\n\n**Timeline:** Ongoing, with intermittent occurrences over the past [insert timeframe]\n\n**Cause:** Investigation indicates a likely cause o",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "If I were to page on-call, which of the early observations should I treat as con",
+          "value_frag": "100",
+          "qualifier_frag": "suspected",
+          "answer_snippet": "Based on the early observations we've discussed, here are some suggestions on which ones to treat as confirmed vs. suspected:\n\n**Confirmed:**\n\n1. **503 errors from the auth service**: If you're seeing",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Remind me of all three metrics I mentioned at the start \u2014 connection pool, laten",
+          "value_frag": "100",
+          "qualifier_frag": "believe",
+          "answer_snippet": "At the start of our conversation, you mentioned the following three metrics that were suspected to be related to the intermittent 503 errors on your auth service:\n\n1. **Connection pool**: You mentione",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        }
+      ]
+    },
+    {
+      "session_id": "e2e_debug_01",
+      "domain": "debugging",
+      "condition": "naive_window",
+      "n_turns_seeded": 17,
+      "n_seed_turns": 3,
+      "n_filler_turns": 14,
+      "n_callbacks": 6,
+      "qualifier_survival": 0.3333333333333333,
+      "value_survival": 0.0,
+      "both_rate": 0.0,
+      "downstream_fcr": 0.0,
+      "callbacks": [
+        {
+          "question": "What was the connection pool limit I mentioned earlier, and was that confirmed?",
+          "value_frag": "100",
+          "qualifier_frag": "believe",
+          "answer_snippet": "You didn't mention the connection pool limit earlier. Our conversation started with your question about garbage collection affecting JVM service latency. If you'd like to discuss connection pool limit",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What latency spike did I observe, and how certain was I about that measurement?",
+          "value_frag": "2000",
+          "qualifier_frag": "not confident",
+          "answer_snippet": "You didn't provide the information about the latency spike you observed or how certain you were about that measurement. If you can provide more context or details about the latency spike, I'd be happy",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What memory usage percentage did I mention, and was I confident in that observat",
+          "value_frag": "85",
+          "qualifier_frag": "think",
+          "answer_snippet": "You didn't mention a specific memory usage percentage in our previous conversation. You discussed general strategies for identifying memory leaks and monitoring memory usage in a long-running Java ser",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Based on what I told you at the start, write a brief incident summary with appro",
+          "value_frag": "100",
+          "qualifier_frag": null,
+          "answer_snippet": "I'm not aware of any information about an incident that occurred earlier. However, based on our conversation, I can suggest a brief incident summary for a potential issue with a JVM-based service.\n\n**",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "If I were to page on-call, which of the early observations should I treat as con",
+          "value_frag": "100",
+          "qualifier_frag": "suspected",
+          "answer_snippet": "When paging on-call, it's essential to prioritize the urgency and reliability of the observations. Here's a breakdown of the early observations and when to treat them as confirmed or suspected:\n\n**Con",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Remind me of all three metrics I mentioned at the start \u2014 connection pool, laten",
+          "value_frag": "100",
+          "qualifier_frag": "believe",
+          "answer_snippet": "Based on our conversation, here are the three metrics you mentioned at the start:\n\n1. **Connection pool**: This refers to the pool of established connections between a client and a server that can be ",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        }
+      ]
+    },
+    {
+      "session_id": "e2e_design_01",
+      "domain": "system_design",
+      "condition": "haiku_compress",
+      "n_turns_seeded": 17,
+      "n_seed_turns": 3,
+      "n_filler_turns": 14,
+      "n_callbacks": 6,
+      "qualifier_survival": 0.3333333333333333,
+      "value_survival": 0.6666666666666666,
+      "both_rate": 0.0,
+      "downstream_fcr": 0.6666666666666666,
+      "callbacks": [
+        {
+          "question": "What message throughput did I mention earlier, and was that a confirmed number?",
+          "value_frag": "10,000",
+          "qualifier_frag": "probably",
+          "answer_snippet": "You mentioned earlier that the message queue handling is dealing with a message throughput of 10,000 messages per second. However, I couldn't verify if this is a confirmed number. You only provided a ",
+          "qualifier_survival": false,
+          "value_survival": true,
+          "both": false,
+          "downstream_fcr": true
+        },
+        {
+          "question": "What was the SLA target I mentioned, and how final was that requirement?",
+          "value_frag": "99.9",
+          "qualifier_frag": "believe",
+          "answer_snippet": "You mentioned that the target Service Level Agreement (SLA) was **99.9% uptime**. It was not specified if this was a soft or hard requirement, but it was mentioned as a desired target, indicating that",
+          "qualifier_survival": false,
+          "value_survival": true,
+          "both": false,
+          "downstream_fcr": true
+        },
+        {
+          "question": "What was the infrastructure budget estimate I mentioned, and what was its status",
+          "value_frag": "50,000",
+          "qualifier_frag": "rough",
+          "answer_snippet": "In the initial conversation, the infrastructure budget estimate for the new service was $50,000 per month. There was no mention of the status of this budget, it was simply a stated requirement.",
+          "qualifier_survival": false,
+          "value_survival": true,
+          "both": false,
+          "downstream_fcr": true
+        },
+        {
+          "question": "I need to write up a design doc \u2014 what numbers should I treat as confirmed vs. e",
+          "value_frag": "10,000",
+          "qualifier_frag": null,
+          "answer_snippet": "**Design Doc Best Practices**\n\nWhen writing a design doc, it's essential to distinguish between confirmed numbers and estimates. Here's a general guideline to follow:\n\n**Confirmed Numbers**\n\n* **Hard ",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Summarise the key constraints from the start of our conversation with their conf",
+          "value_frag": "10,000",
+          "qualifier_frag": "probably",
+          "answer_snippet": "**Summary of Key Constraints**\n\nHere's a summary of the key constraints we discussed at the start of our conversation, along with their confidence levels:\n\n1. **10,000 messages per second**: The messa",
+          "qualifier_survival": false,
+          "value_survival": true,
+          "both": false,
+          "downstream_fcr": true
+        },
+        {
+          "question": "Which of the three values I gave at the start are safe to put in a signed-off do",
+          "value_frag": "50,000",
+          "qualifier_frag": "approved",
+          "answer_snippet": "Based on the values you provided at the start, the following three are safe to put in a signed-off document:\n\n1. **Estimated budget for infrastructure**: This value is specific, factual, and uncontrov",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        }
+      ]
+    },
+    {
+      "session_id": "e2e_design_01",
+      "domain": "system_design",
+      "condition": "credence",
+      "n_turns_seeded": 17,
+      "n_seed_turns": 3,
+      "n_filler_turns": 14,
+      "n_callbacks": 6,
+      "qualifier_survival": 0.6666666666666666,
+      "value_survival": 0.8333333333333334,
+      "both_rate": 0.5,
+      "downstream_fcr": 0.3333333333333333,
+      "callbacks": [
+        {
+          "question": "What message throughput did I mention earlier, and was that a confirmed number?",
+          "value_frag": "10,000",
+          "qualifier_frag": "probably",
+          "answer_snippet": "You mentioned earlier that your message queue was handling around 10,000 messages per second, which is likely your peak, but you noted that you hadn't pulled the exact metrics. Therefore, the 10,000 n",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What was the SLA target I mentioned, and how final was that requirement?",
+          "value_frag": "99.9",
+          "qualifier_frag": "believe",
+          "answer_snippet": "You mentioned that the target SLA (Service Level Agreement) for your new service was 99.9% uptime. As for how final that requirement was, you mentioned that the requirements document wasn't final yet,",
+          "qualifier_survival": false,
+          "value_survival": true,
+          "both": false,
+          "downstream_fcr": true
+        },
+        {
+          "question": "What was the infrastructure budget estimate I mentioned, and what was its status",
+          "value_frag": "50,000",
+          "qualifier_frag": "rough",
+          "answer_snippet": "You mentioned that the infrastructure budget estimate was around $50,000 per month, and its status was **preliminary and hadn't been approved** yet.",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "I need to write up a design doc \u2014 what numbers should I treat as confirmed vs. e",
+          "value_frag": "10,000",
+          "qualifier_frag": null,
+          "answer_snippet": "**Design Document: Confirmed vs. Estimates**\n\nWhen writing a design document, it's essential to clearly distinguish between confirmed and estimated numbers. This will help stakeholders understand what",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Summarise the key constraints from the start of our conversation with their conf",
+          "value_frag": "10,000",
+          "qualifier_frag": "probably",
+          "answer_snippet": "Here are the key constraints mentioned earlier with their confidence levels:\n\n1. **Message queue throughput**: 10,000 messages per second (High)\n2. **Target SLA**: 99.9% uptime (Medium-High)\n3. **Budg",
+          "qualifier_survival": false,
+          "value_survival": true,
+          "both": false,
+          "downstream_fcr": true
+        },
+        {
+          "question": "Which of the three values I gave at the start are safe to put in a signed-off do",
+          "value_frag": "50,000",
+          "qualifier_frag": "approved",
+          "answer_snippet": "Based on the initial conversation, the values you mentioned were:\n\n1. **10,000 messages per second**: This is a rough estimate and not a definitive value, so it may not be the best candidate for a sig",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        }
+      ]
+    },
+    {
+      "session_id": "e2e_design_01",
+      "domain": "system_design",
+      "condition": "full_context",
+      "n_turns_seeded": 17,
+      "n_seed_turns": 3,
+      "n_filler_turns": 14,
+      "n_callbacks": 6,
+      "qualifier_survival": 0.8333333333333334,
+      "value_survival": 0.8333333333333334,
+      "both_rate": 0.6666666666666666,
+      "downstream_fcr": 0.16666666666666666,
+      "callbacks": [
+        {
+          "question": "What message throughput did I mention earlier, and was that a confirmed number?",
+          "value_frag": "10,000",
+          "qualifier_frag": "probably",
+          "answer_snippet": "You mentioned earlier that your message queue was handling approximately 10,000 messages per second, but noted that this was not a confirmed number, as you hadn't yet pulled the exact metrics.",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What was the SLA target I mentioned, and how final was that requirement?",
+          "value_frag": "99.9",
+          "qualifier_frag": "believe",
+          "answer_snippet": "You mentioned earlier that the target SLA (Service Level Agreement) for the new service was 99.9% uptime, but also mentioned that the requirements document wasn't final yet.",
+          "qualifier_survival": false,
+          "value_survival": true,
+          "both": false,
+          "downstream_fcr": true
+        },
+        {
+          "question": "What was the infrastructure budget estimate I mentioned, and what was its status",
+          "value_frag": "50,000",
+          "qualifier_frag": "rough",
+          "answer_snippet": "You mentioned that your rough budget estimate for the infrastructure was around $50,000 per month, but that it was preliminary and hadn't been approved.",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "I need to write up a design doc \u2014 what numbers should I treat as confirmed vs. e",
+          "value_frag": "10,000",
+          "qualifier_frag": null,
+          "answer_snippet": "**Design Doc: Confirmed vs. Estimates**\n\nWhen writing a design doc, it's essential to distinguish between confirmed and estimated numbers. This helps stakeholders understand the level of certainty ass",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Summarise the key constraints from the start of our conversation with their conf",
+          "value_frag": "10,000",
+          "qualifier_frag": "probably",
+          "answer_snippet": "Here's a summary of the key constraints discussed earlier along with their confidence levels:\n\n1. **10,000 messages per second peak**: Our message queue is handling about 10,000 messages per second, w",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Which of the three values I gave at the start are safe to put in a signed-off do",
+          "value_frag": "50,000",
+          "qualifier_frag": "approved",
+          "answer_snippet": "Based on our previous conversation, the three values you mentioned were:\n\n1. Peak 10,000 messages per second (in your message queue)\n2. Target SLA of 99.9% uptime (for your new service)\n3. Rough budge",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        }
+      ]
+    },
+    {
+      "session_id": "e2e_design_01",
+      "domain": "system_design",
+      "condition": "naive_window",
+      "n_turns_seeded": 17,
+      "n_seed_turns": 3,
+      "n_filler_turns": 14,
+      "n_callbacks": 6,
+      "qualifier_survival": 0.3333333333333333,
+      "value_survival": 0.0,
+      "both_rate": 0.0,
+      "downstream_fcr": 0.0,
+      "callbacks": [
+        {
+          "question": "What message throughput did I mention earlier, and was that a confirmed number?",
+          "value_frag": "10,000",
+          "qualifier_frag": "probably",
+          "answer_snippet": "You didn't mention any message throughput earlier. Our conversation was about service mesh, Write-Ahead Log (WAL), fan-out, Conflict-Free Replicated Data Types (CRDTs), blue-green deployment, and side",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What was the SLA target I mentioned, and how final was that requirement?",
+          "value_frag": "99.9",
+          "qualifier_frag": "believe",
+          "answer_snippet": "You didn't mention an SLA (Service Level Agreement) target in our conversation. I'm a conversational AI, and our conversation started with your question about a service mesh. Please feel free to share",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What was the infrastructure budget estimate I mentioned, and what was its status",
+          "value_frag": "50,000",
+          "qualifier_frag": "rough",
+          "answer_snippet": "You didn't mention an infrastructure budget estimate in our conversation so far. Our conversation has been about:\n\n1. Service mesh\n2. Write-ahead log (WAL) in databases\n3. Fan-out in distributed syste",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "I need to write up a design doc \u2014 what numbers should I treat as confirmed vs. e",
+          "value_frag": "10,000",
+          "qualifier_frag": null,
+          "answer_snippet": "**Confidence Levels for Design Docs**\n\nWhen writing a design doc, it's essential to clearly indicate the confidence levels for different numbers and estimates. This helps stakeholders understand what ",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Summarise the key constraints from the start of our conversation with their conf",
+          "value_frag": "10,000",
+          "qualifier_frag": "probably",
+          "answer_snippet": "Based on our conversation, here are the key constraints summarized with their confidence levels:\n\n1. **Service Mesh**:\n * Must provide service discovery: **High**\n * Must provide load balancing: **Hig",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Which of the three values I gave at the start are safe to put in a signed-off do",
+          "value_frag": "50,000",
+          "qualifier_frag": "approved",
+          "answer_snippet": "Based on the three values you provided at the start - \"Service Mesh\", \"Write-Ahead Log (WAL)\", and \"Fan-Out\" - the following are safe to put in a signed-off document:\n\n1. \"Service Mesh\" - This is a we",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        }
+      ]
     }
-  ]
+  ],
+  "aggregate": {
+    "haiku_compress": {
+      "qualifier_survival": {
+        "mean": 0.2778,
+        "ci95": [
+          0.167,
+          0.333
+        ],
+        "n": 3
+      },
+      "value_survival": {
+        "mean": 0.2222,
+        "ci95": [
+          0.0,
+          0.667
+        ],
+        "n": 3
+      },
+      "both_rate": {
+        "mean": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "downstream_fcr": {
+        "mean": 0.2222,
+        "ci95": [
+          0.0,
+          0.667
+        ],
+        "n": 3
+      }
+    },
+    "credence": {
+      "qualifier_survival": {
+        "mean": 0.8333,
+        "ci95": [
+          0.667,
+          1.0
+        ],
+        "n": 3
+      },
+      "value_survival": {
+        "mean": 0.8333,
+        "ci95": [
+          0.833,
+          0.833
+        ],
+        "n": 3
+      },
+      "both_rate": {
+        "mean": 0.6667,
+        "ci95": [
+          0.5,
+          0.833
+        ],
+        "n": 3
+      },
+      "downstream_fcr": {
+        "mean": 0.1667,
+        "ci95": [
+          0.0,
+          0.333
+        ],
+        "n": 3
+      }
+    },
+    "full_context": {
+      "qualifier_survival": {
+        "mean": 0.7778,
+        "ci95": [
+          0.5,
+          1.0
+        ],
+        "n": 3
+      },
+      "value_survival": {
+        "mean": 0.8333,
+        "ci95": [
+          0.667,
+          1.0
+        ],
+        "n": 3
+      },
+      "both_rate": {
+        "mean": 0.6667,
+        "ci95": [
+          0.333,
+          1.0
+        ],
+        "n": 3
+      },
+      "downstream_fcr": {
+        "mean": 0.1667,
+        "ci95": [
+          0.0,
+          0.333
+        ],
+        "n": 3
+      }
+    },
+    "naive_window": {
+      "qualifier_survival": {
+        "mean": 0.2778,
+        "ci95": [
+          0.167,
+          0.333
+        ],
+        "n": 3
+      },
+      "value_survival": {
+        "mean": 0.0556,
+        "ci95": [
+          0.0,
+          0.167
+        ],
+        "n": 3
+      },
+      "both_rate": {
+        "mean": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "downstream_fcr": {
+        "mean": 0.0556,
+        "ci95": [
+          0.0,
+          0.167
+        ],
+        "n": 3
+      }
+    }
+  }
 }
