@@ -126,7 +126,7 @@ def HFClient(token: str | None = None) -> _OAIClient:
     return _OAIClient(_HF_BASE, token or _HF_TOKEN, "hf", rate_sleep=0.6)
 
 def GroqClient(token: str | None = None) -> _OAIClient:
-    return _OAIClient(_GROQ_BASE, token or _GROQ_TOKEN, "groq", rate_sleep=3.0)
+    return _OAIClient(_GROQ_BASE, token or _GROQ_TOKEN, "groq", rate_sleep=5.0)
 
 
 # ---------------------------------------------------------------------------

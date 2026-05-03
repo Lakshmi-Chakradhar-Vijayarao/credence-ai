@@ -372,7 +372,28 @@ def _ask(client, context_messages: list[dict], question: str) -> str:
     return resp.content[0].text.strip()
 
 
-def run_condition(session: dict, condition: str, client) -> dict:
+def build_history(session: dict, client) -> list[dict]:
+    """Build the shared 17-turn conversation once per session (3 seeds + 14 filler)."""
+    full_history: list[dict] = []
+    for seed in session["seeds"]:
+        full_history.append({"role": "user", "content": seed["user"]})
+        resp = client.messages.create(
+            model=_ANSWER_MODEL, max_tokens=150,
+            messages=full_history,
+        )
+        full_history.append({"role": "assistant", "content": resp.content[0].text.strip()})
+    for filler_q in session["filler"]:
+        full_history.append({"role": "user", "content": filler_q})
+        resp = client.messages.create(
+            model=_ANSWER_MODEL, max_tokens=150,
+            messages=full_history,
+        )
+        full_history.append({"role": "assistant", "content": resp.content[0].text.strip()})
+    return full_history
+
+
+def run_condition(session: dict, condition: str, client,
+                  full_history: list[dict] | None = None) -> dict:
     """
     Run one session under one condition.
 
@@ -381,33 +402,16 @@ def run_condition(session: dict, condition: str, client) -> dict:
         credence        — probe blocks seeded turns; only filler gets compressed
         full_context    — No compression (oracle ceiling)
         naive_window    — Keep only last 6 turns
+
+    full_history: pre-built conversation (built once per session via build_history).
+                  If None, builds it inline (backwards compatibility).
     """
     seeds    = session["seeds"]
     filler   = session["filler"]
     callbacks = session["callbacks"]
 
-    # Build the full conversation: seed turns + filler turns
-    full_history: list[dict] = []
-
-    # Phase 1: seed turns (planted uncertain constraints)
-    for seed in seeds:
-        full_history.append({"role": "user", "content": seed["user"]})
-        resp = client.messages.create(
-            model=_ANSWER_MODEL, max_tokens=150,
-            messages=full_history,
-        )
-        full_history.append({"role": "assistant", "content": resp.content[0].text.strip()})
-        time.sleep(0.3)
-
-    # Phase 2: filler turns (HIGH-J factual QA — these are safe to compress)
-    for filler_q in filler:
-        full_history.append({"role": "user", "content": filler_q})
-        resp = client.messages.create(
-            model=_ANSWER_MODEL, max_tokens=150,
-            messages=full_history,
-        )
-        full_history.append({"role": "assistant", "content": resp.content[0].text.strip()})
-        time.sleep(0.3)
+    if full_history is None:
+        full_history = build_history(session, client)
 
     n_turns = len(full_history) // 2
     seed_pairs = len(seeds)
@@ -656,15 +660,31 @@ def main() -> None:
     results = list(existing)
 
     for session in sessions:
+        # Build history once per session; skip if all conditions already done
+        pending = [c for c in conditions if (session["id"], c) not in seen]
+        if not pending:
+            for c in conditions:
+                print(f"  SKIP {session['id']} / {c} (already done)")
+            continue
+
+        # Skip already-done conditions first
+        for c in conditions:
+            if (session["id"], c) in seen:
+                print(f"  SKIP {session['id']} / {c} (already done)")
+
+        print(f"  Building {session['id']} history ({len(session['seeds'])} seeds + "
+              f"{len(session['filler'])} filler) ...", flush=True)
+        shared_history = build_history(session, client)
+        print(f"    done ({len(shared_history)//2} turns built)")
+
         for condition in conditions:
             if (session["id"], condition) in seen:
-                print(f"  SKIP {session['id']} / {condition} (already done)")
                 continue
 
             print(f"  Running {session['id']} / {condition} ... ", end="", flush=True)
             t0 = time.time()
             try:
-                result = run_condition(session, condition, client)
+                result = run_condition(session, condition, client, full_history=shared_history)
                 elapsed = time.time() - t0
                 print(f"done ({elapsed:.1f}s)  "
                       f"both={result['both_rate']:.1%} fcr={result['downstream_fcr']:.1%}")
