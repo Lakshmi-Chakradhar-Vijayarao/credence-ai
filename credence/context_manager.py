@@ -22,12 +22,12 @@ Guard rails:
     establish conversation identity and are disproportionately attended to.
   - Compression depth limit: after 3 compressions the system stops
     compressing (recursive summarization degrades quality).
-  - Novelty guard: if a turn introduces many new named entities, PRESERVE
-    overrides even a HIGH J-score (new context must not be discarded).
-  - Adaptive thinking (opt-in, use_thinking=True): thinking budget scales
-    continuously and inversely with the previous turn's J-score.  J=0 (max
-    uncertainty) → 2000-token budget; J≥theta_high (confident) → no thinking.
-    This makes the J-signal a unified governor of both memory AND compute.
+  - Novelty guard: disabled (79.2% false-positive rate on stable sessions;
+    vocabulary distance cannot distinguish same-domain progression from genuine
+    topic pivots without semantic embeddings).
+  - Adaptive thinking (opt-in, use_thinking=True): forward-reserved for models
+    that expose thinking blocks. Opus 4.7 does not expose thinking tokens, so
+    thinking_tokens and thinking_utilization are always 0 on this model.
   - Drift detection: if J drops below theta_low for 3 consecutive turns the
     system enters drift state and forces PRESERVE until confidence recovers.
     This is proactive control — the intervention happens before the 4th

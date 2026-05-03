@@ -10,43 +10,35 @@ Four deterministic checkpoints:
   CP3  Post-generation  → Generation-Time Scanner annotates unverified literals in code
   CP4  Pre-tool-use     → credence-gate (Rust) / hooks.py (Python) blocks irreversible writes
 
-Model-agnostic API (no API key required):
+Primary interface — MCP server (10 tools, zero API key):
+    credence-server              — MCP server entry point
+
+Python API (no API key required):
     wrap(compress_fn, context)   — wrap any compress function with CP1 guard
-    credence-server              — MCP server with 12 tools, zero LLM calls
+    CredenceRegistry             — SQLite constraint store
+    CredenceMemory               — cross-session epistemic memory
 
-Cross-session: CredenceMemory persists j_score + zone + verified=False so new
-sessions inherit which facts were unverified, not just what the values were.
-
-Multi-agent: PipelineMonitor intercepts Agent A → Agent B handoffs, extracts
-uncertain claims from Agent A's output, registers them, and injects an
-epistemic handoff block into Agent B's system prompt.
+Advanced (requires Anthropic API key):
+    ContextManager               — full enforcement engine with compression loop
 """
 
-from .context_manager import ContextManager, TurnResult, SessionStats
 from .registry import CredenceRegistry
 from .memory import CredenceMemory
-from .pipeline_monitor import PipelineMonitor, EpistemicHandoff
-from .enforce import enforce, CredenceViolation
 from .wrap import wrap, WrapResult, measure_fcr
+from .enforce import enforce, CredenceViolation
+from .context_manager import ContextManager, TurnResult, SessionStats
 from .confidence_proxy import CredenceProxy, CredenceResult
 from .epistemic_manifest import EpistemicManifest
 
 __version__ = "1.0.0"
 __all__ = [
-    # Model-agnostic wrapper — primary open-source API
+    # Python API — zero API key
     "wrap", "WrapResult", "measure_fcr",
-    # Constraint registry (SQLite, zero deps)
     "CredenceRegistry",
-    # Cross-session epistemic memory
     "CredenceMemory",
-    # Multi-agent middleware
-    "PipelineMonitor", "EpistemicHandoff",
-    # Decorator-based enforcement
     "enforce", "CredenceViolation",
-    # Full enforcement engine (requires API key — optional power-user feature)
+    # Advanced — requires API key
     "ContextManager", "TurnResult", "SessionStats",
-    # J-score proxy and confidence result
     "CredenceProxy", "CredenceResult",
-    # Structured epistemic manifest (XML injection)
     "EpistemicManifest",
 ]

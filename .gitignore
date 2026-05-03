@@ -32,6 +32,13 @@ credence_gate/epistemic_registry.db.bak
 # Large model weights — too big for git (31MB, use Kaggle/HuggingFace Hub)
 models/
 
+# DPO fine-tuning (separate research project — not part of MCP release)
+training/
+data/
+
+# Kaggle workflow docs
+KAGGLE_WORKFLOW.md
+
 # Kaggle staging artifacts (not source)
 kaggle_bundle.zip
 kaggle_push/
