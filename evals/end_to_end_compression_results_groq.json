@@ -1,0 +1,379 @@
+{
+  "results": [
+    {
+      "session_id": "e2e_api_01",
+      "domain": "api_integration",
+      "condition": "haiku_compress",
+      "n_turns_seeded": 17,
+      "n_seed_turns": 3,
+      "n_filler_turns": 14,
+      "n_callbacks": 6,
+      "qualifier_survival": 0.3333333333333333,
+      "value_survival": 0.0,
+      "both_rate": 0.0,
+      "downstream_fcr": 0.0,
+      "callbacks": [
+        {
+          "question": "Going back to what I said at the start: what rate limit did I mention for the AP",
+          "value_frag": "50",
+          "qualifier_frag": "think",
+          "answer_snippet": "You didn't mention a specific rate limit for the API at the start of our conversation. In fact, you mentioned that you were seeking clarification on the API's rate limit, among other things, and were ",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What was the webhook retry window I mentioned, and how confident was I about tha",
+          "value_frag": "72",
+          "qualifier_frag": "not sure",
+          "answer_snippet": "You didn't mention a specific webhook retry window. The conversation started with a summary of a previous conversation, which mentioned that you had sought clarification on the rate limit, webhook ret",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What auth token expiry did I mention earlier, and what was my confidence level o",
+          "value_frag": "3600",
+          "qualifier_frag": "probably",
+          "answer_snippet": "You didn't mention a specific auth token expiry value earlier, nor did you express a confidence level on that value. This conversation started with a summary of a conversation about integrating a paym",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "I need to write code for the rate limit \u2014 what should I do given what we know?",
+          "value_frag": "50",
+          "qualifier_frag": null,
+          "answer_snippet": "To implement rate limiting, you'll need to track the number of requests made by a client within a certain time window. Here's a general outline of the steps you can take:\n\n1. **Choose a rate limiting ",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Can you summarise all three uncertain values I mentioned at the start of this co",
+          "value_frag": "50",
+          "qualifier_frag": "think",
+          "answer_snippet": "At the start of this conversation, you mentioned three uncertain values related to integrating a payment API:\n\n1. **Rate limit**: The maximum number of requests that can be made to the API within a ce",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Which of the values I stated early on are confirmed vs. unconfirmed?",
+          "value_frag": "50",
+          "qualifier_frag": "unconfirmed",
+          "answer_snippet": "You didn't state any specific values earlier. The conversation started with a summary of a previous conversation, but no specific values were mentioned. If you'd like to share the values you're referr",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        }
+      ]
+    },
+    {
+      "session_id": "e2e_api_01",
+      "domain": "api_integration",
+      "condition": "credence",
+      "n_turns_seeded": 17,
+      "n_seed_turns": 3,
+      "n_filler_turns": 14,
+      "n_callbacks": 6,
+      "qualifier_survival": 0.8333333333333334,
+      "value_survival": 0.8333333333333334,
+      "both_rate": 0.6666666666666666,
+      "downstream_fcr": 0.16666666666666666,
+      "callbacks": [
+        {
+          "question": "Going back to what I said at the start: what rate limit did I mention for the AP",
+          "value_frag": "50",
+          "qualifier_frag": "think",
+          "answer_snippet": "At the start of our conversation, you mentioned that you thought the rate limit for the API was around 50 requests per minute, and that your sales rep had mentioned it, but you hadn't confirmed it wit",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What was the webhook retry window I mentioned, and how confident was I about tha",
+          "value_frag": "72",
+          "qualifier_frag": "not sure",
+          "answer_snippet": "You mentioned that the webhook retry window might be 72 hours based on what their docs said **last year**, but you weren't **sure** if it's changed. You were not certain about this number, and it was ",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What auth token expiry did I mention earlier, and what was my confidence level o",
+          "value_frag": "3600",
+          "qualifier_frag": "probably",
+          "answer_snippet": "You mentioned earlier that the auth token expiry is probably **3600 seconds** (1 hour), but you also mentioned that you **haven't confirmed** this value with the official documentation. This suggests ",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "I need to write code for the rate limit \u2014 what should I do given what we know?",
+          "value_frag": "50",
+          "qualifier_frag": null,
+          "answer_snippet": "Based on our previous conversation, you want to implement rate limiting. Here's a step-by-step guide to help you get started:\n\n**Step 1: Determine the Rate Limit**\n\n* Refer to the payment API's docume",
+          "qualifier_survival": false,
+          "value_survival": true,
+          "both": false,
+          "downstream_fcr": true
+        },
+        {
+          "question": "Can you summarise all three uncertain values I mentioned at the start of this co",
+          "value_frag": "50",
+          "qualifier_frag": "think",
+          "answer_snippet": "You mentioned three uncertain values at the start of our conversation:\n\n1. **Rate Limit**: You thought the rate limit was around 50 requests per minute, but you hadn't confirmed with the official docu",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Which of the values I stated early on are confirmed vs. unconfirmed?",
+          "value_frag": "50",
+          "qualifier_frag": "unconfirmed",
+          "answer_snippet": "You mentioned some values related to the payment API earlier. Based on our conversation, here's a confirmation status for each of them:\n\n1. **Rate Limit**: **Unconfirmed**. We didn't verify the rate l",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        }
+      ]
+    },
+    {
+      "session_id": "e2e_api_01",
+      "domain": "api_integration",
+      "condition": "full_context",
+      "n_turns_seeded": 17,
+      "n_seed_turns": 3,
+      "n_filler_turns": 14,
+      "n_callbacks": 6,
+      "qualifier_survival": 1.0,
+      "value_survival": 1.0,
+      "both_rate": 1.0,
+      "downstream_fcr": 0.0,
+      "callbacks": [
+        {
+          "question": "Going back to what I said at the start: what rate limit did I mention for the AP",
+          "value_frag": "50",
+          "qualifier_frag": "think",
+          "answer_snippet": "You mentioned at the start that you thought the rate limit for the API was around 50 requests per minute, and you noted that your sales rep mentioned it but you hadn't confirmed with the API's officia",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What was the webhook retry window I mentioned, and how confident was I about tha",
+          "value_frag": "72",
+          "qualifier_frag": "not sure",
+          "answer_snippet": "You mentioned earlier that you thought the webhook retry window might be 72 hours, but you weren't entirely sure if it was accurate, as it was based on information from the past year, when you last ch",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What auth token expiry did I mention earlier, and what was my confidence level o",
+          "value_frag": "3600",
+          "qualifier_frag": "probably",
+          "answer_snippet": "Earlier, you mentioned that you thought the auth token expiry was 3600 seconds, but you stated that your confidence level on that value was \"not confirmed\" and that you hadn't tested it in production,",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "I need to write code for the rate limit \u2014 what should I do given what we know?",
+          "value_frag": "50",
+          "qualifier_frag": null,
+          "answer_snippet": "Based on our previous conversation, it seems like you want to implement a rate limit for your API to prevent excessive requests. Here's a simple example of how you can do it using Python and the `requ",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Can you summarise all three uncertain values I mentioned at the start of this co",
+          "value_frag": "50",
+          "qualifier_frag": "think",
+          "answer_snippet": "You mentioned the following uncertain values at the start of our conversation:\n\n1. **Rate limit**: You weren't sure about the rate limit, which was mentioned by a sales rep as around 50 requests per m",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Which of the values I stated early on are confirmed vs. unconfirmed?",
+          "value_frag": "50",
+          "qualifier_frag": "unconfirmed",
+          "answer_snippet": "You mentioned several values early on, and now I'll categorize them as confirmed or unconfirmed based on the information we've discussed:\n\n**Confirmed:**\n\n1. **200 seconds (3 minutes) is a common time",
+          "qualifier_survival": true,
+          "value_survival": true,
+          "both": true,
+          "downstream_fcr": false
+        }
+      ]
+    },
+    {
+      "session_id": "e2e_api_01",
+      "domain": "api_integration",
+      "condition": "naive_window",
+      "n_turns_seeded": 17,
+      "n_seed_turns": 3,
+      "n_filler_turns": 14,
+      "n_callbacks": 6,
+      "qualifier_survival": 0.16666666666666666,
+      "value_survival": 0.16666666666666666,
+      "both_rate": 0.0,
+      "downstream_fcr": 0.16666666666666666,
+      "callbacks": [
+        {
+          "question": "Going back to what I said at the start: what rate limit did I mention for the AP",
+          "value_frag": "50",
+          "qualifier_frag": "think",
+          "answer_snippet": "You didn't mention a specific rate limit for the API in your initial question. You asked about handling network timeouts in production API clients and implementing retry logic, but you didn't specify ",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What was the webhook retry window I mentioned, and how confident was I about tha",
+          "value_frag": "72",
+          "qualifier_frag": "not sure",
+          "answer_snippet": "You didn't mention a webhook retry window in our conversation. I can provide general information on webhook retry windows and how they're used to handle temporary issues with webhook delivery.",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What auth token expiry did I mention earlier, and what was my confidence level o",
+          "value_frag": "3600",
+          "qualifier_frag": "probably",
+          "answer_snippet": "You didn't mention an auth token expiry earlier in our conversation. Our conversation started with your question about handling network timeouts in production API clients, and then we discussed circui",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "I need to write code for the rate limit \u2014 what should I do given what we know?",
+          "value_frag": "50",
+          "qualifier_frag": null,
+          "answer_snippet": "To implement a rate limit, you can use a combination of the following strategies:\n\n1. **Track requests**: Keep track of the number of requests made from an IP address or user within a certain time win",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Can you summarise all three uncertain values I mentioned at the start of this co",
+          "value_frag": "50",
+          "qualifier_frag": "think",
+          "answer_snippet": "At the start of our conversation, you mentioned three uncertain values:\n\n1. **Network timeouts**: You asked about handling network timeouts in production API clients.\n2. **Circuit breaker pattern**: Y",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Which of the values I stated early on are confirmed vs. unconfirmed?",
+          "value_frag": "50",
+          "qualifier_frag": "unconfirmed",
+          "answer_snippet": "You mentioned handling network timeouts in production API clients early on. Since none of the specific values related to handling network timeouts (e.g., 503, 504, timeout, max_retries) was confirmed ",
+          "qualifier_survival": false,
+          "value_survival": true,
+          "both": false,
+          "downstream_fcr": true
+        }
+      ]
+    },
+    {
+      "session_id": "e2e_debug_01",
+      "domain": "debugging",
+      "condition": "haiku_compress",
+      "n_turns_seeded": 17,
+      "n_seed_turns": 3,
+      "n_filler_turns": 14,
+      "n_callbacks": 6,
+      "qualifier_survival": 0.16666666666666666,
+      "value_survival": 0.0,
+      "both_rate": 0.0,
+      "downstream_fcr": 0.0,
+      "callbacks": [
+        {
+          "question": "What was the connection pool limit I mentioned earlier, and was that confirmed?",
+          "value_frag": "100",
+          "qualifier_frag": "believe",
+          "answer_snippet": "You didn't mention a specific connection pool limit earlier. You mentioned that the conversation started with troubleshooting intermittent 503 errors (Service Unavailable) in an authentication service",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What latency spike did I observe, and how certain was I about that measurement?",
+          "value_frag": "2000",
+          "qualifier_frag": "not confident",
+          "answer_snippet": "Unfortunately, we didn't discuss any specific latency spike earlier in the conversation. The conversation was more focused on general topics related to microservices, Java, and serverless functions. I",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "What memory usage percentage did I mention, and was I confident in that observat",
+          "value_frag": "85",
+          "qualifier_frag": "think",
+          "answer_snippet": "You didn't specifically mention a memory usage percentage in your previous questions.",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Based on what I told you at the start, write a brief incident summary with appro",
+          "value_frag": "100",
+          "qualifier_frag": null,
+          "answer_snippet": "**Incident Summary:**\n\n**Service:** Authentication Service\n\n**Issue:** Intermittent 503 errors (Service Unavailable)\n\n**Root Cause:** Suspected connection pool limits\n\n**Incident Timeline:**\n\n* Invest",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "If I were to page on-call, which of the early observations should I treat as con",
+          "value_frag": "100",
+          "qualifier_frag": "suspected",
+          "answer_snippet": "When paging on-call, it's essential to separate confirmed from suspected observations to prioritize and investigate issues effectively. Here's a suggested guide:\n\n**Confirmed Observations:**\n\n1. **Met",
+          "qualifier_survival": true,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        },
+        {
+          "question": "Remind me of all three metrics I mentioned at the start \u2014 connection pool, laten",
+          "value_frag": "100",
+          "qualifier_frag": "believe",
+          "answer_snippet": "You mentioned the following 3 metrics during the conversation:\n\n1. **Connection Pool**: This metric is related to the authentication service experiencing intermittent 503 errors (Service Unavailable) ",
+          "qualifier_survival": false,
+          "value_survival": false,
+          "both": false,
+          "downstream_fcr": false
+        }
+      ]
+    }
+  ]
+}
