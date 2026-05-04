@@ -213,6 +213,81 @@ class StripeClient:
             pass
 
 
+def run_feedback(tag: str) -> None:
+    """Tag the last gate block in ~/.credence/events.jsonl as useful/noise/skip."""
+    import json as _json
+    events_file = os.path.expanduser("~/.credence/events.jsonl")
+
+    if not os.path.exists(events_file):
+        print("No gate events recorded yet. Run credence in a real session first.")
+        return
+
+    with open(events_file) as fh:
+        lines = fh.readlines()
+
+    # Find last block event with no feedback
+    for i in range(len(lines) - 1, -1, -1):
+        try:
+            ev = _json.loads(lines[i])
+        except Exception:
+            continue
+        if ev.get("event") == "block" and ev.get("feedback") is None:
+            label = {"1": "true_positive", "2": "false_positive", "3": "skip"}.get(tag, "skip")
+            ev["feedback"] = label
+            lines[i] = _json.dumps(ev) + "\n"
+            with open(events_file, "w") as fh:
+                fh.writelines(lines)
+            print(f"  Logged: last gate block → {label}")
+            return
+
+    print("No unfeedback'd block found. All recent blocks already tagged.")
+
+
+def run_stats() -> None:
+    """Print false-positive rate from ~/.credence/events.jsonl."""
+    import json as _json
+    events_file = os.path.expanduser("~/.credence/events.jsonl")
+
+    if not os.path.exists(events_file):
+        print("No events yet. Install the hook and use Credence in a real session.")
+        return
+
+    blocks = allows = tp = fp = skip = untagged = 0
+    with open(events_file) as fh:
+        for line in fh:
+            try:
+                ev = _json.loads(line)
+            except Exception:
+                continue
+            if ev.get("event") == "block":
+                blocks += 1
+                fb = ev.get("feedback")
+                if fb == "true_positive":   tp += 1
+                elif fb == "false_positive": fp += 1
+                elif fb == "skip":           skip += 1
+                else:                        untagged += 1
+            elif ev.get("event") == "allow":
+                allows += 1
+
+    tagged = tp + fp
+    fpr = (fp / tagged * 100) if tagged else None
+
+    _hr("═")
+    print("  Credence — field signal report")
+    _hr()
+    print(f"  Gate fires (blocks) : {blocks}")
+    print(f"  Pass-throughs       : {allows}")
+    print(f"  Tagged by user      : {tagged}  (true_pos={tp}, false_pos={fp}, skip={skip})")
+    print(f"  Untagged            : {untagged}")
+    print()
+    if fpr is not None:
+        flag = "✓ signal is clean" if fpr <= 20 else ("⚠ needs filter tightening" if fpr <= 40 else "✗ too noisy")
+        print(f"  False positive rate : {fpr:.1f}%  {flag}")
+    else:
+        print("  False positive rate : — (tag gate blocks with `credence feedback 1|2|3`)")
+    _hr("═")
+
+
 def main() -> None:
     args = sys.argv[1:]
     if not args or args[0] == "demo":
@@ -220,10 +295,19 @@ def main() -> None:
     elif args[0] == "server":
         from credence.mcp_server import main as server_main
         server_main()
+    elif args[0] == "feedback":
+        tag = args[1] if len(args) > 1 else "3"
+        run_feedback(tag)
+    elif args[0] == "stats":
+        run_stats()
     else:
-        print(f"Usage: credence [demo|server]")
-        print("       credence demo    — run 30-second smoke test (no API key needed)")
-        print("       credence server  — start MCP server")
+        print("Usage: credence [demo|server|feedback|stats]")
+        print("       credence demo         — run 30-second smoke test (no API key needed)")
+        print("       credence server       — start MCP server")
+        print("       credence feedback 1   — last gate block was correct (true positive)")
+        print("       credence feedback 2   — last gate block was noise (false positive)")
+        print("       credence feedback 3   — skip / unsure")
+        print("       credence stats        — show false positive rate from real usage")
         sys.exit(1)
 
 

@@ -42,10 +42,31 @@ Exit codes:
 
 from __future__ import annotations
 
+import datetime
 import json
 import os
 import re
 import sys
+
+
+# ---------------------------------------------------------------------------
+# Event log — ~/.credence/events.jsonl
+# Every gate fire is logged so false-positive rate can be measured.
+# Run `credence stats` to see signal quality from real usage.
+# ---------------------------------------------------------------------------
+_EVENTS_DIR  = os.path.expanduser("~/.credence")
+_EVENTS_FILE = os.path.join(_EVENTS_DIR, "events.jsonl")
+
+
+def _log_event(event: dict) -> None:
+    """Append one event to the local events log. Never raises."""
+    try:
+        os.makedirs(_EVENTS_DIR, exist_ok=True)
+        event["ts"] = datetime.datetime.utcnow().isoformat() + "Z"
+        with open(_EVENTS_FILE, "a") as fh:
+            fh.write(json.dumps(event) + "\n")
+    except Exception:
+        pass  # logging must never break the gate
 
 # ---------------------------------------------------------------------------
 # Stopwords excluded from overlap scoring (same set as credence_gate in MCP)
@@ -128,6 +149,12 @@ def main() -> int:
             })
 
     if not blocking:
+        _log_event({
+            "event":       "allow",
+            "tool_name":   tool_name,
+            "session_id":  session_id,
+            "constraints": len(uncertain),
+        })
         return 0
 
     # --- Block and warn ------------------------------------------------------
@@ -154,6 +181,17 @@ def main() -> int:
         "",
     ]
     print("\n".join(lines), file=sys.stderr)
+
+    _log_event({
+        "event":      "block",
+        "tool_name":  tool_name,
+        "session_id": session_id,
+        "blocked_by": [
+            {"id": b["constraint_id"][:12], "content": b["content"][:80], "overlap": b["overlap"]}
+            for b in blocking[:3]
+        ],
+        "feedback":   None,   # filled in by `credence feedback 1|2|3`
+    })
     return 2   # non-zero → Claude Code blocks the tool call
 
 
