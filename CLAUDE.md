@@ -41,10 +41,11 @@ Prepend the returned `system_block` to your internal context. This is how unveri
 | Working hypothesis | "probably a race condition" | `assumption` |
 | Config value | "we set MAX_RETRIES to 5" | `config` |
 
-**Ghost constraint heuristic** — register even WITHOUT hedging language when ALL THREE conditions are true:
+**Ghost constraint heuristic** — register even WITHOUT hedging language when ALL FOUR conditions are true:
 1. User states a specific numeric value (any integer or decimal)
-2. Value is associated with a domain keyword: `rate limit`, `timeout`, `quota`, `max`, `threshold`, `retry`, `expiry`, `ttl`, `limit`, `price`, `cost`, `capacity`, `concurrency`, `latency`, `sla`, `budget`, `port`, `token`, `key`, `version`
+2. Value is associated with a domain keyword: `rate limit`, `timeout`, `quota`, `max`, `threshold`, `retry`, `expiry`, `ttl`, `limit`, `price`, `cost`, `capacity`, `concurrency`, `latency`, `sla`, `budget`, `port`, `token`, `key`, `api version`
 3. No documentation reference given (no URL, no "docs say", no "I verified")
+4. The number is NOT inside a URL (not preceded by `://`, `?`, `=`, `/v`, `Id=`)
 
 In this case: `credence_register(content=<exact user statement>, session_id=session_id, source_type="vendor_claim")`
 
