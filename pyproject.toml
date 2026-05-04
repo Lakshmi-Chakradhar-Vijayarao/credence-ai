@@ -55,7 +55,7 @@ Documentation = "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai/blo
 "PyPI" = "https://pypi.org/project/credence-guard/"
 
 [tool.setuptools.packages.find]
-include = ["credence*", "evals*", "demo*"]
+include = ["credence*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -66,27 +66,21 @@ from .temporal_patterns import scan_temporal, scan_domain_assignments
 mcp = FastMCP(
     "Credence",
     instructions=(
-        "Credence is a zero-config epistemic guard layer for coding agents.\n"
-        "Works with Claude Code, Codex, Cursor, Copilot — any agent, zero API key.\n\n"
-        "Core principle: Unknown = unverified. Every value that flows from conversation\n"
-        "into code is tracked and must be verified before it ships.\n\n"
+        "Credence tracks uncertain values from conversation and enforces verification\n"
+        "before they reach code. Works with any coding agent. Zero API key required.\n\n"
+        "Principle: unknown = unverified. Binary state only — verified or not.\n\n"
         "Lifecycle:\n"
-        "  1. credence_memory_recall at session START\n"
-        "  2. credence_autoverify on EVERY user message\n"
-        "  3. credence_register when user states uncertain value\n"
-        "  4. credence_pre_compress BEFORE any compression\n"
-        "  5. credence_post_compress AFTER compression\n"
-        "  6. credence_self_probe AFTER generating code — extracts + registers all\n"
-        "     domain-relevant values as unverified by default\n"
-        "  7. credence_scan AFTER generating code — annotates unverified literals\n"
-        "  8. credence_gate BEFORE Write / Edit / Bash\n"
-        "  9. credence_verify when user confirms a value with evidence\n"
-        " 10. credence_memory_snapshot at session END\n\n"
-        "Annotation tiers in generated code:\n"
-        "  ⚠⚠ CREDENCE[stale]      — temporally stale (versions, pricing, auth lifetimes)\n"
-        "  ⚠⚠ CREDENCE[HIGH RISK]  — confidence < 0.20\n"
-        "  ⚠  CREDENCE[unverified] — confidence 0.20–0.40\n"
-        "     CREDENCE[check]      — confidence ≥ 0.40, low priority"
+        "  1. credence_memory_recall  — session START (existing project)\n"
+        "  2. credence_autoverify     — EVERY user message\n"
+        "  3. credence_register       — user states uncertain value\n"
+        "  4. credence_self_probe     — AFTER generating code (auto-extract values)\n"
+        "  5. credence_scan           — AFTER generating code (annotate output)\n"
+        "  6. credence_gate           — BEFORE Write / Edit / Bash\n"
+        "  7. credence_verify         — user confirms a value with evidence\n"
+        "  8. credence_memory_snapshot — session END\n\n"
+        "Annotations in generated code:\n"
+        "  ⚠⚠ CREDENCE[stale]      — structurally stale (versions, auth lifetimes, pricing)\n"
+        "  ⚠  CREDENCE[unverified] — must verify before shipping"
     ),
 ) if _FASTMCP_AVAILABLE else None
 
@@ -146,21 +140,13 @@ def _scan_output(output_text: str, registry: CredenceRegistry, session_id: str, 
         return output_text, []
 
     def _annotation(c: dict, snippet: str, for_code: bool) -> str:
-        ec     = c.get("eff_conf", 0.5)
         source = c.get("source", "")
         text   = (c.get("content") or "")[:60]
         if source == "temporal_scan":
-            # Structurally stale — always flag, no confidence scoring
             tier = "⚠⚠ CREDENCE[stale]"
-        elif source == "self_probe":
-            # AI-generated, unknown = unverified — no confidence guessing
-            tier = "⚠ CREDENCE[unverified — verify before ship]"
-        elif ec < _GTS_WARN_THRESHOLD:
-            tier = f"⚠⚠ CREDENCE[HIGH RISK, conf={ec:.2f}]"
-        elif ec < _GTS_QUALIFY_THRESHOLD:
-            tier = f"⚠ CREDENCE[unverified, conf={ec:.2f}]"
         else:
-            tier = f"CREDENCE[check, conf={ec:.2f}]"
+            # Everything else: unverified — binary, no confidence tiers
+            tier = "⚠ CREDENCE[unverified]"
         return (f"  # {tier}: {text}" if for_code else f" ⚠ {tier}: {text}")
 
     hits: list[dict] = []
@@ -310,167 +296,34 @@ def _detect_session_type(text: str) -> str:
 if _FASTMCP_AVAILABLE:
 
     @mcp.tool()
-    def credence_pre_compress(text: str, session_id: str) -> dict:
-        """
-        Check whether text is safe to compress (CP1 — faithfulness probe).
-
-        Call this BEFORE any context compression. If uncertainty qualifiers
-        are detected, the tool returns action=BLOCK and you must preserve the
-        text verbatim. If safe, it returns action=ALLOW with a manifest of
-        qualifiers to preserve in the compressed output.
-
-        Works with any model: Claude, GPT, Gemini, local. No API key needed.
-
-        Args:
-            text:       The text about to be compressed.
-            session_id: Session identifier for registry context.
-
-        Returns:
-            action: "BLOCK" or "ALLOW"
-            markers_found: list of uncertainty markers detected
-            registered_constraints: count of unverified constraints in session
-            message: human-readable explanation
-        """
-        text_lower = text.lower()
-        found = [m for m in _UNCERTAINTY_MARKERS if m in text_lower]
-
-        registry     = _get_registry()
-        n_uncertain  = len(registry.list_uncertain(session_id))
-
-        if found:
-            return {
-                "action":                 "BLOCK",
-                "markers_found":          found[:10],
-                "marker_count":           len(found),
-                "registered_constraints": n_uncertain,
-                "message": (
-                    f"BLOCK — {len(found)} uncertainty marker(s) detected. "
-                    "Compress this text and you risk stripping epistemic qualifiers. "
-                    "Preserve it verbatim or verify the uncertain claims first."
-                ),
-            }
-
-        return {
-            "action":                 "ALLOW",
-            "markers_found":          [],
-            "marker_count":           0,
-            "registered_constraints": n_uncertain,
-            "message": (
-                "ALLOW — no uncertainty markers found. "
-                "Safe to compress. After compression, call credence_post_compress "
-                "to verify qualifier survival."
-            ),
-        }
-
-    @mcp.tool()
-    def credence_post_compress(original: str, compressed: str, session_id: str) -> dict:
-        """
-        Measure qualifier survival after compression (CP1 — post-check).
-
-        Call this AFTER your model compresses context. Measures what fraction
-        of the original uncertainty markers survived into the compressed output.
-        Low qual_survival → qualifiers were stripped → false certainty risk.
-
-        Args:
-            original:   The original uncompressed text.
-            compressed: The compressed output from your model.
-            session_id: Session identifier.
-
-        Returns:
-            qual_survival: fraction of original markers preserved (0.0–1.0)
-            fcr_risk:      estimated false-certainty rate (0.0–1.0)
-            verdict:       "SAFE" / "WARN" / "RISK"
-            dropped:       list of markers that were stripped
-        """
-        orig_lower = original.lower()
-        comp_lower = compressed.lower()
-
-        orig_markers = {m for m in _UNCERTAINTY_MARKERS if m in orig_lower}
-        comp_markers = {m for m in _UNCERTAINTY_MARKERS if m in comp_lower}
-
-        if orig_markers:
-            survived     = orig_markers & comp_markers
-            dropped      = orig_markers - comp_markers
-            qual_survival = len(survived) / len(orig_markers)
-        else:
-            survived, dropped = set(), set()
-            qual_survival = 1.0
-
-        fcr_risk = max(0.0, min(1.0, round(1.0 - qual_survival * 1.2, 3)))
-
-        if qual_survival >= 0.80:
-            verdict = "SAFE"
-        elif qual_survival >= 0.50:
-            verdict = "WARN"
-        else:
-            verdict = "RISK"
-
-        # Passive marker flywheel recording — no user-visible effect
-        if orig_markers:
-            registry = _get_registry()
-            session_type = _detect_session_type(original + " " + compressed)
-            registry.record_marker_events(
-                session_id    = session_id,
-                markers_fired = list(orig_markers),
-                qual_survival = qual_survival,
-                session_type  = session_type,
-            )
-
-        return {
-            "qual_survival":        round(qual_survival, 3),
-            "fcr_risk":             fcr_risk,
-            "verdict":              verdict,
-            "original_marker_count": len(orig_markers),
-            "output_marker_count":   len(comp_markers),
-            "survived":             list(survived)[:10],
-            "dropped":              list(dropped)[:10],
-            "message": (
-                f"{verdict} — qualifier survival {qual_survival:.0%}. "
-                + (f"Dropped: {list(dropped)[:5]}" if dropped else "All qualifiers preserved.")
-            ),
-        }
-
-    @mcp.tool()
     def credence_register(
-        content:         str,
-        session_id:      str,
-        j_score:         float = 0.30,
-        zone:            str   = "LOW",
-        source_type:     str   = "observation",
+        content:     str,
+        session_id:  str,
+        source_type: str = "observation",
     ) -> dict:
         """
         Register an uncertain constraint in the epistemic registry.
 
         Use whenever the user states something uncertain: an unconfirmed vendor
         claim, an assumption, a 'I think' statement, a number from a quick search.
-        The registry tracks it across the session so the gate and scan tools can
-        enforce it on every subsequent turn.
+        All registered values are UNVERIFIED until explicitly confirmed.
 
-        source_type classifies the epistemic origin of the claim — this affects
-        confidence decay rate and ghost detection in Phase 3:
-          "vendor_claim"  — value stated by a vendor / docs / external party (slow decay)
-          "user_estimate" — user's rough guess or approximation (fast decay)
-          "observation"   — user's direct measurement or confirmed observation (slow decay)
-          "assumption"    — working hypothesis, needs confirmation (fastest decay)
-          "compliance"    — regulatory / legal constraint (almost no decay)
-          "config"        — configuration value that could change (medium decay)
-          "inference"     — model-derived, not directly stated (medium decay)
+        source_type classifies what kind of uncertain claim this is:
+          "vendor_claim"  — value stated by a vendor / docs / external party
+          "user_estimate" — user's rough guess or approximation
+          "observation"   — user's direct measurement (unconfirmed)
+          "assumption"    — working hypothesis
+          "config"        — configuration value that may change
+          "inference"     — model-derived, not directly stated
 
         Args:
-            content:     The uncertain claim text.
+            content:     The uncertain claim text (exact quote preferred).
             session_id:  Session identifier.
-            j_score:     Confidence 0–1 (default 0.30 = clearly uncertain).
-            zone:        "HIGH", "MEDIUM", or "LOW" (default "LOW").
             source_type: Epistemic origin (see above). Default "observation".
 
         Returns:
-            constraint_id, status, content, j_score, zone, source_type
+            constraint_id, status, content, source_type
         """
-        _VALID_SOURCE_TYPES = {
-            "vendor_claim", "user_estimate", "observation",
-            "assumption", "compliance", "config", "inference",
-        }
-        # Map user_estimate → estimate for registry internal type
         _TYPE_MAP = {"user_estimate": "estimate", "inference": "assumption"}
         registry_type = _TYPE_MAP.get(source_type, source_type)
         if registry_type not in {"vendor_claim", "estimate", "observation",
@@ -479,24 +332,22 @@ if _FASTMCP_AVAILABLE:
 
         registry = _get_registry()
         cid = registry.register(
-            content          = content,
-            session_id       = session_id,
-            j_score          = j_score,
-            zone             = zone,
-            constraint_type  = registry_type,
+            content         = content,
+            session_id      = session_id,
+            j_score         = 0.0,   # unknown = unverified, no confidence scoring
+            zone            = "LOW",
+            constraint_type = registry_type,
         )
         return {
             "constraint_id": cid,
             "status":        "registered",
             "content":       content,
             "session_id":    session_id,
-            "j_score":       j_score,
-            "zone":          zone,
             "source_type":   source_type,
             "message": (
-                f"Registered as uncertain [{source_type}] (id={cid}). "
+                f"Registered as UNVERIFIED [{source_type}] (id={cid}). "
                 f"Call credence_verify('{cid}', <confirmed_value>, '{session_id}') "
-                "when confirmed."
+                "when the user confirms this value."
             ),
         }
 

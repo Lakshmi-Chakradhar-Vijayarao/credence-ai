@@ -46,7 +46,7 @@ Prepend the returned `system_block` to your internal context. This is how unveri
 2. Value is associated with a domain keyword: `rate limit`, `timeout`, `quota`, `max`, `threshold`, `retry`, `expiry`, `ttl`, `limit`, `price`, `cost`, `capacity`, `concurrency`, `latency`, `sla`, `budget`, `port`, `token`, `key`, `version`
 3. No documentation reference given (no URL, no "docs say", no "I verified")
 
-In this case: `credence_register(content=<exact user statement>, session_id=session_id, j_score=0.35, source_type="vendor_claim")`
+In this case: `credence_register(content=<exact user statement>, session_id=session_id, source_type="vendor_claim")`
 
 ---
 
@@ -54,20 +54,6 @@ In this case: `credence_register(content=<exact user statement>, session_id=sess
 
 **ALWAYS** call `credence_autoverify(text=user_message, session_id=session_id)` on every user message.
 This is zero-API, ~1ms. It catches "actually it's X", "confirmed: Y", "I checked, Z" and auto-marks matching constraints verified. No manual work required.
-
----
-
-### Before Context Compression — faithfulness probe
-
-**ALWAYS** call `credence_pre_compress(text=<segment>, session_id=session_id)` before summarizing or compressing any conversation segment.
-
-- If `action == "BLOCK"`: do NOT compress. Preserve the text verbatim.
-- If `action == "ALLOW"`: proceed with compression, then call `credence_post_compress`.
-
-**ALWAYS** call `credence_post_compress(original=<original>, compressed=<output>, session_id=session_id)` after compression.
-
-- If `verdict == "RISK"`: discard the compressed output. Use original.
-- If `verdict == "WARN"`: flag it and prefer the original.
 
 ---
 
@@ -108,11 +94,9 @@ Two categories auto-registered:
 credence_scan(output_text=<your generated code>, session_id=session_id)
 ```
 
-Replace your plain output with `annotated_output`. Annotation tiers:
-- `⚠⚠ CREDENCE[stale]` — temporally stale value, always verify
-- `⚠⚠ CREDENCE[HIGH RISK]` — confidence < 0.20, do not ship
-- `⚠ CREDENCE[unverified]` — needs verification before use
-- `CREDENCE[check]` — low priority
+Replace your plain output with `annotated_output`. Two annotation tiers:
+- `⚠⚠ CREDENCE[stale]` — structurally stale (API versions, pricing, auth lifetimes) — always verify
+- `⚠ CREDENCE[unverified]` — value needs confirmation before shipping
 
 If `recommendation == "BLOCK"`: show annotated output and ask user to verify before proceeding.
 
@@ -160,8 +144,6 @@ This persists unverified constraints so the next session inherits them via `cred
 | User states uncertain value | `credence_register` | ALWAYS |
 | User states numeric + domain keyword, no docs | `credence_register` (ghost) | ALWAYS |
 | Every user message | `credence_autoverify` | ALWAYS |
-| Before compressing context | `credence_pre_compress` | ALWAYS |
-| After compressing context | `credence_post_compress` | ALWAYS |
 | Before Write / Edit / Bash | `credence_gate` | ALWAYS |
 | After generating any code block | `credence_self_probe` then `credence_scan` | ALWAYS |
 | User confirms a value | `credence_verify` | ALWAYS |

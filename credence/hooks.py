@@ -158,27 +158,11 @@ def main() -> int:
         return 0
 
     # --- Block and warn ------------------------------------------------------
+    reasons = " | ".join(b["content"][:60] for b in blocking[:2])
     lines = [
-        "",
-        "╔══════════════════════════════════════════════════════════════╗",
-        "║  CREDENCE GATE — TOOL BLOCKED                                ║",
-        "╚══════════════════════════════════════════════════════════════╝",
-        "",
-        f"  Tool:    {tool_name}",
-        f"  Reason:  {len(blocking)} unverified constraint(s) overlap this action.",
-        "",
-    ]
-    for b in blocking[:3]:
-        lines.append(f"  ⚠ [{b['zone']}] {b['content']}")
-        lines.append(f"     Overlap terms: {', '.join(b['overlap'])}")
-        lines.append("")
-
-    lines += [
-        "  ACTION REQUIRED:",
-        "  Verify the constraint(s) above before proceeding.",
-        "  Use credence_verify(<id>, <confirmed_value>) to resolve.",
-        "  Or call credence_constraints to review all pending constraints.",
-        "",
+        f"credence: blocked {tool_name} — {len(blocking)} unverified value(s)",
+        f"  → {reasons}",
+        f"  Verify first, then retry. Use credence_constraints to see all pending.",
     ]
     print("\n".join(lines), file=sys.stderr)
 
