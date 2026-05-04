@@ -43,6 +43,7 @@ dev = [
 ]
 
 [project.scripts]
+credence              = "credence.__main__:main"
 credence-server       = "credence.mcp_server:main"
 credence-install-gate = "credence.install_gate:main"
 

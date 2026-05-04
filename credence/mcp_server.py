@@ -3,12 +3,11 @@ credence/mcp_server.py
 ======================
 Credence MCP Server — zero API key required.
 
-Credence is a guard layer, not a context manager. It wraps around whatever
-compression the host coding agent (Claude Code, Copilot, Codex) already does.
-The agent compresses with its own model; Credence enforces epistemic safety
-before and after, entirely through deterministic string operations.
+Works with any coding agent: Claude Code, Codex, Cursor, Copilot.
+The agent uses its own model for intelligence; Credence provides the
+extraction, registration, and annotation layer deterministically.
 
-Tools (10 total, zero LLM calls):
+Tools (11 total, zero LLM calls):
     credence_pre_compress    — CP1: check text before compression (BLOCK / ALLOW)
     credence_post_compress   — CP1: measure qualifier survival after compression
     credence_register        — register an uncertain constraint explicitly
@@ -16,6 +15,8 @@ Tools (10 total, zero LLM calls):
     credence_constraints     — query all unverified constraints for a session
     credence_gate            — CP4: pre-tool gate (block if unverified constraints apply)
     credence_scan            — CP3: scan model output for unverified numeric literals
+    credence_self_probe      — CP2: extract domain values from generated code;
+                               auto-register stale + domain-risky values as unverified
     credence_memory_snapshot — persist unverified constraints as project memory
     credence_memory_recall   — load project memory into a new session
     credence_autoverify      — auto-verify constraints on confirmation phrases
@@ -29,6 +30,8 @@ Install:
     credence-server
 
 No ANTHROPIC_API_KEY or any other key needed.
+Design principle: Unknown = unverified. Every value extracted is unverified
+until the user explicitly calls credence_verify with evidence.
 """
 
 import os
@@ -54,6 +57,7 @@ from .context_manager import (
     _GTS_QUALIFY_THRESHOLD,
 )
 from .registry import CredenceRegistry
+from .temporal_patterns import scan_temporal, scan_domain_assignments
 
 # ---------------------------------------------------------------------------
 # Server
@@ -62,17 +66,27 @@ from .registry import CredenceRegistry
 mcp = FastMCP(
     "Credence",
     instructions=(
-        "Credence is a zero-config epistemic guard layer. It prevents uncertainty "
-        "qualifiers from being silently dropped during context compression.\n\n"
+        "Credence is a zero-config epistemic guard layer for coding agents.\n"
+        "Works with Claude Code, Codex, Cursor, Copilot — any agent, zero API key.\n\n"
+        "Core principle: Unknown = unverified. Every value that flows from conversation\n"
+        "into code is tracked and must be verified before it ships.\n\n"
         "Lifecycle:\n"
-        "  1. credence_memory_recall at session START — load prior unverified constraints\n"
-        "  2. credence_pre_compress BEFORE any compression — BLOCK if qualifiers present\n"
-        "  3. credence_post_compress AFTER compression — measure qualifier survival\n"
-        "  4. credence_gate BEFORE any irreversible tool call\n"
-        "  5. credence_scan BEFORE shipping generated code\n"
-        "  6. credence_verify when a constraint is confirmed by the user\n"
-        "  7. credence_memory_snapshot at session END — persist for next session\n\n"
-        "Key invariant: never compress text that contains unverified uncertainty qualifiers."
+        "  1. credence_memory_recall at session START\n"
+        "  2. credence_autoverify on EVERY user message\n"
+        "  3. credence_register when user states uncertain value\n"
+        "  4. credence_pre_compress BEFORE any compression\n"
+        "  5. credence_post_compress AFTER compression\n"
+        "  6. credence_self_probe AFTER generating code — extracts + registers all\n"
+        "     domain-relevant values as unverified by default\n"
+        "  7. credence_scan AFTER generating code — annotates unverified literals\n"
+        "  8. credence_gate BEFORE Write / Edit / Bash\n"
+        "  9. credence_verify when user confirms a value with evidence\n"
+        " 10. credence_memory_snapshot at session END\n\n"
+        "Annotation tiers in generated code:\n"
+        "  ⚠⚠ CREDENCE[stale]      — temporally stale (versions, pricing, auth lifetimes)\n"
+        "  ⚠⚠ CREDENCE[HIGH RISK]  — confidence < 0.20\n"
+        "  ⚠  CREDENCE[unverified] — confidence 0.20–0.40\n"
+        "     CREDENCE[check]      — confidence ≥ 0.40, low priority"
     ),
 ) if _FASTMCP_AVAILABLE else None
 
@@ -132,9 +146,16 @@ def _scan_output(output_text: str, registry: CredenceRegistry, session_id: str, 
         return output_text, []
 
     def _annotation(c: dict, snippet: str, for_code: bool) -> str:
-        ec = c.get("eff_conf", 0.5)
-        text = (c.get("content") or "")[:60]
-        if ec < _GTS_WARN_THRESHOLD:
+        ec     = c.get("eff_conf", 0.5)
+        source = c.get("source", "")
+        text   = (c.get("content") or "")[:60]
+        if source == "temporal_scan":
+            # Structurally stale — always flag, no confidence scoring
+            tier = "⚠⚠ CREDENCE[stale]"
+        elif source == "self_probe":
+            # AI-generated, unknown = unverified — no confidence guessing
+            tier = "⚠ CREDENCE[unverified — verify before ship]"
+        elif ec < _GTS_WARN_THRESHOLD:
             tier = f"⚠⚠ CREDENCE[HIGH RISK, conf={ec:.2f}]"
         elif ec < _GTS_QUALIFY_THRESHOLD:
             tier = f"⚠ CREDENCE[unverified, conf={ec:.2f}]"
@@ -659,6 +680,116 @@ if _FASTMCP_AVAILABLE:
             "hit_count":        len(hits),
             "high_risk_count":  len(high_risk),
             "recommendation":   recommendation,
+        }
+
+    @mcp.tool()
+    def credence_self_probe(code: str, session_id: str) -> dict:
+        """
+        Extract domain-relevant values from generated code and register them
+        as unverified by default — zero API calls, zero model judgment.
+
+        Works with any coding agent (Claude Code, Codex, Cursor, Copilot).
+        The agent's own model is NOT asked to rate its confidence. Instead,
+        every extracted value is treated as unverified until the user
+        explicitly calls credence_verify with evidence.
+
+        Two extraction passes:
+          1. Temporal patterns — structurally stale values (API versions,
+             semver strings, auth magic numbers, rate literals, pricing).
+             Auto-registered as source="temporal_scan", j_score≤0.25.
+          2. Domain assignment patterns — variable names that signal
+             uncertain config values (rate_limit, timeout, token_expiry…).
+             Auto-registered as source="self_probe", j_score≤0.40.
+
+        After calling this, call credence_scan to annotate the code output
+        with the registered constraints before showing it to the user.
+
+        Args:
+            code:       The generated code block (raw string, fenced or plain).
+            session_id: Session identifier.
+
+        Returns:
+            stale_count, domain_count, total_registered,
+            stale_hits, domain_hits, annotation_hint.
+        """
+        registry = _get_registry()
+
+        # --- Pass 1: temporal patterns (structurally stale) ---
+        # j_score from the pattern definition; stale values are HIGH RISK by default.
+        _TEMPORAL_J: dict[str, float] = {
+            "api_date_version":   0.18,
+            "semver":             0.22,
+            "api_path_version":   0.20,
+            "auth_lifetime_magic": 0.25,
+            "rate_limit_inline":  0.20,
+            "pricing":            0.15,
+        }
+        temporal_hits = scan_temporal(code)
+        stale_registered: list[dict] = []
+        for h in temporal_hits:
+            j = _TEMPORAL_J.get(h.pattern_name, 0.20)
+            cid = registry.register(
+                content         = h.constraint_content,
+                session_id      = session_id,
+                j_score         = j,
+                zone            = "LOW",
+                source          = "temporal_scan",
+                constraint_type = "vendor_claim",
+            )
+            stale_registered.append({
+                "constraint_id": cid,
+                "value":         h.value,
+                "category":      h.category,
+                "stale_reason":  h.stale_reason,
+                "verify_hint":   h.verify_hint,
+                "j_score":       j,
+            })
+
+        # --- Pass 2: domain assignment patterns ---
+        # j_score=0.0 for all domain hits: unknown = unverified, no confidence guessing.
+        # Three states only: unverified | stale | verified.
+        domain_hits = scan_domain_assignments(code)
+        domain_registered: list[dict] = []
+        for h in domain_hits:
+            cid = registry.register(
+                content         = h.constraint_content,
+                session_id      = session_id,
+                j_score         = 0.0,
+                zone            = "LOW",
+                source          = "self_probe",
+                constraint_type = "config",
+            )
+            domain_registered.append({
+                "constraint_id": cid,
+                "var_name":      h.var_name,
+                "value":         h.value,
+                "domain":        h.domain,
+                "stale_reason":  h.stale_reason,
+                "j_score":       0.0,
+            })
+
+        total = len(stale_registered) + len(domain_registered)
+        annotation_hint = (
+            f"Registered {total} value(s) as unverified. "
+            "Call credence_scan(code, session_id) to annotate the output "
+            "with CREDENCE tiers before showing it to the user."
+        ) if total > 0 else (
+            "No domain-relevant or temporally stale values detected in this code block."
+        )
+
+        return {
+            "stale_count":      len(stale_registered),
+            "domain_count":     len(domain_registered),
+            "total_registered": total,
+            "stale_hits":       stale_registered,
+            "domain_hits":      domain_registered,
+            "annotation_hint":  annotation_hint,
+            "message": (
+                f"Extracted {len(stale_registered)} stale + "
+                f"{len(domain_registered)} domain-uncertain value(s). "
+                "All registered as unverified. "
+                "Unknown = unverified — no confidence scoring applied."
+            ),
         }
 
     @mcp.tool()

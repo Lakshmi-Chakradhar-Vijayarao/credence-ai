@@ -88,20 +88,33 @@ credence_gate(
 
 ---
 
-### After Generating Code with Numbers — scan
+### After Generating Code — self-probe then scan
 
-**ALWAYS** call `credence_scan` when your output contains code with numeric literals AND there are unverified constraints in the session.
+**ALWAYS** call `credence_self_probe` immediately after generating any code block, before showing it to the user:
+
+```
+credence_self_probe(code=<your generated code>, session_id=session_id)
+```
+
+This extracts every domain-relevant value (rate limits, timeouts, versions, auth lifetimes, pricing) and registers them as unverified by default. **No confidence scoring. No self-assessment. Unknown = unverified.**
+
+Two categories auto-registered:
+- **Temporal stale** — API versions, semver strings, auth magic numbers, pricing patterns → `source="temporal_scan"`
+- **Domain assignments** — variable names like `RATE_LIMIT`, `TOKEN_EXPIRY`, `MAX_RETRIES`, `TIMEOUT_MS` → `source="self_probe"`
+
+**THEN** call `credence_scan` to get the annotated output:
 
 ```
 credence_scan(output_text=<your generated code>, session_id=session_id)
 ```
 
-Replace your plain output with `annotated_output` from the response. This shows the user which literals are unverified, with severity tiers:
-- `⚠⚠ CREDENCE[HIGH RISK]` — stop, do not ship
-- `⚠ CREDENCE[unverified]` — review before use
-- `CREDENCE[check]` — low priority, verify when convenient
+Replace your plain output with `annotated_output`. Annotation tiers:
+- `⚠⚠ CREDENCE[stale]` — temporally stale value, always verify
+- `⚠⚠ CREDENCE[HIGH RISK]` — confidence < 0.20, do not ship
+- `⚠ CREDENCE[unverified]` — needs verification before use
+- `CREDENCE[check]` — low priority
 
-If `recommendation == "BLOCK"`: show the annotated output and tell the user to verify before using.
+If `recommendation == "BLOCK"`: show annotated output and ask user to verify before proceeding.
 
 ---
 
@@ -150,7 +163,7 @@ This persists unverified constraints so the next session inherits them via `cred
 | Before compressing context | `credence_pre_compress` | ALWAYS |
 | After compressing context | `credence_post_compress` | ALWAYS |
 | Before Write / Edit / Bash | `credence_gate` | ALWAYS |
-| After generating code with literals | `credence_scan` | ALWAYS |
+| After generating any code block | `credence_self_probe` then `credence_scan` | ALWAYS |
 | User confirms a value | `credence_verify` | ALWAYS |
 | Session end with open constraints | `credence_memory_snapshot` | OFFER |
 | User asks what's unverified | `credence_constraints` | ALWAYS |
