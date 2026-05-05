@@ -6,6 +6,36 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.2.0] — 2026-05-06
+
+### Changed
+- **Observer two-tier marker architecture** — strong markers fire unconditionally; weak markers (`around`, `seems like`, `i guess`, `docs say`) now require a co-present numeric value before registering. Eliminates false positives like "wrap around the list" while adding `_NUMERIC_RE` fix (`\b` removed) to catch unit-glued numbers: `30s`, `5MB`, `50ms`.
+- **Observer detection coverage**: 59% → 95% on a 22-phrase probe; false positive rate: 50% → 8%.
+- **`TEMPORAL_J_SCORES`** extracted to `credence/temporal_patterns.py` — single source of truth, imported by both `mcp_server.py` and `__main__.py`.
+- **Gate and scan display**: internal `[stale:…]` and `[AI-generated:…]` DB prefixes stripped at all user-facing output points.
+
+### Fixed
+- All 829 tests passing, 1 skipped. (22 tests removed: `test_enforce.py` and `test_manifest.py` covered `credence/enforce.py` and `credence/epistemic_manifest.py`, which were relocated to `experimental/`.)
+- `CREDENCE_DB_PATH` → `CREDENCE_DB` in `credence/__main__.py` (canonical env var).
+- Ruff: all 20 lint errors resolved (16 auto-fixed, 4 manual E701).
+
+### Removed
+- `evals/fcr_downstream_results.json` — v2 scorer (incorrect; contradicted canonical v3 result).
+- `evals/compression_faithfulness_results_groq.json`, `_hf.json` — superseded by `compression_faithfulness_n50_results.json`.
+- `evals/eqlr_compressor_results.json`, `evals/experiment_results.json` — superseded.
+- `evals/data/`, `evals/training/` — DPO training pipeline (dormant; data on HuggingFace).
+- `docs/LAUNCH.md`, `docs/MCP_REGISTRY_SUBMISSION.md` — internal process documents.
+- `sdk/typescript/` → relocated to `experimental/typescript/` (Phase 2, not yet shipped).
+- `credence/enforce.py`, `credence/epistemic_manifest.py` → relocated to `experimental/`.
+
+### Added
+- `paper/PAPER_DRAFT.md` — full arXiv-style research paper draft.
+- `paper/figures/` — 6 publication-ready figures (PDF + PNG, reproducible generation scripts).
+- `experimental/` — home for Phase 2 unshipped work with explicit README.
+- `docs/README.md` — navigation index for the docs/ directory.
+
+---
+
 ## [1.1.0] — 2026-05-06
 
 ### Added
