@@ -3,7 +3,7 @@ name: Publish to PyPI
 on:
   push:
     tags:
-      - "v*"          # trigger: git tag v1.0.0 && git push origin v1.0.0
+      - "v*"          # trigger: git tag v1.2.0 && git push origin v1.2.0
 
 jobs:
   build:
@@ -54,9 +54,8 @@ jobs:
     name: Publish to PyPI
     needs: [build, test-install]
     runs-on: ubuntu-latest
-    environment: pypi          # maps to the "pypi" Environment in repo settings
     permissions:
-      id-token: write          # required for PyPI trusted publishing (OIDC — no token needed)
+      id-token: write          # kept for future OIDC trusted publishing
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -65,3 +64,5 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}

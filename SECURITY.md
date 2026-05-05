@@ -4,7 +4,10 @@
 
 | Version | Supported |
 |---------|-----------|
-| 1.0.x   | ✅ Active |
+| 1.2.x   | ✅ Active  |
+| 1.1.x   | ✅ Active  |
+| 1.0.x   | ⚠️ Patches only |
+| < 1.0   | ❌ No support |
 
 ## Threat Model
 
@@ -19,6 +22,21 @@ The registry (`epistemic_registry.db`) is a local SQLite file. It is not a netwo
 - Malicious code running on the same machine (same-process trust boundary)
 - A compromised MCP host (Claude Code itself)
 - Network-level attacks (Credence has no network listener)
+
+## Data Storage
+
+Credence stores data in two local locations. **No data is ever transmitted off the machine.**
+
+| Store | Default path | Override | Contains |
+|---|---|---|---|
+| Registry | `./epistemic_registry.db` | `CREDENCE_DB` env var | Uncertain statements (≤500 chars), session IDs, verification status |
+| Event log | `~/.credence/events.jsonl` | `CREDENCE_NO_LOG=1` to disable | Gate block/allow events, short constraint excerpts (≤80 chars), timestamps |
+
+**Recommendations:**
+- Add `*.db` to your project's `.gitignore`
+- Set `CREDENCE_DB=~/.credence/registry.db` if working in cloud-synced directories (Dropbox, iCloud, etc.)
+- Set `CREDENCE_NO_LOG=1` if you do not want gate events written to disk at all
+- Do not store secrets as constraint content — the registry is not encrypted at rest
 
 ## Reporting a Vulnerability
 
@@ -43,6 +61,6 @@ If you discover a security vulnerability in credence-guard, please report it **p
 
 ## Known Security Boundaries
 
-- `credence_register()` accepts arbitrary content strings — no per-session rate limit in v1.0.0. A malicious agent could fill the registry. Mitigation: the DB is local; blast radius is your local disk. Per-session cap planned for v1.0.1.
+- `credence_register()` accepts arbitrary content strings — no per-session rate limit. A malicious agent could fill the registry. Mitigation: the DB is local; blast radius is your local disk.
 - The registry is not encrypted at rest. Do not store secrets as constraint content.
-- `CREDENCE_DB_PATH` / `CREDENCE_REGISTRY_PATH` env vars accept arbitrary file paths. Validate these in shared/multi-user environments.
+- `CREDENCE_DB` env var accepts arbitrary file paths. Validate in shared/multi-user environments.

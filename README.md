@@ -28,6 +28,8 @@ RATE_LIMIT = 50   # no warning. no flag. shipped.
 
 The API rejects every request at 2am. The real limit was 10. Claude forgot you weren't sure.
 
+This isn't hallucination. The model reproduced exactly what it read. What it read had the qualifier stripped — by context compression, fifteen turns back.
+
 ---
 
 ## What Credence does
@@ -66,6 +68,8 @@ credence: blocked Edit — 2 unverified value(s)
 
 After you confirm: `"Confirmed — rate limit is 100 req/min per stripe.com/docs"` → gate clears.
 
+![Gate demo](demo/gate_demo.gif)
+
 ---
 
 ## Setup
@@ -94,9 +98,11 @@ After you confirm: `"Confirmed — rate limit is 100 req/min per stripe.com/docs
 
 Done. No API key required.
 
-> **Note:** Credence creates `epistemic_registry.db` in your working directory. Add `*.db` to your project's `.gitignore`, or set `CREDENCE_DB=~/.credence/registry.db` to keep it global.
+> **Registry:** Credence creates `epistemic_registry.db` in your working directory. Add `*.db` to your `.gitignore`, or set `CREDENCE_DB=~/.credence/registry.db` to keep it global.
 >
-> **Session tracking:** Constraints are scoped to a session ID, auto-derived from your working directory. Set `CREDENCE_SESSION_ID=my-project` in your shell to keep constraints stable across directory changes and terminal restarts.
+> **Session tracking:** Set `CREDENCE_SESSION_ID=my-project` to keep constraints stable across directory changes and terminal restarts.
+>
+> **Event log:** The gate writes block/allow events to `~/.credence/events.jsonl` (local only, never sent anywhere). Set `CREDENCE_NO_LOG=1` to disable.
 
 ---
 
@@ -137,7 +143,7 @@ Once verified, the gate clears.
 
 46% of uncertainty qualifiers are stripped by Claude Haiku during context compression. Credence blocks 100% of those writes (n=50, bootstrap CI: [0%–0%]).
 
-Validated across 7 open-weight models (Qwen, Mistral, Llama, Phi, Gemma): same failure, same block rate.
+Validated across 7 open-weight models (Qwen, Mistral, Llama, Phi, Gemma) from 5 organizations: same failure mode, same block rate.
 
 ```bash
 credence demo                     # smoke test, no API key
@@ -162,6 +168,8 @@ tests/            829 tests
 evals/            validation studies + multi-model benchmarks
 docs/             technical report, architecture, ETP spec
 credence_gate/    Rust gate (alternative to Python hooks.py)
+experimental/     Phase 2 work — not yet shipped
+paper/            Research paper draft + figures
 ```
 
 ---

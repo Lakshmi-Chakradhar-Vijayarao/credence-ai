@@ -59,7 +59,10 @@ _EVENTS_FILE = os.path.join(_EVENTS_DIR, "events.jsonl")
 
 
 def _log_event(event: dict) -> None:
-    """Append one event to the local events log. Never raises."""
+    """Append one event to the local events log. Never raises.
+    Set CREDENCE_NO_LOG=1 to disable entirely."""
+    if os.environ.get("CREDENCE_NO_LOG"):
+        return
     try:
         os.makedirs(_EVENTS_DIR, exist_ok=True)
         event["ts"] = datetime.datetime.utcnow().isoformat() + "Z"
