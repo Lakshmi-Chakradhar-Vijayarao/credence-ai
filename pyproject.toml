@@ -42,6 +42,7 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "ruff>=0.4",
+    "anthropic>=0.40.0",
 ]
 
 [project.scripts]
