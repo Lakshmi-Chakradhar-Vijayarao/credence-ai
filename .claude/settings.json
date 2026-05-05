@@ -1,10 +1,8 @@
 {
   "mcpServers": {
     "credence": {
-      "command": "python3",
-      "args": ["-m", "credence.mcp_server"],
+      "command": "credence-server",
       "env": {
-        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
         "CREDENCE_DB": "epistemic_registry.db"
       }
     }

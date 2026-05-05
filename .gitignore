@@ -25,9 +25,14 @@ credence_gate/epistemic_registry.db.bak
 
 # Test and IDE artifacts
 .pytest_cache/
+.ruff_cache/
 .claude/scheduled_tasks.lock
 *.db
 *.db.bak
+
+# Local archive / scratch dirs
+_archive/
+scratch/
 
 # Large model weights — too big for git (31MB, use Kaggle/HuggingFace Hub)
 models/

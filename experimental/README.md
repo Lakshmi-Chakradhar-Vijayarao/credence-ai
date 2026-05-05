@@ -1,12 +1,13 @@
 # experimental/
 
-Pre-production ideas. Not installed, not tested, not documented.
+Pre-production work. Not installed, not tested by CI, not documented in the main README.
 
-| File | What it is | Roadmap phase |
+| Path | What it is | Roadmap phase |
 |---|---|---|
-| `enforce.py` | Decorator-based integration (`@credence.enforce`) — attaches gate to any function call | Phase 2 |
-| `epistemic_manifest.py` | Structured non-compressible manifest (successor to Truth Buffer natural-language injection) | Phase 2 |
+| `enforce.py` | Decorator-based integration (`@credence.enforce`) — attaches gate to any function | Phase 2 |
+| `epistemic_manifest.py` | Structured non-compressible manifest (successor to natural-language Truth Buffer) | Phase 2 |
+| `typescript/` | TypeScript SDK — faithfulness probe + registry client port for Copilot/Cursor integration | Phase 2 |
 
-These are committed here for reference, not for use. Nothing in `credence/` imports from this directory.
+Nothing in `credence/` imports from this directory. These are committed here so the design is visible and forkable, not because they are ready to use.
 
-To try them: `from experimental.enforce import credence_enforce` — no guarantees on API stability.
+To try them locally: there are no guarantees on API stability.
