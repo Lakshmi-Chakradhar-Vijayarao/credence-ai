@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "credence-guard"
-version = "1.0.0"
+version = "1.1.0"
 description = "Credence — epistemic enforcement layer that prevents LLMs from forgetting what they didn't know"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [
-    { name = "Lakshmi-Chakradhar-Vijayarao" }
+    { name = "Lakshmi-Chakradhar-Vijayarao", email = "vijayarao.l@northeastern.edu" }
 ]
 keywords = [
     "llm", "claude", "epistemic", "uncertainty", "mcp",
@@ -18,7 +18,7 @@ keywords = [
     "claude-code", "eql", "false-certainty"
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
