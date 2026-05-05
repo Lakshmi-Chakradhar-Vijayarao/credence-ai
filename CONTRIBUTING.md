@@ -14,7 +14,7 @@ pip install -e ".[dev,mcp]"
 
 ```bash
 # Full test suite — no API key needed
-pytest tests/ -q                      # 851 tests
+pytest tests/ -q                      # 829 tests
 
 # Smoke test — verifies install and enforcement path
 credence demo
@@ -37,7 +37,7 @@ credence/observer.py          — UserPromptSubmit hook
 credence/hooks.py             — PreToolUse enforcement gate
 credence/memory.py            — cross-session persistence
 credence_gate/src/main.rs     — Rust PreToolUse hook (faster alternative)
-tests/                        — 851 tests (pytest)
+tests/                        — 829 tests (pytest)
 evals/                        — validation studies (some require API key)
 ```
 
@@ -50,7 +50,7 @@ evals/                        — validation studies (some require API key)
 - Generation-Time Scanner (`_scan_output_for_constraints`)
 - Consistency Enforcer matching (`_direct_constraint_matches`)
 - Cross-session memory (snapshot, recall)
-- All 851 tests (`pytest tests/ -q`)
+- All 829 tests (`pytest tests/ -q`)
 
 **Requires API key:**
 - `ContextManager.chat()` (calls Opus 4.7)

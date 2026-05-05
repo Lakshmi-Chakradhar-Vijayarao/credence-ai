@@ -2339,7 +2339,7 @@ class ContextManager:
             '"new_value": "value from new message", "reasoning": "≤20 words: why this contradicts", '
             '"reliability": "prior|new|unclear"}\n\n'
             "Return a JSON array. Return [] if no genuine contradiction.\n\n"
-            f"Prior constraints:\n" + "\n".join(candidates) + "\n\n"
+            "Prior constraints:\n" + "\n".join(candidates) + "\n\n"
             f"New message: {user_message[:600]}"
         )
 

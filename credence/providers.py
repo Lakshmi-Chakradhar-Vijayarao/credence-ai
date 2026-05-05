@@ -12,7 +12,9 @@ Supported providers:
     groq       — Groq API, genuinely free tier (GROQ_API_KEY)
 """
 from __future__ import annotations
-import os, time, json
+import os
+import time
+import json
 import requests
 
 # ---------------------------------------------------------------------------

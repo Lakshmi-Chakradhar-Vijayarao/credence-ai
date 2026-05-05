@@ -52,15 +52,12 @@ except ImportError:
     _FASTMCP_AVAILABLE = False
 
 from .context_manager import (
-    _UNCERTAINTY_MARKERS,
     _CE_STOPWORDS,
     _CE_DOMAIN_SYNONYMS,
     _GTS_NUM_PATTERN,
     _GTS_CODE_BLOCK,
     _GTS_SKIP_PREFIXES,
     _GTS_SENTENCE_SPLIT,
-    _GTS_WARN_THRESHOLD,
-    _GTS_QUALIFY_THRESHOLD,
 )
 from .registry import CredenceRegistry
 from .temporal_patterns import scan_temporal, scan_domain_assignments, TEMPORAL_J_SCORES

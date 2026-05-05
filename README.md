@@ -141,7 +141,7 @@ Validated across 7 open-weight models (Qwen, Mistral, Llama, Phi, Gemma): same f
 
 ```bash
 credence demo                     # smoke test, no API key
-python3 -m pytest tests/ -q       # 851 tests
+python3 -m pytest tests/ -q       # 829 tests
 python3 -m evals.latency_report   # P50/P95/P99
 ```
 
@@ -158,7 +158,7 @@ credence/         pip-installable package
   mcp_server.py   17-tool MCP server
   registry.py     SQLite constraint store
   memory.py       cross-session persistence
-tests/            851 tests
+tests/            829 tests
 evals/            validation studies + multi-model benchmarks
 docs/             technical report, architecture, ETP spec
 credence_gate/    Rust gate (alternative to Python hooks.py)

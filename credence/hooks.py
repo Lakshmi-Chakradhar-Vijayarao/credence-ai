@@ -167,7 +167,7 @@ def main() -> int:
     lines = [
         f"credence: blocked {tool_name} — {len(blocking)} unverified value(s)",
         f"  → {reasons}",
-        f"  Verify first, then retry. Use credence_constraints to see all pending.",
+        "  Verify first, then retry. Use credence_constraints to see all pending.",
     ]
     print("\n".join(lines), file=sys.stderr)
 

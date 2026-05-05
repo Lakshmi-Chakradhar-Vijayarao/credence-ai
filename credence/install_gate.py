@@ -17,7 +17,6 @@ If Rust is not installed:
     https://rustup.rs — installs in 60 seconds, no system privileges needed.
 """
 
-import os
 import shutil
 import subprocess
 import sys

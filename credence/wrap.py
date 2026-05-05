@@ -130,7 +130,7 @@ def wrap(
     t_compress = time.perf_counter()
     try:
         compressed = compress_fn(context)
-    except Exception as e:
+    except Exception:
         elapsed = (time.perf_counter() - t_start) * 1000
         return WrapResult(
             output=context,

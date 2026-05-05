@@ -43,7 +43,6 @@ def run_demo() -> None:
     os.environ["CREDENCE_DB"] = demo_db
 
     try:
-        from credence.registry import CredenceRegistry
         from credence.temporal_patterns import scan_temporal, scan_domain_assignments, TEMPORAL_J_SCORES
         from credence.mcp_server import _scan_output, _get_registry, _expand_tokens, _CE_STOPWORDS
 
@@ -109,7 +108,7 @@ class StripeClient:
         print(f"  ⚙  credence_self_probe → {total} values extracted")
         print(f"     {len(t_hits)} stale (temporal patterns)  |  "
               f"{len(d_hits)} domain-uncertain")
-        print(f"     Unknown = unverified. No confidence scoring.")
+        print("     Unknown = unverified. No confidence scoring.")
         print()
         time.sleep(0.4)
 
@@ -136,7 +135,7 @@ class StripeClient:
         ]
 
         _hr()
-        print(f"  ⚙  credence_gate  →  proceed: False")
+        print("  ⚙  credence_gate  →  proceed: False")
         print(f"     {len(blocked)} constraint(s) block writing stripe_client.py:")
         def _clean(s: str) -> str:
             s = re.sub(r'^\[stale:[^\]]+\]\s*', '', s)
@@ -177,7 +176,7 @@ class StripeClient:
         _hr()
         remaining = len(uncertain_after)
         if len(blocked_after) < len(blocked):
-            print(f"  ⚙  credence_gate  →  proceed: True  ✓")
+            print("  ⚙  credence_gate  →  proceed: True  ✓")
             print(f"     Rate limit verified. {remaining} value(s) still annotated in code.")
         else:
             print(f"  ⚙  credence_gate  →  proceed: False  ({len(blocked_after)} still blocked)")
@@ -258,10 +257,14 @@ def run_stats() -> None:
             if ev.get("event") == "block":
                 blocks += 1
                 fb = ev.get("feedback")
-                if fb == "true_positive":   tp += 1
-                elif fb == "false_positive": fp += 1
-                elif fb == "skip":           skip += 1
-                else:                        untagged += 1
+                if fb == "true_positive":
+                    tp += 1
+                elif fb == "false_positive":
+                    fp += 1
+                elif fb == "skip":
+                    skip += 1
+                else:
+                    untagged += 1
             elif ev.get("event") == "allow":
                 allows += 1
 

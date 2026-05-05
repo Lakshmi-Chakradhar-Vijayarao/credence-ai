@@ -6,7 +6,7 @@ any compression, any session, any handoff.
 
 **Current state** (2026-05-06):
 - 17 MCP tools — shipped as v1.1.0
-- Tests: 851 passing, 0 failing
+- Tests: 829 passing, 0 failing
 - Core: faithfulness probe (0.07ms, 0% FCR with Haiku/Opus), Rust gate (3.4ms, 98× faster than Python hook)
 - Free-tier validated: EQLR 51% → 0% blocked on llama-3.1-8b-instant (n=98, Groq)
 - Observer hook live — fires before model generates, zero API key
@@ -140,7 +140,7 @@ This is the correct design: RL loop exists, uses the right signal.
 |-------------|-----------|-----------|--------|-----------------|
 | Baseline    | 11        | 2         | 166    | ✓ shipped       |
 | Phase 0     | 16        | 2         | 195    | ✓ shipped       |
-| Phase 1     | 17        | 2         | 851    | ✓ shipped v1.1.0 |
+| Phase 1     | 17        | 2         | 829    | ✓ shipped v1.1.0 |
 | Phase 2     | 19 + TS SDK | 2      | ~950   | planned          |
 | Phase 3     | 22        | 2         | ~1050  | planned          |
 

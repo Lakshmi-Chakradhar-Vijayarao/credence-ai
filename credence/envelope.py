@@ -30,7 +30,7 @@ Design constraints:
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, asdict
 from typing import Optional
 
 # Known trusted sources — internal Credence agents.

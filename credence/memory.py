@@ -25,9 +25,7 @@ Usage:
 
 from __future__ import annotations
 
-import textwrap
 from dataclasses import dataclass, field
-from typing import Optional
 
 from credence.registry import CredenceRegistry
 
