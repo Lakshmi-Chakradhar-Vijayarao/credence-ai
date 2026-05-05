@@ -29,6 +29,9 @@ jobs:
       - name: Run test suite (no API key required)
         run: pytest tests/ -v --tb=short
 
+      - name: Smoke test CLI entry point
+        run: credence demo
+
   lint:
     name: Lint & Import Check
     runs-on: ubuntu-latest

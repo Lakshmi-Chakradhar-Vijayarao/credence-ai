@@ -13,13 +13,13 @@ pip install -e ".[dev,mcp]"
 ## Running Tests
 
 ```bash
-# All 178 unit tests — no API key needed
-python tests/tests.py
+# Full test suite — no API key needed
+pytest tests/ -q                      # 851 tests
 
-# Validate claimed numbers offline
-python tests/test_claims.py
+# Smoke test — verifies install and enforcement path
+credence demo
 
-# Adversarial robustness (5 tests, no API)
+# Adversarial robustness (no API)
 python -m evals.adversarial_tests
 
 # Probe latency and precision (no API)
@@ -32,11 +32,13 @@ python -m evals.precision_eval
 ```
 credence/context_manager.py   — compression, Truth Buffer, GTS, CE
 credence/registry.py          — SQLite constraint store + decay
-credence/confidence_proxy.py  — J-score (no API calls)
+credence/mcp_server.py        — 17-tool MCP server
+credence/observer.py          — UserPromptSubmit hook
+credence/hooks.py             — PreToolUse enforcement gate
 credence/memory.py            — cross-session persistence
-credence_gate/src/main.rs     — Rust PreToolUse hook
-tests/tests.py                — 178 unit tests (S1–S26 suites)
-evals/                        — validation studies
+credence_gate/src/main.rs     — Rust PreToolUse hook (faster alternative)
+tests/                        — 851 tests (pytest)
+evals/                        — validation studies (some require API key)
 ```
 
 ## What's Offline vs API-Required
@@ -48,7 +50,7 @@ evals/                        — validation studies
 - Generation-Time Scanner (`_scan_output_for_constraints`)
 - Consistency Enforcer matching (`_direct_constraint_matches`)
 - Cross-session memory (snapshot, recall)
-- All 178 unit tests
+- All 851 tests (`pytest tests/ -q`)
 
 **Requires API key:**
 - `ContextManager.chat()` (calls Opus 4.7)
@@ -72,7 +74,8 @@ evals/                        — validation studies
 
 ## Pull Request Guidelines
 
-- All 178 offline tests must pass: `python tests/tests.py`
+- All tests must pass: `pytest tests/ -q`
+- `credence demo` must run clean
 - If you change decay rates in `registry.py`, update the corresponding S2 tests in `tests/tests.py`
 - If you add uncertainty markers to `_UNCERTAINTY_MARKERS`, add a test case to the S22 suite
 - Keep the faithfulness probe scanning user turns only (not assistant code blocks) — see the comment block above `_has_uncertainty_in_user_turns()` for why

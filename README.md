@@ -2,6 +2,11 @@
 
 AI doesn't remember what it wasn't sure about. Credence does.
 
+[![PyPI](https://img.shields.io/pypi/v/credence-guard)](https://pypi.org/project/credence-guard/)
+[![CI](https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/pypi/pyversions/credence-guard)](https://pypi.org/project/credence-guard/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ```bash
 pip install "credence-guard[mcp]"
 ```
@@ -120,14 +125,13 @@ Full methodology: [docs/TECHNICAL_REPORT.md](docs/TECHNICAL_REPORT.md)
 credence/         pip-installable package
   observer.py     passive UserPromptSubmit hook
   hooks.py        PreToolUse enforcement gate
-  mcp_server.py   MCP server (10 tools)
+  mcp_server.py   17-tool MCP server
   registry.py     SQLite constraint store
   memory.py       cross-session persistence
 tests/            851 tests
 evals/            validation studies + multi-model benchmarks
 docs/             technical report, architecture, ETP spec
 credence_gate/    Rust gate (alternative to Python hooks.py)
-sdk/              TypeScript SDK
 ```
 
 ---
