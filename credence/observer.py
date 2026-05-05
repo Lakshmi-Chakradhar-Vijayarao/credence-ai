@@ -43,7 +43,8 @@ from pathlib import Path
 
 # ── Uncertainty markers — authoritative copy lives in context_manager.py.
 # Inline here to avoid a slow import on every hook invocation.
-_UNCERTAINTY_MARKERS = frozenset({
+# Strong markers: fire unconditionally — these phrases almost exclusively signal uncertainty
+_STRONG_MARKERS = frozenset({
     "not certain", "not sure", "uncertain", "tentative", "unverified",
     "approximately", "roughly", "i think", "i believe", "i'm not",
     "might be", "might not", "may be", "possibly", "perhaps",
@@ -63,7 +64,7 @@ _UNCERTAINTY_MARKERS = frozenset({
     "working theory", "my assumption", "i'm assuming", "in theory",
     "could be wrong", "not 100%", "not entirely sure",
     "the vendor said", "they mentioned", "reportedly",
-    "the docs say", "i read somewhere", "heard that", "we were told",
+    "i read somewhere", "heard that", "we were told",
     "give or take", "ballpark", "order of magnitude", "in the range of",
     "somewhere around", "plus or minus", "estimated at",
     "untested", "not yet tested", "haven't tested", "not benchmarked",
@@ -72,27 +73,44 @@ _UNCERTAINTY_MARKERS = frozenset({
     "i'm unsure", "unsure", "not sure which", "unsure of",
     "according to the rep", "per the ticket", "vendor claims",
     "sales rep said", "they told us", "our rep mentioned",
-    "according to their docs", "per their docs",
+    "according to their docs", "according to the docs", "per their docs",
     "per the vendor", "from the vendor", "according to the vendor",
     "vendor estimate", "vendor ballpark", "vendor said",
     "the demo showed", "from the demo",
     "from a quote", "per the quote", "their estimate",
+    "estimate is", "my estimate", "i'd estimate",
 })
 
-_MARKER_RE = re.compile(
-    r'\b(' + '|'.join(re.escape(m) for m in sorted(_UNCERTAINTY_MARKERS, key=len, reverse=True)) + r')\b',
+# Weak markers: only fire when a numeric value is also present.
+# These phrases appear in both uncertainty and non-uncertainty contexts.
+# "around 100 req/min" → register. "wrap around the list" → skip.
+_WEAK_MARKERS = frozenset({
+    "around", "assuming", "i guess", "i suppose",
+    "seems like", "seems to be", "docs say", "the docs say",
+})
+
+_STRONG_RE = re.compile(
+    r'\b(' + '|'.join(re.escape(m) for m in sorted(_STRONG_MARKERS, key=len, reverse=True)) + r')\b',
     re.IGNORECASE,
 )
+_WEAK_RE = re.compile(
+    r'\b(' + '|'.join(re.escape(m) for m in sorted(_WEAK_MARKERS, key=len, reverse=True)) + r')\b',
+    re.IGNORECASE,
+)
+# Kept for backward compatibility (used in tests)
+_UNCERTAINTY_MARKERS = _STRONG_MARKERS | _WEAK_MARKERS
+_MARKER_RE = _STRONG_RE
 
 # Ghost constraint heuristic — same conditions as CLAUDE.md:
 # numeric value + domain keyword + not inside a URL
 _DOMAIN_KW_RE = re.compile(
     r'\b(rate[\s_-]?limit|auth[\s_-]?lifetime|token[\s_-]?expir|ttl|'
     r'api[\s_-]?version|pricing|cost[\s_-]?per|price[\s_-]?per|'
-    r'quota|max[\s_-]?retries|timeout|concurrency)\b',
+    r'quota|max[\s_-]?retries|timeout|concurrency|tokens?)\b',
     re.IGNORECASE,
 )
-_NUMERIC_RE   = re.compile(r'\b\d+(?:\.\d+)?\b')
+# No trailing \b — allows matching numbers glued to units: 30s, 5MB, 256KB, 50ms
+_NUMERIC_RE   = re.compile(r'\b\d+(?:\.\d+)?')
 _URL_CTX_RE   = re.compile(r'(?:://|[?=&/]v?)\d')
 
 
@@ -100,8 +118,13 @@ def _classify(text: str) -> tuple[bool, str]:
     """Return (should_register, source_type) for a text fragment."""
     lower = text.lower()
 
-    # Explicit uncertainty marker → user_estimate
-    if _MARKER_RE.search(lower):
+    # Strong marker → register unconditionally
+    if _STRONG_RE.search(lower):
+        return True, "user_estimate"
+
+    # Weak marker → only register when a numeric value is also present.
+    # Prevents "wrap around the list" / "seems like a clean design" from firing.
+    if _WEAK_RE.search(lower) and _NUMERIC_RE.search(text):
         return True, "user_estimate"
 
     # Ghost heuristic: numeric + domain keyword + not a URL value
