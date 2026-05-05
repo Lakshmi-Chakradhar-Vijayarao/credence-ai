@@ -23,7 +23,7 @@ from .registry import CredenceRegistry
 from .memory import CredenceMemory
 from .wrap import wrap, WrapResult, measure_fcr
 
-__version__ = "1.2.2"
+__version__ = "1.2.3"
 __all__ = [
     "CredenceRegistry",
     "CredenceMemory",

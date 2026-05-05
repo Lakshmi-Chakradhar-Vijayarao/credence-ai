@@ -179,3 +179,5 @@ paper/            Research paper draft + figures
 **Lakshmi Chakradhar Vijayarao** — [GitHub](https://github.com/Lakshmi-Chakradhar-Vijayarao) · [LinkedIn](https://www.linkedin.com/in/lakshmichakradharvijayarao/) · [X](https://x.com/LChakradharV28)
 
 MIT License
+
+<!-- mcp-name: io.github.lakshmi-chakradhar-vijayarao/credence -->

@@ -6,6 +6,23 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.2.3] — 2026-05-06
+
+### Fixed
+- Added `anthropic` to `[dev]` extras so `test_mock_llm.py` integration tests can instantiate `ContextManager` without requiring a separate `pip install anthropic`.
+- Added MCP registry ownership token to README for `registry.modelcontextprotocol.io` submission.
+
+---
+
+## [1.2.2] — 2026-05-06
+
+### Fixed
+- PyPI publish pipeline: removed broken OIDC trusted-publishing config (`environment: pypi`), switched to `PYPI_API_TOKEN` secret. v1.1.0 and v1.2.0 were published to PyPI for the first time.
+- `CREDENCE_NO_LOG=1` opt-out added to `hooks.py` gate event log.
+- Data storage documented in README and SECURITY.md (`epistemic_registry.db` + `~/.credence/events.jsonl`).
+
+---
+
 ## [1.2.0] — 2026-05-06
 
 ### Changed
