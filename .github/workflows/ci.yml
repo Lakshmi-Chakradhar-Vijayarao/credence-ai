@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev,mcp]"
 
-      - name: Run test suite (821 tests, no API key required)
+      - name: Run test suite (no API key required)
         run: pytest tests/ -v --tb=short
 
   lint:
@@ -47,9 +47,8 @@ jobs:
           python -c "
           import credence
           from credence import (
-              ContextManager, CredenceRegistry, CredenceProxy,
-              CredenceMemory, EpistemicManifest,
-              enforce, CredenceViolation,
+              CredenceRegistry,
+              CredenceMemory,
               wrap, WrapResult, measure_fcr,
           )
           print('All exports OK — v' + credence.__version__)
