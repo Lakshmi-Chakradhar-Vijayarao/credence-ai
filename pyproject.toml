@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "credence-guard"
-version = "1.2.0"
+version = "1.2.2"
 description = "Credence — epistemic enforcement layer that prevents LLMs from forgetting what they didn't know"
 readme = "README.md"
 license = {file = "LICENSE"}
