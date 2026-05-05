@@ -1,0 +1,64 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.lakshmi-chakradhar-vijayarao/credence",
+  "title": "Credence — Epistemic Guard",
+  "description": "Tracks uncertain values from conversation and blocks writes until verified. When an AI says 'I think the rate limit is 50', Credence registers that, then blocks any file write that embeds the value until you confirm it. Zero API key required.",
+  "version": "1.2.3",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "credence-guard",
+      "version": "1.2.3",
+      "installInstructions": "pip install \"credence-guard[mcp]\"",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai"
+  },
+  "tools": [
+    {
+      "name": "credence_register",
+      "description": "Register an uncertain value or claim from conversation"
+    },
+    {
+      "name": "credence_verify",
+      "description": "Mark a constraint as verified with evidence"
+    },
+    {
+      "name": "credence_gate",
+      "description": "Check whether a planned write/execute action is safe to proceed"
+    },
+    {
+      "name": "credence_autoverify",
+      "description": "Auto-verify constraints matched in a user message"
+    },
+    {
+      "name": "credence_constraints",
+      "description": "List all unverified constraints for a session"
+    },
+    {
+      "name": "credence_scan",
+      "description": "Annotate generated code with unverified value warnings"
+    },
+    {
+      "name": "credence_self_probe",
+      "description": "Extract and register domain-relevant values from generated code"
+    },
+    {
+      "name": "credence_session_summary",
+      "description": "Plain-English digest of all unverified constraints for agent handoffs"
+    },
+    {
+      "name": "credence_memory_snapshot",
+      "description": "Persist unverified constraints across session boundaries"
+    },
+    {
+      "name": "credence_memory_recall",
+      "description": "Inject prior-session unverified constraints into current context"
+    }
+  ]
+}
