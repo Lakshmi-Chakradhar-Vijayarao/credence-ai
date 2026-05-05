@@ -57,10 +57,17 @@ data/epistemic_compression_training.json
 data/epistemic_compression_training.json.bak
 data/synthetic_5k_gold.json.archived
 
-# Kaggle staging artifacts
+# Kaggle staging artifacts (all local Kaggle dirs)
 kaggle_datasets/
 kaggle_kernel/
 kaggle_kv_cache/
 kaggle_training/
-evals/kernel-metadata.json
-evals/kv_cache/*.log
+kaggle_*/
+evals/kaggle/
+evals/kv_cache/
+
+# Large training datasets (live on HuggingFace Datasets)
+evals/data/epistemic_5k_clustered.json
+evals/data/epistemic_compression_training.json
+evals/data/epistemic_compression_training.json.bak
+evals/data/synthetic_5k_gold.json.archived
