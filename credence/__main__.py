@@ -40,7 +40,7 @@ def run_demo() -> None:
     import re
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tf:
         demo_db = tf.name
-    os.environ["CREDENCE_DB_PATH"] = demo_db
+    os.environ["CREDENCE_DB"] = demo_db
 
     try:
         from credence.registry import CredenceRegistry

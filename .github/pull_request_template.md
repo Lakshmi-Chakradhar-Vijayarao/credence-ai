@@ -14,6 +14,6 @@ credence demo
 - [ ] All tests pass (`pytest tests/ -q`)
 - [ ] `credence demo` runs clean
 - [ ] No new hard dependencies added to core package
-- [ ] If changing decay rates in `registry.py`: S2 tests updated
-- [ ] If adding uncertainty markers to `_UNCERTAINTY_MARKERS`: S22 tests updated
+- [ ] If changing decay rates in `registry.py`: decay tests updated (S2 suite in `tests/tests.py`)
+- [ ] If adding uncertainty markers to `_UNCERTAINTY_MARKERS`: probe tests updated (S22 suite in `tests/tests.py`)
 - [ ] If adding a new MCP tool: corresponding test suite added

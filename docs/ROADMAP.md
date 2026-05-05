@@ -136,13 +136,13 @@ This is the correct design: RL loop exists, uses the right signal.
 
 ## Tool count by phase end
 
-| After phase | MCP Tools | Resources | Tests  | Status    |
-|-------------|-----------|-----------|--------|-----------|
-| Baseline    | 11        | 2         | 166    | ✓ shipped |
-| Phase 0     | 16        | 2         | 195    | ✓ shipped |
-| Phase 1     | 17        | 2         | 207    | ✓ shipped |
-| Phase 2     | 19 + TS SDK | 2      | 221    | ✓ shipped |
-| Phase 3     | 22        | 2         | 238    | ✓ shipped |
+| After phase | MCP Tools | Resources | Tests  | Status          |
+|-------------|-----------|-----------|--------|-----------------|
+| Baseline    | 11        | 2         | 166    | ✓ shipped       |
+| Phase 0     | 16        | 2         | 195    | ✓ shipped       |
+| Phase 1     | 17        | 2         | 851    | ✓ shipped v1.1.0 |
+| Phase 2     | 19 + TS SDK | 2      | ~950   | planned          |
+| Phase 3     | 22        | 2         | ~1050  | planned          |
 
 ---
 

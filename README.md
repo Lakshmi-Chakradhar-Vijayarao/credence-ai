@@ -9,7 +9,10 @@ AI doesn't remember what it wasn't sure about. Credence does.
 
 ```bash
 pip install "credence-guard[mcp]"
+credence demo   # 30-second smoke test, no API key required
 ```
+
+`[mcp]` adds the FastMCP server for Claude Code. Core package has zero hard dependencies.
 
 ---
 
@@ -92,6 +95,8 @@ After you confirm: `"Confirmed — rate limit is 100 req/min per stripe.com/docs
 Done. No API key required.
 
 > **Note:** Credence creates `epistemic_registry.db` in your working directory. Add `*.db` to your project's `.gitignore`, or set `CREDENCE_DB=~/.credence/registry.db` to keep it global.
+>
+> **Session tracking:** Constraints are scoped to a session ID, auto-derived from your working directory. Set `CREDENCE_SESSION_ID=my-project` in your shell to keep constraints stable across directory changes and terminal restarts.
 
 ---
 
