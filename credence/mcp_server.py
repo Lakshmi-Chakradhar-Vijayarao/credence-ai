@@ -8,25 +8,25 @@ The agent uses its own model for intelligence; Credence provides the
 extraction, registration, and annotation layer deterministically.
 
 Tools (11 total, zero LLM calls):
-    credence_pre_compress    — CP1: check text before compression (BLOCK / ALLOW)
-    credence_post_compress   — CP1: measure qualifier survival after compression
     credence_register        — register an uncertain constraint explicitly
     credence_verify          — mark a constraint as verified
+    credence_autoverify      — auto-verify constraints on confirmation phrases
     credence_constraints     — query all unverified constraints for a session
-    credence_gate            — CP4: pre-tool gate (block if unverified constraints apply)
-    credence_scan            — CP3: scan model output for unverified numeric literals
-    credence_self_probe      — CP2: extract domain values from generated code;
+    credence_gate            — pre-tool gate (block if unverified constraints apply)
+    credence_scan            — scan model output for unverified numeric literals
+    credence_self_probe      — extract domain values from generated code;
                                auto-register stale + domain-risky values as unverified
     credence_memory_snapshot — persist unverified constraints as project memory
     credence_memory_recall   — load project memory into a new session
-    credence_autoverify      — auto-verify constraints on confirmation phrases
+    credence_audit           — per-session epistemic timeline
+    credence_reset           — clear all constraints for a session
 
 Resources (passive, epistemic:// URI scheme):
     epistemic://session/{session_id}/ledger             — all constraints
     epistemic://session/{session_id}/constraint/{id}    — single constraint + trajectory
 
 Install:
-    pip install credence-ai fastmcp
+    pip install "credence-guard[mcp]"
     credence-server
 
 No ANTHROPIC_API_KEY or any other key needed.
@@ -198,14 +198,11 @@ def _scan_output(output_text: str, registry: CredenceRegistry, session_id: str, 
                     continue
                 for var_name, c in annotated_vars.items():
                     if re.search(r'\b' + re.escape(var_name) + r'\b', line):
-                        ec   = c.get("eff_conf", 0.5)
-                        tier = "HIGH RISK" if ec < _GTS_WARN_THRESHOLD else "unverified"
-                        line = line.rstrip() + f"  # CREDENCE[inherited from {var_name}, {tier}]"
+                        line = line.rstrip() + f"  # CREDENCE[inherited from {var_name}, unverified]"
                         hits.append({"value": var_name,
                                      "constraint_id": c["constraint_id"],
                                      "constraint_text": c.get("content","")[:80],
                                      "line": line.strip(),
-                                     "eff_conf": ec,
                                      "source": "code_inherited"})
                         break
                 out2.append(line)
@@ -492,10 +489,9 @@ if _FASTMCP_AVAILABLE:
         Generation-Time Constraint Scanner (CP3): scan model output for numeric
         literals that match registered unverified constraints.
 
-        Annotations are severity-tiered by decayed confidence:
-            ⚠⚠ CREDENCE[HIGH RISK, conf=0.15]  — eff_conf < 0.20
-            ⚠  CREDENCE[unverified, conf=0.30]  — 0.20 ≤ eff_conf < 0.40
-               CREDENCE[check, conf=0.42]        — eff_conf ≥ 0.40
+        Two annotation tiers (no confidence scores — unknown = unverified):
+            ⚠⚠ CREDENCE[stale]      — source="temporal_scan" (structurally stale values)
+            ⚠  CREDENCE[unverified]  — all other registered constraints
 
         Scans both code blocks and prose.
 
@@ -510,14 +506,7 @@ if _FASTMCP_AVAILABLE:
         registry   = _get_registry()
         annotated, hits = _scan_output(output_text, registry, session_id, current_turn)
 
-        high_risk = [h for h in hits if h.get("eff_conf", 1.0) < _GTS_WARN_THRESHOLD]
-
-        if high_risk:
-            recommendation = (
-                f"BLOCK — {len(high_risk)} HIGH RISK literal(s) found. "
-                "Verify before use."
-            )
-        elif hits:
+        if hits:
             recommendation = (
                 f"REVIEW — {len(hits)} unverified literal(s) annotated. "
                 "Confirm values before shipping."
@@ -529,7 +518,6 @@ if _FASTMCP_AVAILABLE:
             "annotated_output": annotated,
             "scan_hits":        hits,
             "hit_count":        len(hits),
-            "high_risk_count":  len(high_risk),
             "recommendation":   recommendation,
         }
 
@@ -800,6 +788,273 @@ if _FASTMCP_AVAILABLE:
                 else "Confirmation signal present but no constraints matched (< 2 token overlap)."
             ),
         }
+
+    @mcp.tool()
+    def credence_audit(session_id: str) -> dict:
+        """
+        Per-session epistemic timeline — all constraints (verified and unverified)
+        in chronological order with full certainty trajectory.
+
+        Use to answer "what have we tracked this session?" or "what's still open?"
+        before starting an implementation phase.
+
+        Args:
+            session_id: The session to audit.
+
+        Returns:
+            constraint_count, unverified_count, verified_count, constraints list,
+            timeline (each constraint with its trajectory events).
+        """
+        registry = _get_registry()
+        all_rows = registry._conn.execute(
+            "SELECT * FROM constraints WHERE session_id=? ORDER BY created_at ASC",
+            (session_id,),
+        ).fetchall()
+        all_constraints = [registry._row_to_dict(r) for r in all_rows]
+        uncertain = [c for c in all_constraints if not c.get("verified")]
+        verified  = [c for c in all_constraints if c.get("verified")]
+        timeline = [
+            {**c, "trajectory": registry.get_trajectory(c["constraint_id"])}
+            for c in all_constraints
+        ]
+        return {
+            "session_id":       session_id,
+            "constraint_count": len(all_constraints),
+            "unverified_count": len(uncertain),
+            "verified_count":   len(verified),
+            "constraints":      all_constraints,
+            "timeline":         timeline,
+        }
+
+    @mcp.tool()
+    def credence_reset(session_id: str) -> dict:
+        """
+        Clear all constraints for a session.
+
+        Use after completing a verification pass, or when starting a fresh
+        implementation phase where all prior uncertain values have been resolved.
+
+        Args:
+            session_id: The session to clear.
+
+        Returns:
+            cleared (bool), session_id, cleared_count.
+        """
+        registry = _get_registry()
+        count = registry._conn.execute(
+            "SELECT COUNT(*) FROM constraints WHERE session_id=?", (session_id,)
+        ).fetchone()[0]
+        registry._conn.execute(
+            "DELETE FROM constraints WHERE session_id=?", (session_id,)
+        )
+        registry._conn.commit()
+        return {"cleared": True, "session_id": session_id, "cleared_count": count}
+
+    @mcp.tool()
+    def credence_session_summary(session_id: str, project_id: str = None) -> dict:
+        """
+        Brief of unverified constraints for a session.
+
+        Returns action_required, unverified_count, and a summary list so the
+        model can decide whether to snapshot or prompt the user to verify.
+
+        Args:
+            session_id:  Session to summarize.
+            project_id:  Optional project to associate with the snapshot.
+        """
+        registry = _get_registry()
+        uncertain = registry.list_uncertain(session_id)
+        summaries = [
+            {"content": c["content"][:100], "constraint_id": c["constraint_id"],
+             "source": c.get("source", ""), "verified": c.get("verified", False)}
+            for c in uncertain
+        ]
+        return {
+            "session_id":          session_id,
+            "project_id":          project_id,
+            "action_required":     len(uncertain) > 0,
+            "unverified_count":    len(uncertain),
+            "constraint_summaries": summaries,
+        }
+
+    @mcp.tool()
+    def credence_diff(text_a: str, text_b: str, session_id: str = None) -> dict:
+        """
+        Compare two texts for numeric contradictions.
+
+        Extracts numeric claims from both texts and detects when the same
+        topic context has different values. Optionally checks against
+        verified registry constraints when session_id is provided.
+
+        Args:
+            text_a:     First text (e.g. prior agent response).
+            text_b:     Second text (e.g. new agent response).
+            session_id: Optional — check text_b against verified constraints.
+
+        Returns:
+            matched_claims, contradictions, registry_conflicts, divergence_score,
+            contradiction_count, recommendation, etp_version.
+        """
+        import re as _re
+        _num_re = _re.compile(r'\b\d+(?:\.\d+)?\b')
+        nums_a = set(_num_re.findall(text_a))
+        nums_b = set(_num_re.findall(text_b))
+        matched  = list(nums_a & nums_b)
+        only_a   = nums_a - nums_b
+        only_b   = nums_b - nums_a
+        contradictions = []
+        for n in only_a:
+            contradictions.append({"value_a": n, "value_b": None, "note": f"{n!r} in text_a only"})
+        for n in only_b:
+            contradictions.append({"value_a": None, "value_b": n, "note": f"{n!r} in text_b only"})
+
+        registry_conflicts: list = []
+        if session_id:
+            registry = _get_registry()
+            verified = [c for c in registry.get_all(session_id) if c.get("verified")]
+            for c in verified:
+                v_nums = set(_num_re.findall(c.get("verified_value") or c["content"]))
+                for n in v_nums:
+                    if n not in nums_b and v_nums:
+                        registry_conflicts.append({
+                            "constraint_id": c["constraint_id"],
+                            "verified_value": c.get("verified_value"),
+                            "conflict_note":  f"verified {n!r} not present in text_b",
+                        })
+
+        total = max(1, len(nums_a | nums_b))
+        divergence_score = round(len(contradictions) / total, 4)
+
+        if contradictions:
+            recommendation = "DIVERGE — numeric values differ between the two texts"
+        elif not nums_a and not nums_b:
+            recommendation = "AGREE — no numeric claims to compare"
+        else:
+            recommendation = "AGREE — numeric values consistent"
+
+        return {
+            "matched_claims":    matched,
+            "contradictions":    contradictions,
+            "registry_conflicts": registry_conflicts,
+            "divergence_score":  divergence_score,
+            "contradiction_count": len(contradictions),
+            "recommendation":    recommendation,
+            "etp_version":       "1.0",
+        }
+
+    @mcp.tool()
+    def credence_project_status(project_id: str) -> dict:
+        """
+        Project-wide epistemic health dashboard.
+
+        Shows all unverified constraints across sessions that have been
+        snapshotted to this project via credence_memory_snapshot.
+
+        Args:
+            project_id: Project identifier.
+
+        Returns:
+            total_constraints, unverified_count, verified_count, epistemic_debt,
+            health (CLEAN/LOW_DEBT/MEDIUM_DEBT/HIGH_DEBT), etp_version.
+        """
+        registry = _get_registry()
+        constraints = registry.get_all_project_constraints(project_id)
+        total      = len(constraints)
+        unverified = [c for c in constraints if not c.get("verified")]
+        debt       = len(unverified)
+        if debt == 0:
+            health = "CLEAN"
+        elif debt <= 3:
+            health = "LOW_DEBT"
+        elif debt <= 10:
+            health = "MEDIUM_DEBT"
+        else:
+            health = "HIGH_DEBT"
+        return {
+            "project_id":       project_id,
+            "total_constraints": total,
+            "unverified_count": len(unverified),
+            "verified_count":   total - len(unverified),
+            "epistemic_debt":   debt,
+            "health":           health,
+            "etp_version":      "1.0",
+        }
+
+    @mcp.tool()
+    def credence_scan_ghosts(session_id: str) -> dict:
+        """
+        Scan a session for ghost constraints.
+
+        Ghost constraints are vendor-supplied facts registered without hedging
+        language — they look certain but are actually unverified. The ghost
+        detector flags unverified vendor_claim constraints with no hedging.
+
+        Args:
+            session_id: Session to scan.
+
+        Returns:
+            ghost_count, ghost_candidates (with ghost_reason), recommendation.
+        """
+        registry = _get_registry()
+        flagged  = registry.flag_ghost_constraints(session_id)
+        if flagged:
+            recommendation = (
+                f"⚠ {len(flagged)} ghost constraint(s) detected. These vendor claims "
+                "lack hedging language — verify before treating as fact."
+            )
+        else:
+            recommendation = (
+                "No ghost constraints detected. All vendor claims include appropriate "
+                "hedging language or are already verified."
+            )
+        return {
+            "session_id":       session_id,
+            "ghost_count":      len(flagged),
+            "ghost_candidates": flagged,
+            "recommendation":   recommendation,
+        }
+
+    @mcp.tool()
+    def credence_marker_health() -> dict:
+        """
+        Marker statistics from accumulated session data.
+
+        Shows which uncertainty markers are most reliable (high precision)
+        vs. noisy (low precision) based on observed FCR outcomes.
+        Requires 10+ sessions before returning data.
+
+        Returns:
+            status (insufficient_data|available), threshold, markers list.
+        """
+        registry = _get_registry()
+        stats    = registry.get_marker_stats()
+        if not stats:
+            return {
+                "status":    "insufficient_data",
+                "threshold": 10,
+                "markers":   [],
+                "message":   "Need 10+ sessions with marker event data.",
+            }
+        return {
+            "status":    "available",
+            "threshold": 10,
+            "markers":   stats,
+            "message":   f"{len(stats)} markers with precision/recall data.",
+        }
+
+    @mcp.tool()
+    def credence_bandit_status() -> dict:
+        """
+        Adaptive compression threshold status (Thompson sampling bandit).
+
+        Returns current learned thresholds per session type, or the static
+        defaults if insufficient data has been collected (< 100 sessions).
+
+        Returns:
+            status (learning|active), threshold, current_thresholds, message.
+        """
+        registry = _get_registry()
+        return registry.get_bandit_state()
 
 # ---------------------------------------------------------------------------
 # MCP Resources — epistemic:// URI scheme

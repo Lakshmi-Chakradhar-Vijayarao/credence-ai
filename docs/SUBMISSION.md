@@ -14,7 +14,7 @@ The Ghost Detector — powered by Opus 4.7 — catches implicit uncertainty with
 
 As AI agents make higher-stakes decisions, uncertainty is not a weakness to hide — it is the most honest signal a system can carry. Credence is the first enforcement layer built around that principle.
 
-22-tool MCP server. 821 tests. Built entirely with Claude Code.
+10-tool MCP server. 851 tests. Built entirely with Claude Code.
 
 ---
 

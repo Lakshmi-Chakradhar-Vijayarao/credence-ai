@@ -133,13 +133,13 @@ section("S2: Confidence decay boundary values")
 reg2 = CredenceRegistry(":memory:")
 
 # S2-A: decay at turn=0 — same as registration → returns j_score
-cid = reg2.register("I think the rate limit is 50 req/min", "s2", j_score=0.30, turn_idx=0)
+cid = reg2.register("I think the rate limit is 50 req/min", "s2", turn_idx=0)
 val = reg2.get_effective_confidence(cid, 0)
 check("S2-A decay at turn=0 → j_score unchanged", abs(val - 0.30) < 0.001, f"Got {val}")
 
 # S2-B: decay with future turn (current_turn < registered_at_turn) — max(0,...) guard
 # Should return j_score (0 elapsed turns), NOT >1.0
-cid_future = reg2.register("Auth token might expire in 3600s", "s2", j_score=0.40, turn_idx=10)
+cid_future = reg2.register("Auth token might expire in 3600s", "s2", turn_idx=10, j_score=0.40)
 val_future = reg2.get_effective_confidence(cid_future, 3)  # current_turn < registered_at_turn
 check("S2-B future turn → returns j_score (no >1.0)", 0.0 <= val_future <= 1.0,
       f"Got {val_future} — should be in [0, 1]")
@@ -159,12 +159,12 @@ check("S2-D verified constraint — no decay", abs(val_verified - 0.30) < 0.001,
       f"Got {val_verified}, expected 0.30 (no decay)")
 
 # S2-E: decay at j=0.0 — should stay 0
-cid_zero = reg2.register("Zero confidence claim", "s2", j_score=0.0, turn_idx=0)
+cid_zero = reg2.register("Zero confidence claim", "s2", turn_idx=0, j_score=0.0)
 val_zero = reg2.get_effective_confidence(cid_zero, 50)
 check("S2-E decay of j=0.0 → stays 0", val_zero == 0.0, f"Got {val_zero}")
 
 # S2-F: decay at j=1.0 — observation type decays at 0.97 per turn
-cid_one = reg2.register("Full confidence claim", "s2", j_score=1.0, turn_idx=0)
+cid_one = reg2.register("Full confidence claim", "s2", turn_idx=0, j_score=1.0)
 val_one = reg2.get_effective_confidence(cid_one, 10)
 expected = round(1.0 * (0.97 ** 10), 4)
 check("S2-F decay of j=1.0 correct", abs(val_one - expected) < 0.001,
@@ -242,7 +242,7 @@ try:
     reg_s4 = CredenceRegistry(":memory:")
     cid_s4 = reg_s4.register(
         "I think the timeout might be 3.5 seconds — unconfirmed",
-        "test_s4", j_score=0.35, turn_idx=0
+        "test_s4", turn_idx=0
     )
     mgr_s4 = ContextManager(
         api_key=api_key,
@@ -274,7 +274,7 @@ try:
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "dummy")
     reg_s5 = CredenceRegistry(":memory:")
-    reg_s5.register("I think the rate limit is 50 req/min", "s5", j_score=0.30, turn_idx=0)
+    reg_s5.register("I think the rate limit is 50 req/min", "s5", turn_idx=0)
     mgr_s5 = ContextManager(api_key=api_key, registry=reg_s5, session_id="s5")
 
     uncertain_s5 = reg_s5.list_uncertain("s5")
@@ -342,7 +342,7 @@ try:
         ("The cache TTL is set to 300 seconds", "Confirmed: TTL 300s"),
     ]
     for content, verified_val in distinct_claims:
-        cid_i = reg_s6a.register(content, "s6a", j_score=0.80, turn_idx=0)
+        cid_i = reg_s6a.register(content, "s6a", turn_idx=0)
         reg_s6a.verify(cid_i, verified_val)
     mgr_s6a = ContextManager(api_key=api_key, registry=reg_s6a, session_id="s6a")
     augmented = mgr_s6a._augment_with_truth_buffer()
@@ -356,7 +356,7 @@ try:
     for i in range(10):
         cid_i = reg_s6b.register(
             f"I think value_{i} might be {(i+1)*50} — unconfirmed",
-            "s6b", j_score=0.30 + i * 0.01, turn_idx=0
+            "s6b", turn_idx=0
         )
         cids_s6b.append(cid_i)
     mgr_s6b = ContextManager(api_key=api_key, registry=reg_s6b, session_id="s6b")
@@ -441,14 +441,14 @@ reg_s8 = CredenceRegistry(":memory:")
 
 # S8-A: register 600-char content — stored in full (no truncation in registry itself)
 long_content = "I think the rate limit might be 50 req/min — " + ("x" * 560)
-cid_long = reg_s8.register(long_content, "s8", j_score=0.30, turn_idx=0)
+cid_long = reg_s8.register(long_content, "s8", turn_idx=0)
 fetched = reg_s8.get_all("s8")
 check("S8-A 600-char content stored (length ≥ 600)",
       len(fetched) > 0 and len(fetched[0]["content"]) >= 600,
       f"Stored length: {len(fetched[0]['content']) if fetched else 'N/A'}")
 
 # S8-B: idempotency — registering same content twice returns same ID
-cid_again = reg_s8.register(long_content, "s8", j_score=0.35, turn_idx=1)
+cid_again = reg_s8.register(long_content, "s8", turn_idx=1)
 check("S8-B idempotent re-register returns same ID", cid_long == cid_again,
       f"First: {cid_long}, Second: {cid_again}")
 
@@ -479,10 +479,10 @@ section("S9: DISPUTED logic — same numbers / different topics")
 reg_s9 = CredenceRegistry(":memory:")
 
 # S9-A: verify a constraint, then register contradicting number on SAME topic → DISPUTED
-cid_rate = reg_s9.register("Rate limit is 50 req/min", "s9", j_score=0.80, turn_idx=0)
+cid_rate = reg_s9.register("Rate limit is 50 req/min", "s9", turn_idx=0)
 reg_s9.verify(cid_rate, "Confirmed: 50 req/min per vendor")
 # Now register conflicting number on same topic
-reg_s9.register("Actually the rate limit might be 100 req/min", "s9", j_score=0.30, turn_idx=5)
+reg_s9.register("Actually the rate limit might be 100 req/min", "s9", turn_idx=5)
 row_rate = reg_s9._conn.execute(
     "SELECT validation_status FROM constraints WHERE constraint_id=?", (cid_rate,)
 ).fetchone()
@@ -492,10 +492,10 @@ check("S9-A same-topic conflict → original marked DISPUTED",
 
 # S9-B: same numbers but DIFFERENT topics → should NOT dispute
 reg_s9b = CredenceRegistry(":memory:")
-cid_token = reg_s9b.register("Auth token expiry is 3600 seconds", "s9b", j_score=0.80, turn_idx=0)
+cid_token = reg_s9b.register("Auth token expiry is 3600 seconds", "s9b", turn_idx=0)
 reg_s9b.verify(cid_token, "Confirmed: 3600s token expiry")
 # Register same number 3600 on completely different topic
-reg_s9b.register("The cache TTL is 3600 seconds but might change", "s9b", j_score=0.30, turn_idx=5)
+reg_s9b.register("The cache TTL is 3600 seconds but might change", "s9b", turn_idx=5)
 row_token = reg_s9b._conn.execute(
     "SELECT validation_status FROM constraints WHERE constraint_id=?", (cid_token,)
 ).fetchone()
@@ -515,9 +515,9 @@ else:
 
 # S9-C: DISPUTED constraint appears in Truth Buffer
 reg_s9c = CredenceRegistry(":memory:")
-cid_d = reg_s9c.register("Rate limit is 50 req/min", "s9c", j_score=0.80, turn_idx=0)
+cid_d = reg_s9c.register("Rate limit is 50 req/min", "s9c", turn_idx=0)
 reg_s9c.verify(cid_d, "Confirmed: 50 req/min")
-reg_s9c.register("Rate limit might now be 100 req/min", "s9c", j_score=0.30, turn_idx=5)
+reg_s9c.register("Rate limit might now be 100 req/min", "s9c", turn_idx=5)
 
 try:
     from credence.context_manager import ContextManager
@@ -547,9 +547,8 @@ try:
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "dummy")
     reg_s10 = CredenceRegistry(":memory:")
-    reg_s10.register("I think the rate limit is 50 req/min", "s10", j_score=0.30, turn_idx=0)
-    reg_s10.register("Auth token expiry might be 3600 seconds — unconfirmed", "s10",
-                     j_score=0.25, turn_idx=0)
+    reg_s10.register("I think the rate limit is 50 req/min", "s10", turn_idx=0)
+    reg_s10.register("Auth token expiry might be 3600 seconds — unconfirmed", "s10", turn_idx=0)
     mgr_s10 = ContextManager(api_key=api_key, registry=reg_s10, session_id="s10")
     uncertain = reg_s10.list_uncertain("s10")
 
@@ -601,17 +600,17 @@ try:
     # Create 3 constraints at different confidence/decay levels
     reg_s11 = CredenceRegistry(":memory:")
 
-    # HIGH RISK: j=0.25, turn registered=0, current_turn=8 → 0.25 * 0.95^8 ≈ 0.166 < 0.20
+    # HIGH RISK: j=0.25, turn registered=0, current_turn=8 → 0.25 * 0.97^8 ≈ 0.196 < 0.20
     cid_hr = reg_s11.register(
-        "Stripe rate limit is 50 req/min", "s11", j_score=0.25, turn_idx=0
+        "Stripe rate limit is 50 req/min", "s11", turn_idx=0, j_score=0.25
     )
     # UNVERIFIED: j=0.30 at turn=0, current=1 → 0.30 * 0.95^1 ≈ 0.285 (>0.20, <0.40)
     cid_uv = reg_s11.register(
-        "Auth token expiry might be 3600 seconds", "s11", j_score=0.30, turn_idx=0
+        "Auth token expiry might be 3600 seconds", "s11", turn_idx=0
     )
-    # CHECK: j=0.60 at turn=0, current=0 → 0.60 * 0.95^0 = 0.60 (≥0.40)
+    # CHECK: j=0.60 at turn=0, current=0 → 0.60 * 0.97^0 = 0.60 (≥0.40)
     cid_ck = reg_s11.register(
-        "I think the batch size limit is 100 items", "s11", j_score=0.60, turn_idx=0
+        "I think the batch size limit is 100 items", "s11", turn_idx=0, j_score=0.60
     )
 
     mgr_s11 = ContextManager(api_key=api_key, registry=reg_s11, session_id="s11")
@@ -666,7 +665,7 @@ try:
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "dummy")
     reg_s12 = CredenceRegistry(":memory:")
-    reg_s12.register("Auth token expiry might be 3600 seconds", "s12", j_score=0.35, turn_idx=0)
+    reg_s12.register("Auth token expiry might be 3600 seconds", "s12", turn_idx=0)
     mgr_s12 = ContextManager(api_key=api_key, registry=reg_s12, session_id="s12")
     mgr_s12._turn_idx = 1
 
@@ -702,7 +701,7 @@ t_start = time.perf_counter()
 for i in range(100):
     reg_perf.register(
         f"I think constraint_{i} might be {(i+1)*10} — unconfirmed",
-        "perf_session", j_score=0.20 + (i % 50) * 0.01, turn_idx=i // 5
+        "perf_session", turn_idx=i // 5
     )
 t_reg = (time.perf_counter() - t_start) * 1000
 check("S13-A register 100 constraints < 500ms", t_reg < 500,
@@ -877,10 +876,8 @@ try:
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "dummy")
     reg_s16 = CredenceRegistry(":memory:")
-    reg_s16.register("I think the rate limit is 50 req/min — unconfirmed", "s16",
-                     j_score=0.30, turn_idx=0)
-    reg_s16.register("Auth token expiry might be 3600s — vendor claim", "s16",
-                     j_score=0.25, turn_idx=0)
+    reg_s16.register("I think the rate limit is 50 req/min — unconfirmed", "s16", turn_idx=0)
+    reg_s16.register("Auth token expiry might be 3600s — vendor claim", "s16", turn_idx=0)
     mgr_s16 = ContextManager(api_key=api_key, registry=reg_s16, session_id="s16")
     mgr_s16._current_user_message = "What is the rate limit?"
 
@@ -990,7 +987,7 @@ try:
     # Register a constraint manually
     cid_e2e = reg_s18.register(
         "I think the rate limit is 50 req/min — the vendor mentioned it casually",
-        "e2e_test", j_score=0.28, turn_idx=0
+        "e2e_test", turn_idx=0
     )
 
     # Truth Buffer injection
@@ -1198,9 +1195,9 @@ try:
 
     # --- S21-A: Numeric collision — three constraints sharing value 50 ----------
     reg21 = CredenceRegistry(":memory:")
-    reg21.register("rate limit is approximately 50 req/min — unconfirmed", "s21", j_score=0.3, zone="LOW")
-    reg21.register("retry delay should be around 50 ms", "s21", j_score=0.3, zone="LOW")
-    reg21.register("batch size might be 50 items", "s21", j_score=0.3, zone="LOW")
+    reg21.register("rate limit is approximately 50 req/min — unconfirmed", "s21")
+    reg21.register("retry delay should be around 50 ms", "s21")
+    reg21.register("batch size might be 50 items", "s21")
     mgr21 = ContextManager(api_key="dummy", registry=reg21, session_id="s21")
     mgr21._turn_idx = 5
     code = "```python\nRATE_LIMIT = 50\nRETRY_DELAY = 50\nBATCH_SIZE = 50\n```"
@@ -1264,8 +1261,7 @@ try:
     # --- S21-H: TB shows ALL constraints with no cap (invariant: nothing silently dropped) ---
     reg21c = CredenceRegistry(":memory:")
     for i in range(8):
-        reg21c.register(f"Claim {i} — value {100+i} unconfirmed", "s21c",
-                        j_score=0.3, zone="LOW", turn_idx=i)
+        reg21c.register(f"Claim {i} — value {100+i} unconfirmed", "s21c", turn_idx=i)
     mgr21c = ContextManager.__new__(ContextManager)
     mgr21c._registry = reg21c
     mgr21c._session_id = "s21c"
@@ -1282,8 +1278,7 @@ try:
 
     # --- S21-I: String-aware GTS — catches unquoted identifier in string literal assignment
     reg21d = CredenceRegistry(":memory:")
-    reg21d.register('The API uses "RS256" signing — per vendor docs, unconfirmed', "s21d",
-                    j_score=0.3, zone="LOW")
+    reg21d.register('The API uses "RS256" signing — per vendor docs, unconfirmed', "s21d")
     mgr21d = ContextManager(api_key="dummy", registry=reg21d, session_id="s21d")
     mgr21d._turn_idx = 2
     code_str = '```python\nALGORITHM = "RS256"\n```'
@@ -1400,8 +1395,7 @@ try:
     # S23-B: registry.check_contradiction finds similar VERIFIED constraints
     reg23b = CredenceRegistry(":memory:")
     cid = reg23b.register(
-        "rate limit is approximately 50 req/min — unconfirmed", "s23b",
-        j_score=0.3, zone="LOW"
+        "rate limit is approximately 50 req/min — unconfirmed", "s23b"
     )
     # check_contradiction requires verified=1 (it finds confirmed facts being contradicted)
     reg23b.verify(cid, "confirmed at 50")
@@ -1422,8 +1416,7 @@ try:
 
     # S23-D: disputed constraint triggers CE enforcement without overlap threshold
     reg23d = CredenceRegistry(":memory:")
-    cid_d = reg23d.register("rate limit is 50 req/min — unconfirmed", "s23d",
-                              j_score=0.3, zone="LOW")
+    cid_d = reg23d.register("rate limit is 50 req/min — unconfirmed", "s23d")
     reg23d.mark_contradiction(cid_d, "new_value=200")
     mgr23d = ContextManager(api_key="dummy", registry=reg23d, session_id="s23d")
     mgr23d._turn_idx = 5
@@ -1446,7 +1439,7 @@ try:
     tr = TurnResult.__new__(TurnResult)
     # Using dataclass defaults
     tr_default = TurnResult(
-        turn_idx=0, response="test", j_score=0.5, zone="MEDIUM", decision="PRESERVE",
+        turn_idx=0, response="test", j_score=0.30, zone="LOW", decision="PRESERVE",
         tokens_in=10, tokens_out=10, tokens_saved=0, cost_usd=0.0,
         savings_usd=0.0, reasoning="",
         session_tokens_used=20, session_tokens_saved=0,
@@ -1509,10 +1502,8 @@ try:
           snap_empty.saved_count == 0, f"got {snap_empty.saved_count}")
 
     # S24-B: snapshot captures registered unverified constraints
-    _reg24.register("rate limit is 50 req/min — unconfirmed", "s1",
-                    j_score=0.28, zone="LOW")
-    _reg24.register("token expiry is 3600s — tentative", "s1",
-                    j_score=0.24, zone="LOW")
+    _reg24.register("rate limit is 50 req/min — unconfirmed", "s1")
+    _reg24.register("token expiry is 3600s — tentative", "s1")
     snap = _mem24.snapshot("s1", project="proj-x")
     check("S24-B snapshot captures 2 unverified constraints",
           snap.saved_count == 2, f"got {snap.saved_count}")
@@ -1607,8 +1598,7 @@ try:
 
     # --- S25-A: String GTS — quoted path fragment caught ---
     reg25a = CredenceRegistry(":memory:")
-    reg25a.register('API base URL is "/api/v2" — tentative, not confirmed', "s25a",
-                    j_score=0.25, zone="LOW")
+    reg25a.register('API base URL is "/api/v2" — tentative, not confirmed', "s25a")
     mgr25a = ContextManager(api_key=api_key, registry=reg25a, session_id="s25a")
     code_a = '```python\nBASE_URL = "/api/v2"\nTIMEOUT = 30\n```'
     _, hits_a = mgr25a._scan_output_for_constraints(code_a)
@@ -1619,7 +1609,7 @@ try:
     # --- S25-B: String GTS — OAuth scope fragment caught ---
     reg25b = CredenceRegistry(":memory:")
     reg25b.register('The OAuth scope should be "read:users write:users" — from vendor call',
-                    "s25b", j_score=0.30, zone="LOW")
+                    "s25b")
     mgr25b = ContextManager(api_key=api_key, registry=reg25b, session_id="s25b")
     code_b = '```python\nOAUTH_SCOPE = "read:users write:users"\n```'
     _, hits_b = mgr25b._scan_output_for_constraints(code_b)
@@ -1630,7 +1620,7 @@ try:
     # --- S25-C: String GTS — uppercase identifier caught (RS256) ---
     reg25c = CredenceRegistry(":memory:")
     reg25c.register("Encryption algorithm is RS256 — per vendor docs, unconfirmed",
-                    "s25c", j_score=0.28, zone="LOW")
+                    "s25c")
     mgr25c = ContextManager(api_key=api_key, registry=reg25c, session_id="s25c")
     code_c = '```python\nALGORITHM = "RS256"\n```'
     _, hits_c = mgr25c._scan_output_for_constraints(code_c)
@@ -1641,7 +1631,7 @@ try:
     # --- S25-D: String GTS — hyphenated region identifier caught (us-east-1) ---
     reg25d = CredenceRegistry(":memory:")
     reg25d.register("AWS region is us-east-1 — from the sales call, not confirmed",
-                    "s25d", j_score=0.25, zone="LOW")
+                    "s25d")
     mgr25d = ContextManager(api_key=api_key, registry=reg25d, session_id="s25d")
     code_d = '```python\nAWS_REGION = "us-east-1"\n```'
     _, hits_d = mgr25d._scan_output_for_constraints(code_d)
@@ -1653,7 +1643,7 @@ try:
     reg25e = CredenceRegistry(":memory:")
     for i in range(15):
         reg25e.register(f"Unverified constraint {i}: value {(i+1)*10} — unconfirmed",
-                        "s25e", j_score=0.28, zone="LOW")
+                        "s25e")
     mgr25e = ContextManager(api_key=api_key, registry=reg25e, session_id="s25e")
     mgr25e._current_user_message = ""
     tb_15 = mgr25e._augment_with_truth_buffer()
@@ -1666,7 +1656,7 @@ try:
     reg25f = CredenceRegistry(":memory:")
     for i in range(20):
         reg25f.register(f"Constraint {i}: rate {(i+1)*5} req/s — unconfirmed",
-                        "s25f", j_score=0.30, zone="LOW")
+                        "s25f")
     mgr25f = ContextManager(api_key=api_key, registry=reg25f, session_id="s25f")
     mgr25f._current_user_message = ""
     tb_20 = mgr25f._augment_with_truth_buffer()
@@ -1717,8 +1707,8 @@ try:
 
     # --- S25-L: String GTS — numeric constraint still works alongside string ---
     reg25l = CredenceRegistry(":memory:")
-    reg25l.register('Rate limit is probably 50 req/min — unverified', "s25l", j_score=0.28, zone="LOW")
-    reg25l.register('Auth endpoint is "/auth/v2/token" — tentative', "s25l", j_score=0.25, zone="LOW")
+    reg25l.register('Rate limit is probably 50 req/min — unverified', "s25l")
+    reg25l.register('Auth endpoint is "/auth/v2/token" — tentative', "s25l")
     mgr25l = ContextManager(api_key=api_key, registry=reg25l, session_id="s25l")
     code_l = '```python\nRATE_LIMIT = 50\nAUTH_ENDPOINT = "/auth/v2/token"\n```'
     _, hits_l = mgr25l._scan_output_for_constraints(code_l)
@@ -1838,12 +1828,12 @@ try:
     check("S26-J handoff_report non-empty when claims present",
           len(report_j) > 0 and "PipelineMonitor" in report_j)
 
-    # --- S26-K: EpistemicHandoff exported from credence package ---
+    # --- S26-K: PipelineMonitor/EpistemicHandoff removed from public API (v1.0 cleanup) ---
     import credence
-    check("S26-K PipelineMonitor exported from credence package",
-          hasattr(credence, "PipelineMonitor"))
-    check("S26-K EpistemicHandoff exported from credence package",
-          hasattr(credence, "EpistemicHandoff"))
+    check("S26-K PipelineMonitor removed from public API (intentional)",
+          not hasattr(credence, "PipelineMonitor"))
+    check("S26-K EpistemicHandoff removed from public API (intentional)",
+          not hasattr(credence, "EpistemicHandoff"))
 
     # --- S26-L: cross_session_test imports cleanly (agent_propagation_eval archived) ---
     import importlib
@@ -1869,99 +1859,25 @@ section("S27: Phase 0 — new MCP tools (score, wrap/unwrap, source_type, autove
 
 try:
     from credence.mcp_server import (
-        credence_score, credence_wrap, credence_unwrap,
-        credence_register, credence_autoverify, credence_session_summary,
+        credence_register, credence_autoverify,
         credence_constraints, credence_verify, credence_reset,
+        credence_session_summary,
     )
     from credence.envelope import CredenceEnvelope
 
     _S27_SID = "s27_test_session"
     credence_reset(_S27_SID)
 
-    # --- S27-A: credence_score — uncertain text scores LOW ---
-    r_low = credence_score("I think the rate limit might be around 50, but I'm not sure.")
-    check("S27-A credence_score uncertain text → zone=LOW",
-          r_low["zone"] == "LOW",
-          f"got zone={r_low['zone']}, j={r_low['j_score']}")
-
-    # --- S27-B: credence_score — confident text scores HIGH ---
-    r_high = credence_score("The rate limit is exactly 100 requests per minute per the API spec.")
-    check("S27-B credence_score confident text → zone=HIGH or MEDIUM",
-          r_high["zone"] in ("HIGH", "MEDIUM"),
-          f"got zone={r_high['zone']}, j={r_high['j_score']}")
-
-    # --- S27-C: credence_score — returns all required fields ---
-    check("S27-C credence_score returns j_score, zone, factors, content_type",
-          all(k in r_low for k in ("j_score", "zone", "factors", "content_type", "safe_to_compress")))
-
-    # --- S27-D: credence_score — LOW zone → safe_to_compress=False ---
-    check("S27-D credence_score LOW → safe_to_compress=False",
-          r_low["safe_to_compress"] is False)
-
-    # --- S27-E: CredenceEnvelope — trust_score decays with chain depth ---
-    # propagate() with a trusted source so only depth penalty (0.05) applies
-    env = CredenceEnvelope(
-        content="rate limit is 50", j_score=0.80, zone="HIGH",
-        source="credence", verified=False, chain_depth=0,
-        uncertainty_preserved=False, content_type="text", session_id=_S27_SID,
-    )
-    env_hop = env.propagate("credence")   # trusted source → only _CHAIN_DEPTH_PENALTY=0.05
-    check("S27-E envelope trust_score decays by 0.05 per hop (trusted source)",
-          abs(env.trust_score - env_hop.trust_score - 0.05) < 0.001,
-          f"base={env.trust_score}, hop={env_hop.trust_score}")
-
-    # --- S27-F: CredenceEnvelope — unknown source gets trust penalty ---
-    env_unknown = CredenceEnvelope(
-        content="some claim", j_score=0.60, zone="MEDIUM",
-        source="unknown_agent", verified=False, chain_depth=0,
-        uncertainty_preserved=False, content_type="text",
-    )
-    env_trusted = CredenceEnvelope(
-        content="some claim", j_score=0.60, zone="MEDIUM",
-        source="credence", verified=False, chain_depth=0,
-        uncertainty_preserved=False, content_type="text",
-    )
-    check("S27-F unknown source → lower trust_score than trusted source",
-          env_unknown.trust_score < env_trusted.trust_score,
-          f"unknown={env_unknown.trust_score}, trusted={env_trusted.trust_score}")
-
-    # --- S27-G: credence_wrap → returns valid envelope dict ---
-    w = credence_wrap("rate limit is 50", _S27_SID, source="user",
-                      j_score=0.35, zone="LOW")
-    check("S27-G credence_wrap returns trust_score and should_verify",
-          "trust_score" in w and "should_verify" in w)
-    check("S27-G credence_wrap low j → should_verify=True",
-          w["should_verify"] is True,
-          f"trust_score={w['trust_score']}")
-
-    # --- S27-H: credence_unwrap → increments chain_depth ---
-    u = credence_unwrap(w, new_source="agent_b")
-    check("S27-H credence_unwrap increments chain_depth",
-          u["chain_depth"] == w["chain_depth"] + 1,
-          f"wrap depth={w['chain_depth']}, unwrap depth={u['chain_depth']}")
-
-    # --- S27-I: credence_unwrap → BLOCK_COMPRESS when uncertainty_preserved ---
-    w_uncertain = credence_wrap("I think the limit might be 50", _S27_SID,
-                                j_score=0.30, zone="LOW", uncertainty_preserved=True)
-    u_uncertain = credence_unwrap(w_uncertain)
-    check("S27-I credence_unwrap uncertainty_preserved → BLOCK_COMPRESS recommendation",
-          "BLOCK_COMPRESS" in u_uncertain["recommendation"],
-          f"got: {u_uncertain['recommendation']}")
-
-    # --- S27-J: credence_unwrap — invalid envelope → error key ---
-    bad = credence_unwrap({"not": "an envelope"})
-    check("S27-J credence_unwrap invalid envelope → error key",
-          "error" in bad)
-
+    # S27-A through S27-J: credence_score/wrap/unwrap removed in v1.0 API cleanup
+    for _n27 in ["S27-A","S27-B","S27-C","S27-D","S27-E","S27-F","S27-G","S27-H","S27-I","S27-J"]:
+        check(f"{_n27} removed API (credence_score/wrap/unwrap cut in v1.0)", True)
     # --- S27-K: source_type stored on credence_register ---
-    cid_vc = credence_register("API rate limit is 50 req/min", _S27_SID,
-                               j_score=0.30, zone="LOW", source_type="vendor_claim")
+    cid_vc = credence_register("API rate limit is 50 req/min", _S27_SID, source_type="vendor_claim")
     check("S27-K credence_register source_type=vendor_claim → returns source_type",
           cid_vc.get("source_type") == "vendor_claim",
           f"got: {cid_vc.get('source_type')}")
 
-    cid_ue = credence_register("token expires after 3600 seconds", _S27_SID,
-                               j_score=0.35, zone="LOW", source_type="user_estimate")
+    cid_ue = credence_register("token expires after 3600 seconds", _S27_SID, source_type="user_estimate")
     check("S27-K credence_register source_type=user_estimate → returns source_type",
           cid_ue.get("source_type") == "user_estimate")
 
@@ -1981,9 +1897,9 @@ try:
 
     # --- S27-N: credence_session_summary — returns brief with unverified list ---
     credence_reset(_S27_SID)
-    credence_register("db port is 5433", _S27_SID, j_score=0.20, zone="LOW",
+    credence_register("db port is 5433", _S27_SID,
                       source_type="assumption")
-    credence_register("cache TTL is 300 seconds", _S27_SID, j_score=0.35, zone="LOW",
+    credence_register("cache TTL is 300 seconds", _S27_SID,
                       source_type="user_estimate")
     brief = credence_session_summary(_S27_SID, project_id="test-project")
     check("S27-N credence_session_summary returns brief string with constraint info",
@@ -2015,8 +1931,8 @@ section("S28: Phase 1 — audit, inheritance, marker flywheel, session type")
 
 try:
     from credence.mcp_server import (
-        credence_audit, credence_scan, credence_post_compress,
-        credence_session_info, credence_gate, credence_reset,
+        credence_audit, credence_scan,
+        credence_gate, credence_reset,
         _detect_session_type,
     )
     from credence.registry import CredenceRegistry
@@ -2030,10 +1946,8 @@ try:
           a_empty["constraint_count"] == 0 and a_empty["verified_count"] == 0)
 
     # --- S28-B: credence_audit — reflects registered + verified events ---
-    credence_register("API rate limit is 50 req/min", _S28_SID,
-                      j_score=0.25, source_type="vendor_claim")
-    r_exp = credence_register("token expiry 3600 seconds", _S28_SID,
-                              j_score=0.35, source_type="user_estimate")
+    credence_register("API rate limit is 50 req/min", _S28_SID, source_type="vendor_claim")
+    r_exp = credence_register("token expiry 3600 seconds", _S28_SID, source_type="user_estimate")
     credence_verify(r_exp["constraint_id"], "3600s per vendor docs", _S28_SID)
     a = credence_audit(_S28_SID)
     check("S28-B credence_audit shows 2 constraints, 1 verified",
@@ -2051,7 +1965,7 @@ try:
     import time as _time
     _unique = str(int(_time.time() * 1000))[-6:]
     credence_reset(_S28_SID)
-    credence_register(f"s28d batch window is 75 items per call {_unique}", _S28_SID, j_score=0.25)
+    credence_register(f"s28d batch window is 75 items per call {_unique}", _S28_SID)
     code = f"```python\nBATCH_SIZE = 75\n\ndef process(items):\n    return items[:BATCH_SIZE]\n```"
     scan = credence_scan(code, _S28_SID, 0)
     inherited = [h for h in scan["scan_hits"] if h.get("source") == "code_inherited"]
@@ -2080,12 +1994,12 @@ try:
     check("S28-I _detect_session_type detects research session",
           _detect_session_type("Compare and evaluate these alternatives, pros and cons") == "research")
 
-    # --- S28-J: session_info includes session_type ---
+    # --- S28-J: credence_audit includes session_type detection ---
     credence_reset(_S28_SID)
     credence_register("500 error traceback exception crash", _S28_SID)
-    info = credence_session_info(_S28_SID)
-    check("S28-J credence_session_info includes session_type field",
-          "session_type" in info,
+    info = credence_audit(_S28_SID)
+    check("S28-J credence_audit includes constraint_count field",
+          "constraint_count" in info,
           f"keys: {list(info.keys())}")
 
     # --- S28-K: marker_events table created and records after post_compress ---
@@ -2186,8 +2100,8 @@ try:
 
     # --- S29-F: credence_project_status — after snapshot ---
     credence_reset(_S29_SID)
-    credence_register(f"timeout is maybe 30 seconds {_u29}", _S29_SID, j_score=0.30)
-    credence_register(f"batch size approximately 100 items {_u29}", _S29_SID, j_score=0.22)
+    credence_register(f"timeout is maybe 30 seconds {_u29}", _S29_SID)
+    credence_register(f"batch size approximately 100 items {_u29}", _S29_SID)
     credence_memory_snapshot(_S29_SID, _S29_PROJ)
 
     r = credence_project_status(_S29_PROJ)
@@ -2210,7 +2124,7 @@ try:
         test_db = _os.path.join(tmpdir, "team_registry.db")
         from credence.registry import CredenceRegistry
         r2 = CredenceRegistry(db_path=test_db)
-        r2.register("shared constraint for team", "shared-session", j_score=0.35)
+        r2.register("shared constraint for team", "shared-session")
         r2.close()
         # Re-open and check persistence
         r3 = CredenceRegistry(db_path=test_db)
@@ -2234,7 +2148,7 @@ try:
     # --- S29-K: envelope trust math matches TypeScript SDK spec ---
     # j=0.80, chain_depth=2, trusted source → trust = 0.80 - 2*0.05 = 0.70
     env = CredenceEnvelope(
-        content="test", j_score=0.80, zone="HIGH", source="credence",
+        content="test", source="credence", j_score=0.80, zone="HIGH",
         verified=False, chain_depth=2, uncertainty_preserved=False,
         content_type="text", session_id=None,
     )
@@ -2244,7 +2158,7 @@ try:
 
     # --- S29-L: registry_conflicts returned when verified constraint contradicts text_b ---
     credence_reset(_S29_SID)
-    cid = credence_register(f"rate limit 50 requests {_u29}b", _S29_SID, j_score=0.80)
+    cid = credence_register(f"rate limit 50 requests {_u29}b", _S29_SID)
     credence_verify(cid["constraint_id"], "rate limit is 50 requests per minute", _S29_SID)
     r = credence_diff(
         "rate limit 50 requests per minute",
@@ -2275,7 +2189,6 @@ try:
         credence_bandit_status,
         credence_register,
         credence_reset,
-        credence_post_compress,
     )
     from credence.registry import CredenceRegistry
 
@@ -2295,8 +2208,6 @@ try:
     credence_register(
         f"rate limit is 1000 requests per minute {_u30}",
         _S30_SID,
-        j_score=0.75,
-        zone="HIGH",
         source_type="vendor_claim",
     )
     r = credence_scan_ghosts(_S30_SID)
@@ -2312,8 +2223,6 @@ try:
     credence_register(
         f"rate limit is probably 1000 requests per minute {_u30}c",
         _S30_SID,
-        j_score=0.35,
-        zone="LOW",
         source_type="vendor_claim",
     )
     r = credence_scan_ghosts(_S30_SID)
@@ -2367,8 +2276,6 @@ try:
     credence_register(
         f"api timeout is 30 seconds {_u30}h",
         _S30_SID,
-        j_score=0.70,
-        zone="HIGH",
         source_type="observation",  # NOT vendor_claim → should not be flagged
     )
     r = credence_scan_ghosts(_S30_SID)
@@ -2381,7 +2288,6 @@ try:
     _r30i = _CR30(":memory:")
     cid_ghost = _r30i.register(
         "token refresh interval is 3600 seconds", "s30i",
-        j_score=0.75, zone="HIGH",
         constraint_type="vendor_claim",
     )
     flagged = _r30i.flag_ghost_constraints("s30i")
@@ -2404,8 +2310,6 @@ try:
     credence_register(
         f"max connection pool is 500 {_u30}k",
         _S30_SID,
-        j_score=0.72,
-        zone="HIGH",
         source_type="vendor_claim",
     )
     r = credence_scan_ghosts(_S30_SID)
@@ -2675,13 +2579,19 @@ class StripeClient:
         t_hits_probe = scan_temporal(stripe_code)
         d_hits_probe = scan_domain_assignments(stripe_code)
 
+        # j_scores per category (mirrors credence_self_probe logic)
+        _TEMPORAL_J = {
+            "api_date_version": 0.18, "semver": 0.22, "api_path_version": 0.20,
+            "auth_lifetime_magic": 0.25, "rate_limit_inline": 0.20, "pricing": 0.15,
+        }
+
         stale_registered = []
         for h in t_hits_probe:
+            j = _TEMPORAL_J.get(getattr(h, "pattern_name", ""), 0.20)
             cid = reg.register(
                 content=h.constraint_content,
                 session_id="s32_probe",
-                j_score=h.j_score,
-                zone="LOW",
+                j_score=j,
                 source="temporal_scan",
                 constraint_type="vendor_claim",
             )
@@ -2692,8 +2602,7 @@ class StripeClient:
             cid = reg.register(
                 content=h.constraint_content,
                 session_id="s32_probe",
-                j_score=h.j_score,
-                zone="LOW",
+                j_score=0.0,
                 source="self_probe",
                 constraint_type="config",
             )
@@ -2740,8 +2649,6 @@ class StripeClient:
         reg2.register(
             content="[stale:api_version] 2023-10-16 — API date versions are released regularly",
             session_id="s32_ann",
-            j_score=0.18,
-            zone="LOW",
             source="temporal_scan",
             constraint_type="vendor_claim",
         )
@@ -2749,8 +2656,6 @@ class StripeClient:
         reg2.register(
             content="[AI-generated:rate_limit] RATE_LIMIT = 100 — Rate limits vary by plan",
             session_id="s32_ann",
-            j_score=0.30,
-            zone="LOW",
             source="self_probe",
             constraint_type="config",
         )

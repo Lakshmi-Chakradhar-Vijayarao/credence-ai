@@ -159,12 +159,13 @@ Credence is the reference implementation of ETP, deployed as an MCP server.
 
 | Tool | Phase | Purpose |
 |------|-------|---------|
-| `credence_pre_compress` | Before compression | BLOCK if uncertainty qualifiers present |
-| `credence_post_compress` | After compression | Measure qualifier survival rate |
 | `credence_register` | Any time | Register an uncertain constraint |
+| `credence_autoverify` | On every user message | Auto-match confirmations to open constraints |
 | `credence_verify` | On confirmation | Mark a constraint as verified |
 | `credence_constraints` | Any time | Query unverified constraints for a session |
 | `credence_gate` | Before irreversible action | Block if unverified constraints apply |
+| `credence_scan` | After generation | Annotate output with ⚠⚠/⚠ markers |
+| `credence_self_probe` | After code generation | Extract and register values from code |
 | `credence_scan` | Before shipping code | Annotate unverified literals inline |
 | `credence_wrap` | Before agent handoff | Attach ETP envelope to content |
 | `credence_unwrap` | On receiving from agent | Inspect provenance, increment chain_depth |
