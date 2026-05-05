@@ -21,9 +21,8 @@ As AI agents make higher-stakes decisions, uncertainty is not a weakness to hide
 ## Run the Demo
 
 ```bash
-python quickstart.py           # 30 seconds, no API key
-python demo/live_demo.py       # full pipeline trace, no API key
-streamlit run demo/app.py      # interactive 5-tab demo (failure / fix / live chat / evidence / multi-agent)
+credence demo                  # 30 seconds, no API key
+python demo/gate_demo.py       # gate enforcement trace, no API key
 ```
 
 ---

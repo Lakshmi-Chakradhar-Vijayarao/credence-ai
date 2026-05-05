@@ -226,8 +226,7 @@ verified facts, and trajectory history.
 
 ## JSON Schema
 
-The machine-readable schema is at `etp_schema.json` (root of this repository) and
-`docs/etp_v1.json`.
+The machine-readable schema is at `docs/etp_schema.json`.
 
 ```
 $schema: https://json-schema.org/draft/2020-12/schema

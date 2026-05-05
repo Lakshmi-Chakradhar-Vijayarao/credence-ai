@@ -196,7 +196,7 @@ github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai
 - [x] All 596 tests passing (`python -m pytest tests/ -q`)
 - [x] Code pushed to GitHub (v1.0.0 tag pending — create at github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai/releases/new)
 - [ ] `pip install credence-guard` installs cleanly from PyPI
-- [ ] `python quickstart.py` runs without API key
+- [ ] `credence demo` runs without API key
 - [ ] demo/gate_demo.gif renders correctly in README on GitHub
 - [ ] arXiv submission queued (or preprint linked in README)
 - [ ] HN post ready — post 9-10am US Eastern on a Tuesday/Wednesday

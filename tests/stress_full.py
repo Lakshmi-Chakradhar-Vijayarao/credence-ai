@@ -881,8 +881,8 @@ section("ST-13: ETP — JSON schema file, envelope field completeness")
 try:
     # Schema file exists and is valid JSON
     schema_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                               "etp_schema.json")
-    check("ST-13-A: etp_schema.json exists at repo root", os.path.exists(schema_path),
+                               "docs", "etp_schema.json")
+    check("ST-13-A: etp_schema.json exists at docs/", os.path.exists(schema_path),
           f"looked at {schema_path}")
 
     with open(schema_path) as f:

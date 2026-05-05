@@ -92,12 +92,18 @@ def main() -> int:
     print("Add to .claude/settings.json:")
     print("""  {
     "hooks": {
+      "UserPromptSubmit": [{
+        "hooks": [{"type": "command", "command": "python3 -m credence.observer"}]
+      }],
       "PreToolUse": [{
         "matcher": "Write|Edit|Bash|NotebookEdit",
         "hooks": [{"type": "command", "command": "credence-gate"}]
       }]
     }
-  }""")
+  }
+
+  UserPromptSubmit: passive observer — registers uncertain values automatically.
+  PreToolUse: enforcement gate — blocks writes containing unverified values.""")
     return 0
 
 

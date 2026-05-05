@@ -1,0 +1,184 @@
+"""
+credence/observer.py
+====================
+Passive conversation-stream observer for automatic epistemic tracking.
+
+Registers uncertain values from user messages WITHOUT requiring model
+cooperation. The model never needs to call credence_register — this hook
+fires on every user message and does it automatically.
+
+This removes the fundamental fragility of instruction-dependent enforcement:
+if the model ignores CLAUDE.md, the registry is still populated.
+
+Hook configuration (add to .claude/settings.json):
+----------------------------------------------------
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [{
+          "type": "command",
+          "command": "python3 -m credence.observer"
+        }]
+      }
+    ]
+  }
+}
+
+The PreToolUse gate (hooks.py) is still required for enforcement.
+This observer is the detection layer; hooks.py is the enforcement layer.
+
+Exit codes: always 0 — observer never blocks.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+
+# ── Uncertainty markers — authoritative copy lives in context_manager.py.
+# Inline here to avoid a slow import on every hook invocation.
+_UNCERTAINTY_MARKERS = frozenset({
+    "not certain", "not sure", "uncertain", "tentative", "unverified",
+    "approximately", "roughly", "i think", "i believe", "i'm not",
+    "might be", "might not", "may be", "possibly", "perhaps",
+    "i'd verify", "need to check", "should verify", "to verify",
+    "approx", "tbd",
+    "probably", "maybe", "provisionally", "preliminary", "supposedly",
+    "ambiguous", "unclear", "hasn't clarified", "not yet clarified",
+    "unconfirmed", "not confirmed", "not yet confirmed", "open question",
+    "needs verification", "need to verify",
+    "not yet decided", "not decided", "to be determined", "to be confirmed",
+    "haven't confirmed", "haven't verified", "haven't checked",
+    "depending on", "depends on whether", "subject to", "contingent on",
+    "once we confirm", "once we verify", "pending confirmation",
+    "as far as i know", "to my knowledge", "to my understanding",
+    "if i recall", "i seem to recall", "last time i checked",
+    "best of my knowledge",
+    "working theory", "my assumption", "i'm assuming", "in theory",
+    "could be wrong", "not 100%", "not entirely sure",
+    "the vendor said", "they mentioned", "reportedly",
+    "the docs say", "i read somewhere", "heard that", "we were told",
+    "give or take", "ballpark", "order of magnitude", "in the range of",
+    "somewhere around", "plus or minus", "estimated at",
+    "untested", "not yet tested", "haven't tested", "not benchmarked",
+    "iirc", "afaik", "if i recall correctly", "from memory",
+    "off the top of my head", "as best i recall", "i think i remember",
+    "i'm unsure", "unsure", "not sure which", "unsure of",
+    "according to the rep", "per the ticket", "vendor claims",
+    "sales rep said", "they told us", "our rep mentioned",
+    "according to their docs", "per their docs",
+    "per the vendor", "from the vendor", "according to the vendor",
+    "vendor estimate", "vendor ballpark", "vendor said",
+    "the demo showed", "from the demo",
+    "from a quote", "per the quote", "their estimate",
+})
+
+_MARKER_RE = re.compile(
+    r'\b(' + '|'.join(re.escape(m) for m in sorted(_UNCERTAINTY_MARKERS, key=len, reverse=True)) + r')\b',
+    re.IGNORECASE,
+)
+
+# Ghost constraint heuristic — same conditions as CLAUDE.md:
+# numeric value + domain keyword + not inside a URL
+_DOMAIN_KW_RE = re.compile(
+    r'\b(rate[\s_-]?limit|auth[\s_-]?lifetime|token[\s_-]?expir|ttl|'
+    r'api[\s_-]?version|pricing|cost[\s_-]?per|price[\s_-]?per|'
+    r'quota|max[\s_-]?retries|timeout|concurrency)\b',
+    re.IGNORECASE,
+)
+_NUMERIC_RE   = re.compile(r'\b\d+(?:\.\d+)?\b')
+_URL_CTX_RE   = re.compile(r'(?:://|[?=&/]v?)\d')
+
+
+def _classify(text: str) -> tuple[bool, str]:
+    """Return (should_register, source_type) for a text fragment."""
+    lower = text.lower()
+
+    # Explicit uncertainty marker → user_estimate
+    if _MARKER_RE.search(lower):
+        return True, "user_estimate"
+
+    # Ghost heuristic: numeric + domain keyword + not a URL value
+    if (_NUMERIC_RE.search(text)
+            and _DOMAIN_KW_RE.search(text)
+            and not _URL_CTX_RE.search(text)):
+        return True, "vendor_claim"
+
+    return False, ""
+
+
+def _derive_session_id() -> str:
+    """Stable session id from cwd — matches CLAUDE.md auto-derivation."""
+    return hashlib.md5(os.getcwd().encode()).hexdigest()[:8] + "_auto"
+
+
+def observe(text: str, session_id: str, db_path: str) -> bool:
+    """
+    Inspect a text fragment and register it if uncertain.
+    Returns True if a registration was made.
+    """
+    text = text.strip()
+    if len(text) < 12:
+        return False
+
+    should, source_type = _classify(text)
+    if not should:
+        return False
+
+    try:
+        from credence.registry import CredenceRegistry
+        reg = CredenceRegistry(db_path)
+        reg.register(
+            content=text[:500],
+            session_id=session_id,
+            j_score=0.0,
+            zone="LOW",
+            source=source_type,
+            constraint_type="observation",
+        )
+        return True
+    except Exception:
+        return False
+
+
+def _extract_text(payload: dict) -> str:
+    """Pull user message text from a UserPromptSubmit hook payload."""
+    # Claude Code sends the prompt as either a string or a list of content parts
+    content = payload.get("prompt", payload.get("message", ""))
+    if isinstance(content, list):
+        return " ".join(
+            p.get("text", "") for p in content
+            if isinstance(p, dict) and p.get("type") == "text"
+        )
+    return str(content) if content else ""
+
+
+def main() -> int:
+    try:
+        raw = sys.stdin.read()
+        payload = json.loads(raw) if raw.strip() else {}
+    except (json.JSONDecodeError, ValueError):
+        return 0
+
+    text = _extract_text(payload)
+    if not text:
+        return 0
+
+    db_path    = os.environ.get("CREDENCE_DB", "epistemic_registry.db")
+    session_id = os.environ.get("CREDENCE_SESSION_ID") or _derive_session_id()
+
+    if not os.path.exists(db_path):
+        return 0
+
+    observe(text, session_id, db_path)
+    return 0  # observer never blocks
+
+
+if __name__ == "__main__":
+    sys.exit(main())
