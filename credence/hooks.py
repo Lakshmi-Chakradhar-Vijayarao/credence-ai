@@ -158,7 +158,7 @@ def main() -> int:
         return 0
 
     # --- Block and warn ------------------------------------------------------
-    reasons = " | ".join(b["content"][:60] for b in blocking[:2])
+    reasons = " | ".join(b["content"][:100] for b in blocking[:2])
     lines = [
         f"credence: blocked {tool_name} — {len(blocking)} unverified value(s)",
         f"  → {reasons}",

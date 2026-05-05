@@ -42,6 +42,29 @@ Every other tool warns. Credence enforces.
 
 ---
 
+## What it looks like
+
+```python
+# Claude generates this. Credence intercepts before it ships.
+
+class StripeClient:
+    API_VERSION  = "2023-10-16"  # ⚠⚠ CREDENCE[stale]: API date versions change on release — verify before shipping
+    RATE_LIMIT   = 100           # ⚠  CREDENCE[unverified]: I think Stripe rate limit is around 100 req/min
+    TOKEN_EXPIRY = 3600          # ⚠⚠ CREDENCE[stale]: Token/session lifetime values are set by the vendor — verify
+    MAX_RETRIES  = 3
+    TIMEOUT_MS   = 5000
+```
+
+```
+credence: blocked Edit — 2 unverified value(s)
+  → I think Stripe rate limit is around 100 req/min | TOKEN_EXPIRY = 3600
+  Verify first, then retry. Use credence_constraints to see all pending.
+```
+
+After you confirm: `"Confirmed — rate limit is 100 req/min per stripe.com/docs"` → gate clears.
+
+---
+
 ## Setup
 
 **1. Add to `.mcp.json`:**
@@ -67,6 +90,8 @@ Every other tool warns. Credence enforces.
 ```
 
 Done. No API key required.
+
+> **Note:** Credence creates `epistemic_registry.db` in your working directory. Add `*.db` to your project's `.gitignore`, or set `CREDENCE_DB_PATH=~/.credence/registry.db` to keep it global.
 
 ---
 

@@ -43,7 +43,10 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -e ".[dev,mcp]"
+        run: pip install -e ".[dev,mcp,api]"
+
+      - name: Ruff lint
+        run: ruff check credence/
 
       - name: Check all core exports
         run: |

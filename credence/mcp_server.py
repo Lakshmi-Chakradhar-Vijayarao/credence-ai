@@ -7,7 +7,7 @@ Works with any coding agent: Claude Code, Codex, Cursor, Copilot.
 The agent uses its own model for intelligence; Credence provides the
 extraction, registration, and annotation layer deterministically.
 
-Tools (11 total, zero LLM calls):
+Tools (17 total, zero LLM calls):
     credence_register        — register an uncertain constraint explicitly
     credence_verify          — mark a constraint as verified
     credence_autoverify      — auto-verify constraints on confirmation phrases
@@ -20,6 +20,12 @@ Tools (11 total, zero LLM calls):
     credence_memory_recall   — load project memory into a new session
     credence_audit           — per-session epistemic timeline
     credence_reset           — clear all constraints for a session
+    credence_session_summary — plain-English digest of session epistemic state
+    credence_diff            — detect epistemic contradictions between two texts
+    credence_project_status  — project-wide epistemic health dashboard
+    credence_scan_ghosts     — flag ghost constraints (numeric + domain, no docs)
+    credence_marker_health   — marker precision diagnostic (returns "insufficient data" below threshold)
+    credence_bandit_status   — adaptive threshold state (returns "learning" below threshold)
 
 Resources (passive, epistemic:// URI scheme):
     epistemic://session/{session_id}/ledger             — all constraints
@@ -96,6 +102,7 @@ def _get_registry() -> CredenceRegistry:
             if _registry is None:  # double-checked locking
                 db_path = (
                     os.environ.get("CREDENCE_DB_PATH")
+                    or os.environ.get("CREDENCE_DB")           # alias used by hooks.py / observer.py
                     or os.environ.get("CREDENCE_REGISTRY_PATH")
                     or "epistemic_registry.db"
                 )
@@ -141,7 +148,7 @@ def _scan_output(output_text: str, registry: CredenceRegistry, session_id: str, 
 
     def _annotation(c: dict, snippet: str, for_code: bool) -> str:
         source = c.get("source", "")
-        text   = (c.get("content") or "")[:60]
+        text   = (c.get("content") or "")[:110]
         if source == "temporal_scan":
             tier = "⚠⚠ CREDENCE[stale]"
         else:

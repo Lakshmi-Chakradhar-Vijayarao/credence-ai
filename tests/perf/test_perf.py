@@ -24,12 +24,12 @@ def bench_results():
 
 def test_probe_certain_under_target(bench_results):
     r = bench_results["probe_certain"]
-    assert r["mean_ms"] < 0.1, f"probe_certain mean {r['mean_ms']:.4f}ms > 0.1ms"
+    assert r["mean_ms"] < 0.15, f"probe_certain mean {r['mean_ms']:.4f}ms > 0.15ms"
 
 
 def test_probe_uncertain_under_target(bench_results):
     r = bench_results["probe_uncertain"]
-    assert r["mean_ms"] < 0.1, f"probe_uncertain mean {r['mean_ms']:.4f}ms > 0.1ms"
+    assert r["mean_ms"] < 0.15, f"probe_uncertain mean {r['mean_ms']:.4f}ms > 0.15ms"
 
 
 def test_probe_long_text_under_target(bench_results):

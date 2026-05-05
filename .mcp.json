@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "credence-guard": {
+    "credence": {
       "type": "stdio",
       "command": "credence-server",
       "env": {}

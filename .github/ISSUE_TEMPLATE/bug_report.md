@@ -33,7 +33,7 @@ What should have happened instead.
 **Environment**
 - OS:
 - Python version:
-- `pip show credence-ai` output:
+- `pip show credence-guard` output:
 - Rust gate built? (yes/no):
 
 **Offline or API?**

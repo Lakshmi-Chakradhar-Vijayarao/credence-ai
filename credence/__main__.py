@@ -147,7 +147,7 @@ class StripeClient:
         print(f"  ⚙  credence_gate  →  proceed: False")
         print(f"     {len(blocked)} constraint(s) block writing stripe_client.py:")
         for b in blocked[:4]:
-            print(f"     ⚠  {b['content'][:65]}")
+            print(f"     ⚠  {b['content'][:100]}")
         print()
         time.sleep(0.4)
 
@@ -202,7 +202,7 @@ class StripeClient:
         print("  Every value that flows from conversation into code")
         print("  is tracked and must be verified before it ships.")
         print()
-        print("  Install:  pip install credence-guard fastmcp")
+        print('  Install:  pip install "credence-guard[mcp]"')
         print("  Docs:     github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai")
         _hr("═")
 
