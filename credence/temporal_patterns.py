@@ -122,6 +122,18 @@ _PATTERNS: list[TemporalPattern] = [
 ]
 
 
+# J-scores for temporal pattern categories — lower = more stale risk.
+# Kept here so mcp_server.py and the demo share a single source of truth.
+TEMPORAL_J_SCORES: dict[str, float] = {
+    "api_date_version":    0.18,
+    "semver":              0.22,
+    "api_path_version":    0.20,
+    "auth_lifetime_magic": 0.25,
+    "rate_limit_inline":   0.20,
+    "pricing":             0.15,
+}
+
+
 # ---------------------------------------------------------------------------
 # Domain assignment patterns — HIGH-SIGNAL ONLY
 #

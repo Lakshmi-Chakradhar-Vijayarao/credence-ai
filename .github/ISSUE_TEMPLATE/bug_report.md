@@ -5,11 +5,11 @@ labels: bug
 ---
 
 **Which layer?**
-- [ ] Faithfulness probe (CP1)
-- [ ] Truth Buffer / Consistency Enforcer (CP2)
-- [ ] Generation-Time Scanner (CP3)
-- [ ] Rust gate (CP4)
-- [ ] Cross-session memory (CP5)
+- [ ] Observer hook (UserPromptSubmit — registers uncertain values)
+- [ ] Gate hook (PreToolUse — blocks writes)
+- [ ] Scan annotations (code output annotations)
+- [ ] Rust gate (`credence-gate` binary)
+- [ ] Cross-session memory (snapshot / recall)
 - [ ] Registry / decay
 - [ ] MCP server
 - [ ] Other

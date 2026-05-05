@@ -62,7 +62,7 @@ evals/                        — validation studies (some require API key)
 ## Where to Contribute
 
 **High-value, no API needed:**
-- Expand `_UNCERTAINTY_MARKERS` in `context_manager.py` (currently 108 terms) — add domain-specific hedging language for medical, legal, financial domains
+- Expand `_UNCERTAINTY_MARKERS` in `context_manager.py` (currently 423 terms) — add domain-specific hedging language for medical, legal, financial domains
 - Expand `_CE_DOMAIN_SYNONYMS` in `context_manager.py` — add synonym clusters for new domains
 - Improve GTS prose scanning — better sentence boundary detection
 - Rust gate performance improvements
@@ -70,7 +70,7 @@ evals/                        — validation studies (some require API key)
 
 **Requires API key:**
 - New eval scenarios for `evals/gauntlet.py` (50 scenarios, always room for more domains)
-- Ghost constraint sessions for `evals/claim_gauntlet.py`
+- Ghost constraint sessions for `evals/ghost_gauntlet.py`
 
 ## Pull Request Guidelines
 
@@ -79,7 +79,7 @@ evals/                        — validation studies (some require API key)
 - If you change decay rates in `registry.py`, update the corresponding S2 tests in `tests/tests.py`
 - If you add uncertainty markers to `_UNCERTAINTY_MARKERS`, add a test case to the S22 suite
 - Keep the faithfulness probe scanning user turns only (not assistant code blocks) — see the comment block above `_has_uncertainty_in_user_turns()` for why
-- No new dependencies without discussion — the core package intentionally has only `anthropic` as a hard dependency
+- No new dependencies without discussion — the core package has zero hard dependencies; `anthropic` is optional (`pip install "credence-guard[api]"`)
 
 ## Reporting Issues
 

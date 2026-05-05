@@ -44,7 +44,7 @@ def run_demo() -> None:
 
     try:
         from credence.registry import CredenceRegistry
-        from credence.temporal_patterns import scan_temporal, scan_domain_assignments
+        from credence.temporal_patterns import scan_temporal, scan_domain_assignments, TEMPORAL_J_SCORES
         from credence.mcp_server import _scan_output, _get_registry, _expand_tokens, _CE_STOPWORDS
 
         reg = _get_registry()
@@ -92,18 +92,10 @@ class StripeClient:
         t_hits = scan_temporal(generated)
         d_hits = scan_domain_assignments(generated)
 
-        _TEMPORAL_J: dict[str, float] = {
-            "api_date_version":    0.18,
-            "semver":              0.22,
-            "api_path_version":    0.20,
-            "auth_lifetime_magic": 0.25,
-            "rate_limit_inline":   0.20,
-            "pricing":             0.15,
-        }
         for h in t_hits:
             reg.register(
                 content=h.constraint_content, session_id=SESSION,
-                j_score=_TEMPORAL_J.get(h.pattern_name, 0.20), zone="LOW",
+                j_score=TEMPORAL_J_SCORES.get(h.pattern_name, 0.20), zone="LOW",
                 source="temporal_scan", constraint_type="vendor_claim",
             )
         for h in d_hits:
@@ -146,8 +138,12 @@ class StripeClient:
         _hr()
         print(f"  ⚙  credence_gate  →  proceed: False")
         print(f"     {len(blocked)} constraint(s) block writing stripe_client.py:")
+        def _clean(s: str) -> str:
+            s = re.sub(r'^\[stale:[^\]]+\]\s*', '', s)
+            s = re.sub(r'^\[AI-generated:[^\]]+\]\s*', '', s)
+            return s
         for b in blocked[:4]:
-            print(f"     ⚠  {b['content'][:100]}")
+            print(f"     ⚠  {_clean(b['content'])[:130]}")
         print()
         time.sleep(0.4)
 

@@ -158,7 +158,12 @@ def main() -> int:
         return 0
 
     # --- Block and warn ------------------------------------------------------
-    reasons = " | ".join(b["content"][:100] for b in blocking[:2])
+    def _clean(s: str) -> str:
+        import re as _re
+        s = _re.sub(r'^\[stale:[^\]]+\]\s*', '', s)
+        s = _re.sub(r'^\[AI-generated:[^\]]+\]\s*', '', s)
+        return s
+    reasons = " | ".join(_clean(b["content"])[:100] for b in blocking[:2])
     lines = [
         f"credence: blocked {tool_name} — {len(blocking)} unverified value(s)",
         f"  → {reasons}",

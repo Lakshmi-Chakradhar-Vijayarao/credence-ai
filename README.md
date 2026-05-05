@@ -91,7 +91,7 @@ After you confirm: `"Confirmed — rate limit is 100 req/min per stripe.com/docs
 
 Done. No API key required.
 
-> **Note:** Credence creates `epistemic_registry.db` in your working directory. Add `*.db` to your project's `.gitignore`, or set `CREDENCE_DB_PATH=~/.credence/registry.db` to keep it global.
+> **Note:** Credence creates `epistemic_registry.db` in your working directory. Add `*.db` to your project's `.gitignore`, or set `CREDENCE_DB=~/.credence/registry.db` to keep it global.
 
 ---
 

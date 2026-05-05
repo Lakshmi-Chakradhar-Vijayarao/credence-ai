@@ -63,7 +63,7 @@ from .context_manager import (
     _GTS_QUALIFY_THRESHOLD,
 )
 from .registry import CredenceRegistry
-from .temporal_patterns import scan_temporal, scan_domain_assignments
+from .temporal_patterns import scan_temporal, scan_domain_assignments, TEMPORAL_J_SCORES
 
 # ---------------------------------------------------------------------------
 # Server
@@ -149,6 +149,9 @@ def _scan_output(output_text: str, registry: CredenceRegistry, session_id: str, 
     def _annotation(c: dict, snippet: str, for_code: bool) -> str:
         source = c.get("source", "")
         text   = (c.get("content") or "")[:110]
+        # Strip internal prefixes added by temporal_patterns.py before displaying
+        text = re.sub(r'^\[stale:[^\]]+\]\s*', '', text)
+        text = re.sub(r'^\[AI-generated:[^\]]+\]\s*', '', text)
         if source == "temporal_scan":
             tier = "⚠⚠ CREDENCE[stale]"
         else:
@@ -562,18 +565,10 @@ if _FASTMCP_AVAILABLE:
 
         # --- Pass 1: temporal patterns (structurally stale) ---
         # j_score from the pattern definition; stale values are HIGH RISK by default.
-        _TEMPORAL_J: dict[str, float] = {
-            "api_date_version":   0.18,
-            "semver":             0.22,
-            "api_path_version":   0.20,
-            "auth_lifetime_magic": 0.25,
-            "rate_limit_inline":  0.20,
-            "pricing":            0.15,
-        }
         temporal_hits = scan_temporal(code)
         stale_registered: list[dict] = []
         for h in temporal_hits:
-            j = _TEMPORAL_J.get(h.pattern_name, 0.20)
+            j = TEMPORAL_J_SCORES.get(h.pattern_name, 0.20)
             cid = registry.register(
                 content         = h.constraint_content,
                 session_id      = session_id,
