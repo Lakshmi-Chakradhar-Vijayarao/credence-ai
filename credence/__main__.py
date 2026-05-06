@@ -291,6 +291,9 @@ def main() -> None:
     args = sys.argv[1:]
     if not args or args[0] == "demo":
         run_demo()
+    elif args[0] in ("--version", "-V", "version"):
+        import credence as _c
+        print(_c.__version__)
     elif args[0] == "server":
         from credence.mcp_server import main as server_main
         server_main()
@@ -300,9 +303,10 @@ def main() -> None:
     elif args[0] == "stats":
         run_stats()
     else:
-        print("Usage: credence [demo|server|feedback|stats]")
+        print("Usage: credence [demo|server|feedback|stats|--version]")
         print("       credence demo         — run 30-second smoke test (no API key needed)")
         print("       credence server       — start MCP server")
+        print("       credence --version    — print installed version")
         print("       credence feedback 1   — last gate block was correct (true positive)")
         print("       credence feedback 2   — last gate block was noise (false positive)")
         print("       credence feedback 3   — skip / unsure")
