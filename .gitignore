@@ -34,6 +34,9 @@ credence_gate/epistemic_registry.db.bak
 _archive/
 scratch/
 
+# Paper draft and figures — not public until formally published
+paper/
+
 # Large model weights — too big for git (31MB, use Kaggle/HuggingFace Hub)
 models/
 
