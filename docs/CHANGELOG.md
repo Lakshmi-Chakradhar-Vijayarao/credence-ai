@@ -6,6 +6,18 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.2.4] — 2026-05-06
+
+### Added
+- `credence --version` / `credence -V` flag — prints installed package version.
+- 6 missing tools added to CLAUDE.md quick reference: `credence_session_summary`, `credence_project_status`, `credence_scan_ghosts`, `credence_audit`, `credence_diff`, `credence_reset`.
+
+### Fixed
+- SECURITY.md: corrected "no per-session rate limit" claim — cap was already implemented at 500/session (`CREDENCE_MAX_CONSTRAINTS`).
+- README: documented `CREDENCE_MAX_CONSTRAINTS` env var and `credence stats` / `credence feedback` CLI commands.
+
+---
+
 ## [1.2.3] — 2026-05-06
 
 ### Fixed
