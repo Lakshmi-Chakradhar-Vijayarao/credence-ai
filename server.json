@@ -3,12 +3,12 @@
   "name": "io.github.Lakshmi-Chakradhar-Vijayarao/credence",
   "title": "Credence — Epistemic Guard",
   "description": "Epistemic guard for AI coding: tracks uncertain values and blocks writes until verified.",
-  "version": "1.2.3",
+  "version": "1.2.5",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "credence-guard",
-      "version": "1.2.3",
+      "version": "1.2.5",
       "installInstructions": "pip install credence-guard",
       "transport": {
         "type": "stdio"
