@@ -8,7 +8,7 @@ AI doesn't remember what it wasn't sure about. Credence does.
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ```bash
-pip install "credence-guard[mcp]"
+pip install credence-guard
 credence demo   # 30-second smoke test, no API key required
 ```
 
@@ -184,4 +184,4 @@ paper/            Research paper draft + figures
 
 MIT License
 
-<!-- mcp-name: io.github.lakshmi-chakradhar-vijayarao/credence -->
+<!-- mcp-name: io.github.Lakshmi-Chakradhar-Vijayarao/credence -->

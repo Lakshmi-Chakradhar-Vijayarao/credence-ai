@@ -312,7 +312,7 @@ Credence eliminates EQL through deterministic constraint tracking: faithfulness 
 
 The key design principle: a structural guarantee (compression is blocked when uncertainty is present; constraints are injected regardless of compression) is preferable to a probabilistic instruction (prompt the compressor to preserve qualifiers) for a failure mode where a single miss can cause a runtime production failure. Prompt-based qualifier preservation achieves 98% survival; Credence achieves 100%.
 
-EQL-Bench (370 scenarios, 8 domains, 5 qualifier types, versioned) is released for reproducibility. Credence is available as an MCP server: `pip install "credence-guard[mcp]"`.
+EQL-Bench (370 scenarios, 8 domains, 5 qualifier types, versioned) is released for reproducibility. Credence is available as an MCP server: `pip install credence-guard`.
 
 ---
 

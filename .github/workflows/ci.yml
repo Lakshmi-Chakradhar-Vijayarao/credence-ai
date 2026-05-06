@@ -24,7 +24,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: pip install -e ".[dev,mcp]"
+        run: pip install -e ".[dev]"
 
       - name: Run test suite (no API key required)
         run: pytest tests/ -v --tb=short
@@ -43,7 +43,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -e ".[dev,mcp,api]"
+        run: pip install -e ".[dev,api]"
 
       - name: Ruff lint
         run: ruff check credence/

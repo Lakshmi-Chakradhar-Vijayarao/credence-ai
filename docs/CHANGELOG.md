@@ -6,6 +6,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.2.5] — 2026-05-06
+
+### Changed
+- **`fastmcp` is now a hard dependency** — install command is `pip install credence-guard` (no `[mcp]` extra required). The MCP server is the primary interface; the extra was unnecessary friction.
+- **MCP registry**: fixed `server.json` name casing (`io.github.Lakshmi-Chakradhar-Vijayarao/credence`) to match GitHub username.
+
+---
+
 ## [1.2.4] — 2026-05-06
 
 ### Added

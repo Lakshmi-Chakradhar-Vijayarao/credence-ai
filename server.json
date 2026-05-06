@@ -1,22 +1,23 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.lakshmi-chakradhar-vijayarao/credence",
+  "name": "io.github.Lakshmi-Chakradhar-Vijayarao/credence",
   "title": "Credence — Epistemic Guard",
-  "description": "Tracks uncertain values from conversation and blocks writes until verified. When an AI says 'I think the rate limit is 50', Credence registers that, then blocks any file write that embeds the value until you confirm it. Zero API key required.",
+  "description": "Epistemic guard for AI coding: tracks uncertain values and blocks writes until verified.",
   "version": "1.2.3",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "credence-guard",
       "version": "1.2.3",
-      "installInstructions": "pip install \"credence-guard[mcp]\"",
+      "installInstructions": "pip install credence-guard",
       "transport": {
         "type": "stdio"
       }
     }
   ],
   "repository": {
-    "type": "git",
+    "source": "github",
+    "id": "1221864133",
     "url": "https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai"
   },
   "tools": [
