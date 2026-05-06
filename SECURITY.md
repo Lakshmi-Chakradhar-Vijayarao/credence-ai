@@ -61,6 +61,6 @@ If you discover a security vulnerability in credence-guard, please report it **p
 
 ## Known Security Boundaries
 
-- `credence_register()` accepts arbitrary content strings — no per-session rate limit. A malicious agent could fill the registry. Mitigation: the DB is local; blast radius is your local disk.
+- `credence_register()` accepts arbitrary content strings. The registry enforces a per-session cap of 500 constraints by default (override: `CREDENCE_MAX_CONSTRAINTS=<n>`). A malicious agent filling the registry is bounded by this cap; blast radius is your local disk.
 - The registry is not encrypted at rest. Do not store secrets as constraint content.
 - `CREDENCE_DB` env var accepts arbitrary file paths. Validate in shared/multi-user environments.

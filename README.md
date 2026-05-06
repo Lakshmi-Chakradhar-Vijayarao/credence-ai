@@ -103,6 +103,8 @@ Done. No API key required.
 > **Session tracking:** Set `CREDENCE_SESSION_ID=my-project` to keep constraints stable across directory changes and terminal restarts.
 >
 > **Event log:** The gate writes block/allow events to `~/.credence/events.jsonl` (local only, never sent anywhere). Set `CREDENCE_NO_LOG=1` to disable.
+>
+> **Constraint cap:** The registry allows up to 500 constraints per session by default. Override with `CREDENCE_MAX_CONSTRAINTS=<n>`.
 
 ---
 
@@ -147,6 +149,8 @@ Validated across 7 open-weight models (Qwen, Mistral, Llama, Phi, Gemma) from 5 
 
 ```bash
 credence demo                     # smoke test, no API key
+credence stats                    # false-positive rate from real gate usage
+credence feedback 1|2|3           # tag last gate block: correct / noise / skip
 python3 -m pytest tests/ -q       # 829 tests
 python3 -m evals.latency_report   # P50/P95/P99
 ```

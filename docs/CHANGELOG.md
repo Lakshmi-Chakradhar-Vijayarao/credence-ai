@@ -101,6 +101,8 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Planned
 - Pre-built `credence-gate` binary as PyPI platform wheel (removes `cargo build` requirement).
-- Per-session constraint cap (DB spam guard).
 - GitHub Actions `credence-check` integration.
 - ETP adoption in external agent frameworks.
+
+### Already shipped (not yet tagged)
+- Per-session constraint cap: 500 constraints/session default, override with `CREDENCE_MAX_CONSTRAINTS`. Implemented in `registry.py:register()`.
