@@ -2,49 +2,49 @@
   "results": [
     {
       "component": "CP1 \u2014 Faithfulness Probe",
-      "description": "198-term frozenset scan on user turns",
-      "p50": 0.0173,
-      "p95": 0.0217,
-      "p99": 0.0251,
-      "max": 0.1514,
-      "mean": 0.014,
-      "n": 1000,
+      "description": "423-term frozenset scan on user turns",
+      "p50": 0.032,
+      "p95": 0.0493,
+      "p99": 0.0559,
+      "max": 0.2058,
+      "mean": 0.0269,
+      "n": 4000,
       "uncertain_tp_rate": "10/10",
       "certain_fp_rate": "0/20"
     },
     {
       "component": "J-score (CredenceProxy)",
       "description": "Linguistic assertiveness score \u2014 zero API calls",
-      "p50": 0.0135,
-      "p95": 0.015,
-      "p99": 0.0189,
-      "max": 0.2728,
-      "mean": 0.0141,
-      "n": 500,
+      "p50": 0.013,
+      "p95": 0.02,
+      "p99": 0.0218,
+      "max": 0.2869,
+      "mean": 0.0138,
+      "n": 2000,
       "uncertain_low_pct": "2/10 scored LOW",
       "certain_high_pct": "14/20 scored HIGH"
     },
     {
       "component": "CP2 \u2014 Consistency Enforcer",
       "description": "Keyword overlap + 52-cluster synonym expansion",
-      "p50": 0.006,
-      "p95": 0.009,
-      "p99": 0.0186,
-      "max": 0.0399,
-      "mean": 0.0067,
-      "n": 500,
+      "p50": 0.0064,
+      "p95": 0.0105,
+      "p99": 0.0175,
+      "max": 0.0311,
+      "mean": 0.007,
+      "n": 2000,
       "overlap_match_rate": "4/5 overlapping queries matched",
       "nonoverlap_match_rate": "0/5 non-overlapping falsely matched"
     },
     {
       "component": "CP3 \u2014 Generation-Time Scanner",
       "description": "Code + prose scan for unverified literals",
-      "p50": 0.0256,
-      "p95": 0.0299,
-      "p99": 0.0416,
-      "max": 0.079,
-      "mean": 0.0263,
-      "n": 500,
+      "p50": 0.0257,
+      "p95": 0.04,
+      "p99": 0.0437,
+      "max": 0.1091,
+      "mean": 0.0288,
+      "n": 2000,
       "hit_count_uncertain": 0,
       "hit_count_certain": 0
     },
@@ -52,58 +52,58 @@
       "component": "Registry (SQLite)",
       "description": "Constraint write + confidence lookup",
       "write": {
-        "p50": 0.022,
-        "p95": 0.0273,
-        "p99": 0.0453,
-        "max": 0.0794,
-        "mean": 0.0228,
-        "n": 250
+        "p50": 0.015,
+        "p95": 0.0275,
+        "p99": 0.0351,
+        "max": 0.0405,
+        "mean": 0.017,
+        "n": 1000
       },
       "read": {
         "p50": 0.002,
         "p95": 0.0022,
-        "p99": 0.0041,
-        "max": 0.0203,
-        "mean": 0.0021,
-        "n": 250
+        "p99": 0.0091,
+        "max": 0.0201,
+        "mean": 0.0022,
+        "n": 1000
       },
       "combined": {
-        "p50": 0.017,
-        "p95": 0.0243,
-        "p99": 0.0407,
-        "max": 0.0794,
-        "mean": 0.0125,
-        "n": 500
+        "p50": 0.0107,
+        "p95": 0.0259,
+        "p99": 0.0336,
+        "max": 0.0405,
+        "mean": 0.0096,
+        "n": 2000
       }
     },
     {
       "component": "CP5 \u2014 Cross-Session Memory",
       "description": "Snapshot unverified constraints + inject into new session",
       "snapshot": {
-        "p50": 0.0659,
-        "p95": 0.0813,
-        "p99": 0.113,
-        "max": 0.3892,
-        "mean": 0.0696,
-        "n": 250
+        "p50": 0.0709,
+        "p95": 0.0766,
+        "p99": 0.0929,
+        "max": 0.4174,
+        "mean": 0.0703,
+        "n": 1000
       },
       "recall": {
-        "p50": 0.4293,
-        "p95": 0.6029,
-        "p99": 0.6249,
-        "max": 0.6954,
-        "mean": 0.428,
-        "n": 250
+        "p50": 1.045,
+        "p95": 1.7537,
+        "p99": 1.8473,
+        "max": 1.9117,
+        "mean": 1.0482,
+        "n": 1000
       },
       "combined": {
-        "p50": 0.2265,
-        "p95": 0.5855,
-        "p99": 0.6156,
-        "max": 0.6954,
-        "mean": 0.2488,
-        "n": 500
+        "p50": 0.2306,
+        "p95": 1.6863,
+        "p99": 1.8259,
+        "max": 1.9117,
+        "mean": 0.5592,
+        "n": 2000
       }
     }
   ],
-  "n_per_component": 500
+  "n_per_component": 2000
 }
