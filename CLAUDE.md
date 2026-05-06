@@ -152,6 +152,12 @@ This persists unverified constraints so the next session inherits them via `cred
 | User confirms a value | `credence_verify` | ALWAYS |
 | Session end with open constraints | `credence_memory_snapshot` | OFFER |
 | User asks what's unverified | `credence_constraints` | ALWAYS |
+| User asks for session summary / handoff | `credence_session_summary` | ON REQUEST |
+| User asks about project-wide health | `credence_project_status` | ON REQUEST |
+| User asks what constraints look suspicious | `credence_scan_ghosts` | ON REQUEST |
+| User asks for epistemic timeline | `credence_audit` | ON REQUEST |
+| User asks if two responses contradict | `credence_diff` | ON REQUEST |
+| User wants to clear session state | `credence_reset` | ON REQUEST |
 
 ---
 
