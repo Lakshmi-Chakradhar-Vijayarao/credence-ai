@@ -36,6 +36,63 @@ scratch/
 
 # Paper draft and figures — not public until formally published
 
+# Research dirs — belong in credence-research (private) or detection-without-control
+experiments/
+findings/
+results/
+science/
+archive/
+checkpoints/
+esm/
+epistemic_runtime/
+memory/
+outreach/
+demos/
+CLAIM_SHEET.md
+EVIDENCE_LEDGER.md
+RESEARCH_PROGRAM.md
+KAGGLE_PUSH_QUEUE.md
+REPRODUCIBILITY.md
+ROADMAP.md
+
+# Extra research docs inside docs/
+docs/OBSERVATORY_HANDBOOK.md
+docs/OBSERVATORY_SPECIFICATION.md
+docs/RESEARCH_CHRONICLE.md
+docs/SCIENTIFIC_VOCABULARY.md
+docs/epistemic_tag_spec.md
+docs/program_postmortem.md
+docs/program_synthesis.md
+docs/research_narrative.md
+docs/research_plan_v2.md
+docs/thesis.md
+docs/vllm_rfc.md
+docs/COMPETING_THEORIES.md
+docs/OPEN_QUESTIONS.md
+docs/PAPER_OUTLINE.md
+docs/RESEARCH_ATLAS.md
+docs/PROGRAM_CHARTER.md
+docs/KNORM_BOUND.md
+
+# Session state / local tooling
+.credence/
+.gstack/
+
+# ESM research results inside evals/ — belong in credence-research
+evals/esm_*.json
+evals/independence_results.json
+evals/adversarial_invariance.py
+evals/bootstrap_ci.py
+evals/cross_arch_validation.py
+evals/independence_test.py
+evals/ESM_FINDINGS.md
+evals/gemma_results/
+evals/llama_results/
+evals/rl_regime_results/
+evals/cross_model/
+
+# Makefile is kept (build entry point)
+
 # Large model weights — too big for git (31MB, use Kaggle/HuggingFace Hub)
 models/
 

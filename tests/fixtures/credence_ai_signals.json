@@ -1,0 +1,104 @@
+{
+  "signals": {
+    "n_commits": 100,
+    "weeks": 3,
+    "days_since_last": 27,
+    "commits_per_week": 33.33,
+    "why_count": 2,
+    "fix_count": 53,
+    "refactor_count": 9,
+    "arch_signals": 4,
+    "avg_message_len": 64.6,
+    "fix_rate": 0.53,
+    "fix_rate_bucket": "exploratory",
+    "fix_rate_meaning": "High fix rate \u2014 rapid experimentation or exploratory work.",
+    "early_why": 0,
+    "recent_why": 1,
+    "early_prefix_ratio": 0.8,
+    "recent_prefix_ratio": 1.0,
+    "early_avg_len": 72.6,
+    "recent_avg_len": 64.8,
+    "message_evolution": true,
+    "scope_sufficient": false,
+    "scope_warning": "Only 3 week(s) of history. Developmental arc claims are unreliable below 8 weeks. This analysis reflects a snapshot, not a trajectory.",
+    "project_phase": "sprint",
+    "total_days": 23,
+    "top_language": "Python",
+    "languages": [
+      "Python",
+      "TeX",
+      "Rust"
+    ],
+    "recovery_status": "INACTIVE",
+    "recovery_days": 27,
+    "dev_style": "iterative",
+    "signal_strength": "Strong",
+    "project_intent": "learning",
+    "recent_messages": [
+      "fix: aggressive gpu teardown between models, hf_token secret name debug",
+      "fix: redirect hf cache to /tmp, clear after each model to avoid disk oom",
+      "fix: rename script to esm_probe_v9.py to bust kaggle cache",
+      "fix: capture gen-step-1 hidden states, not prefill \u2014 critical signal fix",
+      "feat: add llama-3.1-8b and gemma-2-9b \u2014 7 models, 7 orgs"
+    ],
+    "early_messages": [
+      "fix: correct kaggle dataset slug and kernel title for credence-eqlr-open-model",
+      "feat: phase 3 \u2014 kaggle eqlr open-model notebook (eql-bench v2, qwen-2.5-1.5b)",
+      "feat: add gauntlet (n=50) and e8 results via claudecodeclient",
+      "feat: run e6/e7/null_hypothesis via claudecodeclient + fix client injection",
+      "feat: add claudecodeclient fallback to gauntlet + experiments, fix perf threshold"
+    ],
+    "weekly_counts": [
+      23,
+      33,
+      6,
+      19,
+      19
+    ],
+    "repo_name": "credence-ai",
+    "owner_name": "Lakshmi-Chakradhar-Vijayarao",
+    "repo_description": "",
+    "has_readme": true,
+    "star_count": 0,
+    "fork_count": 1,
+    "evidence": {
+      "why_commits": [
+        "fix: redirect hf cache to /tmp, clear after each model to avoid disk oom",
+        "fix: capture prefill cache from model output instead of pre-creating evictioncache"
+      ],
+      "fix_commits": [
+        "fix: aggressive gpu teardown between models, hf_token secret name debug",
+        "fix: redirect hf cache to /tmp, clear after each model to avoid disk oom",
+        "fix: rename script to esm_probe_v9.py to bust kaggle cache",
+        "fix: capture gen-step-1 hidden states, not prefill \u2014 critical signal fix",
+        "fix: cross-model layer sweep \u2014 probe 75-97% depth, not 50-90%"
+      ],
+      "refactor_commits": [
+        "refactor: hard reset \u2014 archive cams eviction v1, introduce esm architecture",
+        "chore: remove internal docs, relocate ts sdk stub, clean up repo surface",
+        "cleanup: remove training artifacts, superseded results, and kaggle clutter",
+        "refactor: clean repo structure \u2014 remove root clutter, consolidate research dirs",
+        "refactor: clean public api, trim claude.md, auto session ids"
+      ],
+      "arch_commits": [
+        "feat: cross-model \u2014 5 non-gated models across 5 orgs, robust layer resolution",
+        "refactor: hard reset \u2014 archive cams eviction v1, introduce esm architecture",
+        "feat: eip architecture \u2014 epistemichook, k-norm bound, paper outline",
+        "refactor: clean repo structure \u2014 remove root clutter, consolidate research dirs"
+      ],
+      "signal_strength_label": "Strong",
+      "signal_strength_reason": "n_commits=100 (\u226580) AND cpw=33.3 (\u22651.5)",
+      "fix_rate_bucket": "exploratory",
+      "fix_rate_meaning": "High fix rate \u2014 rapid experimentation or exploratory work.",
+      "message_evolution_reason": "recent_prefix_ratio=1.0 vs early=0.8, recent_avg_len=64.8 vs early=72.6 \u2192 evolution=True",
+      "project_phase_reason": "cpw=33.3, total_days=23, days_since=27 \u2192 sprint",
+      "scope_warning": "Only 3 week(s) of history. Developmental arc claims are unreliable below 8 weeks. This analysis reflects a snapshot, not a trajectory.",
+      "recovery_reason": "days_since_last=27 \u2192 INACTIVE",
+      "dev_style_reason": "commits_per_week=33.3 \u2192 iterative"
+    }
+  },
+  "meta": {
+    "owner": "Lakshmi-Chakradhar-Vijayarao",
+    "repo": "credence-ai"
+  }
+}
