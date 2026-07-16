@@ -178,10 +178,20 @@ paper/            Research paper draft + figures
 
 ---
 
+## Research
+
+The scientific basis for Credence is documented in `paper/` (EQL / EQLR / FCR).
+
+The companion geometry thesis — on confabulation detection and why the detection
+axis is dissociable from the causal control axis — lives in a separate repo:
+→ **[Detection Without Control](https://github.com/Lakshmi-Chakradhar-Vijayarao/detection-without-control)**
+
+---
+
 ## Built by
 
 **Lakshmi Chakradhar Vijayarao** — [GitHub](https://github.com/Lakshmi-Chakradhar-Vijayarao) · [LinkedIn](https://www.linkedin.com/in/lakshmichakradharvijayarao/) · [X](https://x.com/LChakradharV28)
 
-MIT License
+Apache 2.0 License
 
 <!-- mcp-name: io.github.Lakshmi-Chakradhar-Vijayarao/credence -->
