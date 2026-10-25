@@ -120,7 +120,7 @@ The LLMLingua simulation failure mode is different: the uncertain statement is r
 
 ## 4. Multi-Model Validation
 
-If EQL is a structural property of summarization — not a Haiku artifact — it should appear across model families. We test this on EQL-Bench v2 (280 explicit scenarios, 8 domains) using 6 open-weight models run on Kaggle GPU instances.
+If EQL is a structural property of summarization — not a Haiku artifact — it should appear across model families. We test this on EQL-Bench v2 (280 explicit scenarios, 8 domains) using the 7 open-weight models listed in §4.1, run on Kaggle GPU instances, alongside Claude Haiku.
 
 ### 4.1 Results
 
@@ -306,7 +306,7 @@ Total P99 overhead across all components: <1ms. Rust implementation of the gate:
 
 ## 11. Conclusion
 
-We identify Epistemic Qualifier Loss as a systematic, measurable failure mode in LLM context compression: standard Haiku summarization strips explicit uncertainty markers in 46% of compressions (EQLR = 0.46, 95% CI [0.318, 0.607]); token-importance compression produces EQLR = 0.68. The failure is model-agnostic — EQLR = 0.41–0.75 across 8 open-weight models from 6 organizations. It propagates to system-level failures: incorrect code constants, lost debugging context, wrong architectural decisions.
+We identify Epistemic Qualifier Loss as a systematic, measurable failure mode in LLM context compression: standard Haiku summarization strips explicit uncertainty markers in 46% of compressions (EQLR = 0.46, 95% CI [0.318, 0.607]); token-importance compression produces EQLR = 0.68. The failure is model-agnostic — EQLR = 0.41–0.75 across 8 models from 6 organizations (7 open-weight plus Claude Haiku). It propagates to system-level failures: incorrect code constants, lost debugging context, wrong architectural decisions.
 
 Credence eliminates EQL through deterministic constraint tracking: faithfulness probe, immutable registry, Truth Buffer injection, and PreToolUse gate. Applied to the same benchmark: EQLR = 0.00 (95% CI [0.000, 0.000]). The ghost constraint heuristic recovers unhedged uncertain values: BothRate from 0.33 (naive window) to 1.00.
 
