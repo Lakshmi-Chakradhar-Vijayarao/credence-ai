@@ -1,7 +1,6 @@
 # Paper — Epistemic Qualifier Loss
 
-**Working title:** "Epistemic Qualifier Loss: Measuring and Preventing the Systematic
-Loss of Uncertainty Signals in LLM Context Compression"
+**Working title:** "Epistemic Qualifier Loss: Measuring and Preventing the Systematic Loss of Uncertainty Signals in LLM Context Compression"
 
 This is a draft for a standalone research paper on the scientific basis of the
 Credence system — distinct from the geometry thesis.
@@ -22,14 +21,20 @@ Credence system — distinct from the geometry thesis.
 
 ## Core claims this paper makes
 
-1. **EQL** (Epistemic Qualifier Loss): context compression systematically discards
-   hedging language at rates above chance, measurable via a probe on retained tokens.
+1. **EQL** (Epistemic Qualifier Loss): context compression in LLM pipelines systematically
+   removes user-stated uncertainty markers ("I think", "roughly", "the vendor says") while
+   keeping the value they qualify. Measured by checking whether any of 423 uncertainty
+   markers survives next to the value in the compressed context.
 
-2. **EQLR** (EQL Retention Rate): scalar metric for how well a compressor preserves
-   uncertainty signals. Validated on 8 models across 6 orgs.
+2. **EQLR** (Epistemic Qualifier Loss Rate): the fraction of scenarios in which the value
+   survives compression but its qualifier does not. **Higher is worse.** Measured at
+   0.41–0.75 across 8 models from 6 organisations under standard compression; the
+   Credence faithfulness probe reduces it to 0.0 on the scenarios it covers.
 
-3. **FCR** (Faithful Compression Rate): downstream task metric — does compressed
-   context produce equally calibrated outputs?
+3. **FCR** (False Certainty Rate): downstream metric — the fraction of callbacks in which
+   the model states the value with no qualifier while the value is numerically present.
+   **Higher is worse.**
 
-4. Ghost constraint detection (the `credence_self_probe` / `credence_scan` tools)
-   operationalizes EQL in real-time for any LLM workflow.
+4. **Ghost constraints**: uncertain values stated *without* hedging language. A
+   domain-keyword heuristic on user statements (paper §5) recovers them; marker-based
+   detection alone cannot.

@@ -5,7 +5,7 @@ AI doesn't remember what it wasn't sure about. Credence does.
 [![PyPI](https://img.shields.io/pypi/v/credence-guard)](https://pypi.org/project/credence-guard/)
 [![CI](https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/Lakshmi-Chakradhar-Vijayarao/credence-ai/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/pypi/pyversions/credence-guard)](https://pypi.org/project/credence-guard/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 ```bash
 pip install credence-guard
