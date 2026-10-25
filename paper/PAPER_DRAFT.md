@@ -8,7 +8,7 @@ vijayarao.l@northeastern.edu
 
 ## Abstract
 
-We identify and measure **Epistemic Qualifier Loss (EQL)** — the systematic removal of user-stated uncertainty markers during context window compression in large language model pipelines. When a user states "I think the rate limit is around 50 req/min — I haven't confirmed this," standard Haiku-based summarization strips the hedging in 46% of cases (EQLR = 0.46, 95% CI [0.318, 0.607]), producing compressed context that treats the value as confirmed fact. Token-importance compression (LLMLingua-style) produces EQLR = 0.68 (95% CI [0.536, 0.800]). Across 8 open-weight models from 6 organizations, unguarded EQLR ranges from 0.41 to 0.75, confirming that qualifier loss is a structural property of summarization, not a per-model artifact.
+We identify and measure **Epistemic Qualifier Loss (EQL)** — the systematic removal of user-stated uncertainty markers during context window compression in large language model pipelines. When a user states "I think the rate limit is around 50 req/min — I haven't confirmed this," standard Haiku-based summarization strips the hedging in 46% of cases (EQLR = 0.46, 95% CI [0.318, 0.607]), producing compressed context that treats the value as confirmed fact. Token-importance compression (LLMLingua-style) produces EQLR = 0.68 (95% CI [0.536, 0.800]). Across 8 models from 6 organizations (7 open-weight plus Claude Haiku), unguarded EQLR ranges from 0.41 to 0.75, confirming that qualifier loss is a structural property of summarization, not a per-model artifact.
 
 We introduce **Credence**, a deterministic constraint-tracking layer that eliminates EQL without model cooperation. A faithfulness probe (423 uncertainty markers, <0.03ms) intercepts compression when qualifier-bearing text is detected. An immutable constraint registry persists uncertain values and their source statements. A PreToolUse gate blocks file writes that embed unverified values. Applied to the same 50 scenarios: EQLR = 0.0 (95% CI [0.0, 0.0]). On a 10-session ghost constraint benchmark (values stated without explicit hedging), a domain-keyword heuristic recovers BothRate from 0.33 (naive window) to 1.0.
 
@@ -45,7 +45,7 @@ To our knowledge, no prior work names, defines, or measures this specific failur
 **Contributions:**
 
 1. We define EQL and introduce EQLR (Epistemic Qualifier Loss Rate) as a measurable metric
-2. We demonstrate that EQLR = 0.46–0.75 across 8 models under standard compression, and is caused by the summarization operation, not model weights
+2. We demonstrate that EQLR = 0.41–0.75 across 8 models under standard compression, and is caused by the summarization operation, not model weights
 3. We show EQL propagates to system-level failures: incorrect code generation, lost debugging context, wrong architectural decisions
 4. We introduce a deterministic fix (Credence) that achieves EQLR = 0.0 through constraint tracking, without requiring model cooperation or fine-tuning
 5. We identify **ghost constraints** — uncertain values stated without explicit hedging — and demonstrate a heuristic that recovers them
