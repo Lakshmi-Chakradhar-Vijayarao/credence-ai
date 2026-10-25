@@ -34,8 +34,6 @@ credence_gate/epistemic_registry.db.bak
 _archive/
 scratch/
 
-# Paper draft and figures — not public until formally published
-
 # Research dirs — belong in credence-research (private) or detection-without-control
 experiments/
 findings/
